@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คุณเป็นแมวประเภทไหน? | หาดจันทร์เจ้า</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#EAF7FF;
+    --bg2:#FDFEFF;
+    --sea-deep:#0284C7;
+    --sea-mid:#38BDF8;
+    --sea-soft:#CDEFFC;
+    --sea-pale:#F1FBFF;
+    --ink:#0F3350;
+    --ink-soft:#5B87A3;
+    --white:#FFFFFF;
+    --blush:#FFC2C2;
+    --gold:#FFD873;
+    --coral:#FF8F70;
+    --coral-deep:#F26B4D;
+    --leaf:#2FAE86;
+    --shadow: rgba(15,51,79,.18);
+    --radius-lg:30px;
+    --radius-md:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{ margin:0; padding:0; min-height:100vh; }
+  body{
+    background:
+      radial-gradient(ellipse at 12% -12%, #cdeeff 0%, transparent 50%),
+      radial-gradient(ellipse at 108% 4%, #ffe3bd 0%, transparent 42%),
+      radial-gradient(ellipse at -8% 62%, #d3f6e6 0%, transparent 48%),
+      radial-gradient(ellipse at 100% 100%, #ffd9e3 0%, transparent 40%),
+      linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 55%, #ffffff 100%);
+    font-family:'Mali', 'Prompt', sans-serif;
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+
+  #bubbles{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .bubble{
+    position:absolute; bottom:-60px; border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.9), rgba(56,189,248,.15));
+    border:1px solid rgba(56,189,248,.3);
+    animation:rise linear infinite;
+  }
+  @keyframes rise{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    10%{ opacity:.8; }
+    100%{ transform:translateY(-115vh) translateX(20px); opacity:0; }
+  }
+
+  .wave-bg{ position:fixed; bottom:0; left:0; width:100%; height:130px; z-index:0; opacity:.55; pointer-events:none; }
+
+  #app{
+    position:relative; z-index:1;
+    max-width:460px; margin:0 auto;
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    padding:26px 18px 36px;
+  }
+
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .brand{
+    font-family:'Prompt', sans-serif; font-weight:700; font-size:12.5px;
+    letter-spacing:.14em; color:var(--sea-deep); text-transform:uppercase; opacity:.8;
+  }
+  .moon-wrap{ display:flex; align-items:center; gap:8px; }
+  .moon{
+    width:34px;height:34px;border-radius:50%;
+    background:var(--sea-soft); position:relative; overflow:hidden;
+    border:1.5px solid rgba(2,132,199,.25); flex-shrink:0;
+    box-shadow:0 0 0 6px rgba(255,216,115,.10);
+  }
+  .moon-fill{
+    position:absolute; top:0; left:0; height:100%; width:0%;
+    background:radial-gradient(circle at 30% 30%, #fff8e0, var(--gold) 75%);
+    transition:width .6s cubic-bezier(.4,0,.2,1);
+  }
+  .moon-label{ font-family:'Prompt',sans-serif; font-size:11px; color:var(--ink-soft); }
+
+  .header-divider{ width:100%; height:12px; margin-bottom:14px; opacity:.65; }
+
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,255,255,.98));
+    border:1px solid rgba(2,132,199,.10);
+    border-radius:var(--radius-lg);
+    padding:22px 20px 24px;
+    flex:1;
+    position:relative;
+    display:flex; flex-direction:column;
+    box-shadow:0 24px 55px var(--shadow), 0 2px 0 rgba(255,255,255,.6) inset;
+    animation:fadeIn .5s ease;
+  }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  .corner-sparkle{ position:absolute; font-size:15px; opacity:.55; pointer-events:none; animation:twinkle 2.4s ease-in-out infinite; }
+  .corner-sparkle.tl{ top:12px; left:16px; }
+  .corner-sparkle.tr{ top:14px; right:18px; animation-delay:.8s; }
+
+  .stage{
+    position:relative;
+    width:100%; height:196px;
+    border-radius:22px;
+    overflow:hidden;
+    margin-bottom:16px;
+    box-shadow:inset 0 0 0 1px rgba(2,132,199,.10), 0 10px 22px rgba(2,132,199,.12);
+  }
+  .stage-bg{ position:absolute; inset:0; transition:background 0.4s ease; }
+  .stage-decor{ position:absolute; inset:0; }
+  .stage-decor svg{ width:100%; height:100%; }
+
+  .birds-layer{ position:absolute; inset:0; overflow:hidden; pointer-events:none; mix-blend-mode:overlay; }
+  .bird{ position:absolute; width:22px; height:11px; opacity:.85; animation:flyAcross linear infinite; }
+  .bird svg{ width:100%; height:100%; display:block; }
+  .bird.b1{ top:18%; animation-duration:13s; animation-delay:0s; }
+  .bird.b2{ top:34%; width:16px; height:8px; opacity:.65; animation-duration:17s; animation-delay:3.2s; }
+  .bird.b3{ top:12%; width:14px; height:7px; opacity:.55; animation-duration:21s; animation-delay:7.5s; }
+  @keyframes flyAcross{
+    0%{ transform:translateX(-40px) translateY(0); }
+    45%{ transform:translateX(150px) translateY(-10px); }
+    100%{ transform:translateX(340px) translateY(2px); }
+  }
+
+  .cat-ground-shadow{
+    position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+    width:96px; height:16px; border-radius:50%;
+    background:rgba(10,40,60,.18); filter:blur(3px);
+  }
+  .cat-figure{
+    position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
+    width:120px; height:120px; animation:bob 3.4s ease-in-out infinite;
+  }
+  .cat-figure.traveler-glow{ filter:drop-shadow(0 0 12px rgba(140,160,255,.5)); }
+  @keyframes bob{ 0%,100%{ transform:translateX(-50%) translateY(0);} 50%{ transform:translateX(-50%) translateY(-6px);} }
+
+  .firefly{ animation:twinkle 1.8s ease-in-out infinite; }
+  @keyframes twinkle{ 0%,100%{opacity:.25;} 50%{opacity:1;} }
+
+  .scene-fade{ animation:sceneIn .45s ease; }
+  @keyframes sceneIn{ from{opacity:0; transform:translateX(14px);} to{opacity:1; transform:translateX(0);} }
+
+  .chapter-label{
+    text-align:center; font-family:'Prompt',sans-serif; font-weight:600;
+    font-size:12.5px; letter-spacing:.06em; color:var(--sea-deep);
+    opacity:.85; margin-bottom:4px;
+  }
+  .dots{ display:flex; gap:6px; justify-content:center; margin-bottom:12px; }
+  .dot{ width:7px; height:7px; border-radius:50%; background:var(--sea-soft); transition:all .3s; }
+  .dot.filled{ background:linear-gradient(135deg,var(--sea-deep),var(--gold)); box-shadow:0 0 6px rgba(255,216,115,.55); }
+
+  .scene{
+    font-size:16.5px; line-height:1.8; color:var(--ink); margin-bottom:18px;
+    text-align:center;
+  }
+
+  .options{ display:flex; flex-direction:column; gap:9px; margin-top:auto; }
+  .opt{
+    display:flex; align-items:center; gap:10px;
+    text-align:left;
+    background:var(--sea-pale);
+    border:1.5px solid rgba(2,132,199,.16);
+    border-radius:100px;
+    padding:12px 17px;
+    color:var(--ink); font-size:14px; line-height:1.5;
+    cursor:pointer; font-family:'Mali', sans-serif;
+    transition:all .18s ease;
+  }
+  .opt .paw{ font-size:15px; flex-shrink:0; opacity:.8; }
+  .opt:hover{ background:var(--sea-soft); border-color:var(--sea-deep); transform:translateX(3px) scale(1.01); }
+  .opt:active{ transform:scale(.98); }
+  .opt:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+
+  h1{
+    font-family:'Prompt', sans-serif; font-weight:800;
+    font-size:24px; line-height:1.4; text-align:center;
+    letter-spacing:-.01em;
+    margin:4px 0 10px; color:var(--ink);
+  }
+  .intro-copy{
+    font-size:15.5px; line-height:1.85; color:var(--ink-soft);
+    text-align:center; margin-bottom:20px;
+  }
+  .intro-copy b{ color:var(--sea-deep); font-weight:700; }
+
+  .btn-primary{
+    position:relative; overflow:hidden;
+    display:block; width:100%;
+    background:linear-gradient(135deg, var(--sea-deep), var(--sea-mid));
+    color:#fff; border:none; border-radius:100px;
+    font-family:'Prompt', sans-serif; font-weight:600; font-size:16px;
+    padding:15px 20px; cursor:pointer;
+    box-shadow:0 14px 28px rgba(2,132,199,.34);
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-primary::after{
+    content:''; position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,.45), transparent);
+    transform:skewX(-20deg);
+    transition:left .6s ease;
+  }
+  .btn-primary:hover{ transform:translateY(-2px); }
+  .btn-primary:hover::after{ left:130%; }
+  .btn-primary:active{ transform:translateY(0) scale(.98); }
+  .btn-primary:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; }
+
+  .btn-ghost{
+    display:block; width:100%; margin-top:10px;
+    background:transparent; color:var(--sea-deep);
+    border:1.5px solid var(--sea-soft); border-radius:100px;
+    font-family:'Prompt', sans-serif; font-weight:600; font-size:15px;
+    padding:13px 20px; cursor:pointer;
+  }
+  .btn-ghost:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; }
+
+  .result-eyebrow{
+    text-align:center; font-family:'Prompt',sans-serif; font-size:12px;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--sea-deep); opacity:.75; margin-bottom:4px;
+  }
+  h2.result-title{
+    font-family:'Prompt', sans-serif; font-weight:800; font-size:25px;
+    text-align:center; color:var(--ink); margin:0 0 4px; letter-spacing:-.01em;
+  }
+  .result-sub{
+    text-align:center; font-family:'Prompt',sans-serif; font-weight:600; font-size:13px;
+    color:var(--coral-deep); margin-bottom:10px;
+  }
+  .result-copy{
+    font-size:15px; line-height:1.8; color:var(--ink-soft); margin-bottom:18px; text-align:center;
+  }
+  .result-copy .highlight{
+    color:var(--ink); background:var(--sea-soft); padding:1px 7px; border-radius:8px; font-weight:600;
+  }
+  .sparkle{
+    position:absolute; pointer-events:none; font-size:16px;
+    animation:sparklePop .9s ease forwards;
+  }
+  @keyframes sparklePop{
+    0%{ opacity:0; transform:scale(.2) translateY(0); }
+    35%{ opacity:1; transform:scale(1.1) translateY(-8px); }
+    100%{ opacity:0; transform:scale(.7) translateY(-26px); }
+  }
+
+  .pyramid-section{
+    margin-bottom:16px;
+    background:linear-gradient(180deg, rgba(2,132,199,.05), rgba(255,255,255,0));
+    border-radius:22px;
+    padding:16px 14px 6px;
+    border:1px solid rgba(2,132,199,.08);
+  }
+  .pyramid-title{
+    font-family:'Prompt',sans-serif; font-weight:700; font-size:13.5px;
+    color:var(--ink); text-align:center; margin-bottom:2px;
+  }
+  .pyramid-subtitle{
+    font-family:'Mali',sans-serif; font-size:12px;
+    color:var(--ink-soft); text-align:center; margin-bottom:10px;
+  }
+  .pyr-triangle-wrap{ width:100%; max-width:230px; margin:0 auto 14px; position:relative; }
+  .pyr-triangle-wrap svg{ width:100%; height:auto; overflow:visible; }
+  .pyr-band{ transition:fill-opacity 1.1s cubic-bezier(.4,0,.2,1) .1s; }
+  .pyr-pct-text{ font-family:'Prompt',sans-serif; font-size:13px; font-weight:700; }
+  .pyr-bump{ animation:twinkle 2.6s ease-in-out infinite; }
+
+  .pyr-row{
+    margin-bottom:12px; padding:10px 12px; border-radius:14px;
+    background:rgba(255,255,255,.65); border:1px solid rgba(2,132,199,.08);
+  }
+  .pyr-row:last-child{ margin-bottom:2px; }
+  .pyr-row-top{ display:flex; align-items:center; gap:8px; }
+  .pyr-icon{ font-size:15px; flex-shrink:0; }
+  .pyr-label{ font-family:'Prompt',sans-serif; font-size:12.5px; color:var(--ink); font-weight:600; }
+  .pyr-pct{ margin-left:auto; font-family:'Prompt',sans-serif; font-weight:700; font-size:13px; color:var(--sea-deep); }
+  .pyr-comment{ font-size:12.5px; line-height:1.65; color:var(--ink-soft); margin:6px 0 0; }
+  .pyr-tip{ font-size:12px; line-height:1.6; color:var(--coral-deep); margin:6px 0 0; }
+  .pyr-tip .bulb{ margin-right:3px; }
+
+  .callout{
+    background:var(--sea-pale); border:1.5px dashed rgba(2,132,199,.35);
+    border-radius:16px; padding:13px 15px; font-size:14px; line-height:1.7;
+    color:var(--ink); margin-bottom:16px; text-align:center;
+  }
+  .callout b{ color:var(--sea-deep); }
+
+  footer.disclaimer{
+    text-align:center; font-size:11px; color:var(--ink-soft); opacity:.7; margin-top:2px; line-height:1.6;
+  }
+
+  .share-row{ display:flex; gap:10px; margin-top:6px; }
+  .share-row .btn-primary, .share-row .btn-ghost{ margin-top:0; }
+
+  .hidden{ display:none !important; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="bubbles"></div>
+<svg class="wave-bg" viewBox="0 0 1440 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0,100 C 240,180 480,20 720,80 C 960,140 1200,40 1440,100 L1440,200 L0,200 Z" fill="#CDEFFC"></path>
+</svg>
+
+<div id="app">
+
+  <header class="top">
+    <span class="brand">หาดจันทร์เจ้า</span>
+    <div class="moon-wrap">
+      <span class="moon-label" id="moonLabel">0/8</span>
+      <div class="moon"><div class="moon-fill" id="moonFill"></div></div>
+    </div>
+  </header>
+  <svg class="header-divider" viewBox="0 0 400 12" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,6 Q20,0 40,6 T80,6 T120,6 T160,6 T200,6 T240,6 T280,6 T320,6 T360,6 T400,6" fill="none" stroke="#38BDF8" stroke-width="2"/>
+  </svg>
+
+  <div class="card" id="screen-intro">
+    <span class="corner-sparkle tl">✨</span>
+    <span class="corner-sparkle tr">🌙</span>
+    <div class="stage">
+      <div class="stage-bg" style="background:linear-gradient(160deg,#BEE7FB,#EAF9E9);"></div>
+      <div class="stage-decor" id="introDecor"></div>
+      <div class="birds-layer" id="introBirds"></div>
+      <div class="cat-ground-shadow"></div>
+      <div class="cat-figure" id="introCat"></div>
+    </div>
+    <h1>คุณเป็นแมวประเภทไหน?</h1>
+    <p class="intro-copy">
+      คืนหนึ่ง คุณไล่ตามหิ่งห้อยจนลอดรั้วเข้าไป แล้วก็เกยตื้นที่ <b>หาดจันทร์เจ้า</b> ดินแดนใต้แสงจันทร์เพ็ญ<br><br>
+      ทางเลือกเล็ก ๆ ตลอด 8 บทข้างหน้า จะสะท้อนตัวตนที่แท้จริงของคุณ...ไปดูกันว่าสุดท้ายคุณเป็นแมวแบบไหน ในบรรดาแมวเก้าประเภทของหาดแห่งนี้
+    </p>
+    <button class="btn-primary" id="startBtn">เริ่มเรื่องราว 🌊</button>
+  </div>
+
+  <div class="card hidden" id="screen-question">
+    <div class="stage" id="stageQ">
+      <div class="stage-bg" id="stageBg"></div>
+      <div class="stage-decor" id="stageDecor"></div>
+      <div class="birds-layer" id="stageBirds"></div>
+      <div class="cat-ground-shadow"></div>
+      <div class="cat-figure" id="questionCat"></div>
+    </div>
+    <div class="chapter-label" id="qCounter">บทที่ ๑</div>
+    <div class="dots" id="dotsRow"></div>
+    <div class="scene" id="sceneText"></div>
+    <div class="options" id="optionsRow"></div>
+  </div>
+
+  <div class="card hidden" id="screen-result">
+    <span class="corner-sparkle tl">✨</span>
+    <span class="corner-sparkle tr">⭐</span>
+    <div class="stage" style="position:relative;">
+      <div class="stage-bg" style="background:linear-gradient(160deg,#FFE9A8,#CDEFFC);"></div>
+      <div class="stage-decor" id="resultDecor"></div>
+      <div class="birds-layer" id="resultBirds"></div>
+      <div class="cat-ground-shadow"></div>
+      <div class="cat-figure" id="resultCat"></div>
+    </div>
+    <div class="result-eyebrow">ผลจากหาดจันทร์เจ้า</div>
+    <h2 class="result-title" id="resultTitle"></h2>
+    <div class="result-sub" id="resultSub"></div>
+    <div class="result-copy" id="resultCopy"></div>
+
+    <div class="pyramid-section">
+      <div class="pyramid-title">ปะการังพระจันทร์ ✦ พีระมิดการเงินของคุณ</div>
+      <div class="pyramid-subtitle">แนวปะการังใต้แสงจันทร์ 3 ชั้น สะท้อนความมั่นคงทางการเงินของคุณ</div>
+      <div class="pyr-triangle-wrap">
+        <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gradReserve" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="#1E9E75"/>
+              <stop offset="100%" stop-color="#5CD9AE"/>
+            </linearGradient>
+            <linearGradient id="gradProtect" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="#0284C7"/>
+              <stop offset="100%" stop-color="#6BD3FF"/>
+            </linearGradient>
+            <linearGradient id="gradGrow" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="#E8A93A"/>
+              <stop offset="100%" stop-color="#FFE39A"/>
+            </linearGradient>
+            <filter id="pyrGlow" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="4.2" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <path d="M100,20 L188,152 L12,152 Z" fill="none" stroke="rgba(15,51,79,.14)" stroke-width="2"/>
+          <g filter="url(#pyrGlow)">
+            <polygon id="bandReserve" class="pyr-band" points="12,152 188,152 158.7,106 41.3,106" fill="url(#gradReserve)" fill-opacity="0" stroke="#fff" stroke-width="2"/>
+            <polygon id="bandProtect" class="pyr-band" points="41.3,106 158.7,106 129.3,60 70.7,60" fill="url(#gradProtect)" fill-opacity="0" stroke="#fff" stroke-width="2"/>
+            <polygon id="bandGrow" class="pyr-band" points="70.7,60 129.3,60 100,20" fill="url(#gradGrow)" fill-opacity="0" stroke="#fff" stroke-width="2"/>
+          </g>
+          <circle class="pyr-bump" cx="60" cy="130" r="2.2" fill="#fff" opacity=".7"/>
+          <circle class="pyr-bump" cx="140" cy="134" r="1.8" fill="#fff" opacity=".6" style="animation-delay:.5s"/>
+          <circle class="pyr-bump" cx="95" cy="86" r="2" fill="#fff" opacity=".65" style="animation-delay:.9s"/>
+          <circle class="pyr-bump" cx="118" cy="80" r="1.6" fill="#fff" opacity=".6" style="animation-delay:1.3s"/>
+          <circle class="pyr-bump" cx="100" cy="40" r="1.8" fill="#fff" opacity=".75" style="animation-delay:.3s"/>
+          <text id="pctReserveTxt" class="pyr-pct-text" x="100" y="134" text-anchor="middle" fill="var(--ink)" stroke="#fff" stroke-width="3" paint-order="stroke">0%</text>
+          <text id="pctProtectTxt" class="pyr-pct-text" x="100" y="88" text-anchor="middle" fill="var(--ink)" stroke="#fff" stroke-width="3" paint-order="stroke">0%</text>
+          <text id="pctGrowTxt" class="pyr-pct-text" x="100" y="46" text-anchor="middle" fill="var(--ink)" stroke="#fff" stroke-width="3" paint-order="stroke">0%</text>
+        </svg>
+      </div>
+
+      <div class="pyr-row">
+        <div class="pyr-row-top">
+          <span class="pyr-icon">⚓</span>
+          <span class="pyr-label">เงินสำรองฉุกเฉิน</span>
+          <span class="pyr-pct" id="pctReserve">0%</span>
+        </div>
+        <div class="pyr-comment" id="commentReserve"></div>
+        <div class="pyr-tip" id="tipReserve"></div>
+      </div>
+      <div class="pyr-row">
+        <div class="pyr-row-top">
+          <span class="pyr-icon">🛡️</span>
+          <span class="pyr-label">ป้องกันความเสี่ยง</span>
+          <span class="pyr-pct" id="pctProtect">0%</span>
+        </div>
+        <div class="pyr-comment" id="commentProtect"></div>
+        <div class="pyr-tip" id="tipProtect"></div>
+      </div>
+      <div class="pyr-row">
+        <div class="pyr-row-top">
+          <span class="pyr-icon">🌱</span>
+          <span class="pyr-label">ต่อยอดความมั่งคั่ง</span>
+          <span class="pyr-pct" id="pctGrow">0%</span>
+        </div>
+        <div class="pyr-comment" id="commentGrow"></div>
+        <div class="pyr-tip" id="tipGrow"></div>
+      </div>
+    </div>
+
+    <div class="callout" id="callout"></div>
+
+    <div class="share-row">
+      <button class="btn-primary" id="againBtn">ลองอีกครั้ง</button>
+      <button class="btn-ghost" id="copyBtn">คัดลอกลิงก์</button>
+    </div>
+    <footer class="disclaimer">นิทานเล่นสนุกเพื่อสะท้อนนิสัยการใช้เงินแบบเบา ๆ อาจพูดถึงแนวคิดเรื่องเงินสำรอง ประกันภัย การลงทุน และภาษีแบบทั่วไปเท่านั้น ไม่ใช่คำแนะนำทางการเงิน ประกันภัย หรือภาษีอย่างเป็นทางการ 🐚</footer>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const bubbleWrap = document.getElementById('bubbles');
+  for(let i=0;i<16;i++){
+    const b = document.createElement('div');
+    b.className='bubble';
+    const size = Math.random()*22+8;
+    b.style.width = size+'px';
+    b.style.height = size+'px';
+    b.style.left = Math.random()*100+'%';
+    b.style.animationDuration = (Math.random()*10+10)+'s';
+    b.style.animationDelay = (Math.random()*10)+'s';
+    bubbleWrap.appendChild(b);
+  }
+
+  const BIRD_ICON = `<svg viewBox="0 0 20 10" xmlns="http://www.w3.org/2000/svg"><path d="M0,6 Q5,0 10,6 Q15,0 20,6" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+  function paintBirds(containerId){
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    el.innerHTML = `
+      <div class="bird b1">${BIRD_ICON}</div>
+      <div class="bird b2">${BIRD_ICON}</div>
+      <div class="bird b3">${BIRD_ICON}</div>
+    `;
+  }
+  ['introBirds','stageBirds','resultBirds'].forEach(paintBirds);
+
+  function catBody(fill, furLight, opts){
+    opts = opts || {};
+    const blush = opts.blush || '#FFC2C2';
+    const patches = opts.patches || '';
+    const overlay = opts.overlay || '';
+    const stroke = opts.stroke || 'rgba(18,58,87,.35)';
+    const eyeColor = opts.eyeColor || '#123A57';
+    const mouthColor = opts.mouthColor || '#123A57';
+    const ruff = opts.ruff || '';
+    return `
+      ${ruff}
+      <path d="M170,150 Q206,142 199,112 Q196,96 179,101" fill="none" stroke="${fill}" stroke-width="16" stroke-linecap="round"/>
+      <path d="M56,72 Q46,24 87,52 Z" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <path d="M164,72 Q176,24 133,52 Z" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <ellipse cx="110" cy="122" rx="80" ry="63" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      ${patches}
+      <ellipse cx="110" cy="148" rx="44" ry="30" fill="${furLight}"/>
+      <ellipse cx="68" cy="180" rx="17" ry="10" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <ellipse cx="152" cy="180" rx="17" ry="10" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <path d="M55,120 L24,113 M55,127 L24,130" stroke="${fill}" stroke-width="2" opacity=".55" stroke-linecap="round"/>
+      <path d="M165,120 L196,113 M165,127 L196,130" stroke="${fill}" stroke-width="2" opacity=".55" stroke-linecap="round"/>
+      <ellipse cx="76" cy="127" rx="10" ry="5.5" fill="${blush}" opacity=".7"/>
+      <ellipse cx="144" cy="127" rx="10" ry="5.5" fill="${blush}" opacity=".7"/>
+      <circle cx="88" cy="114" r="5" fill="${eyeColor}"/>
+      <circle cx="132" cy="114" r="5" fill="${eyeColor}"/>
+      <path d="M100,131 Q110,139 120,131" stroke="${mouthColor}" stroke-width="3" fill="none" stroke-linecap="round"/>
+      ${overlay}
+    `;
+  }
+  function catSVG(fill, furLight, opts){
+    return `<svg viewBox="0 0 220 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">${catBody(fill, furLight, opts)}</svg>`;
+  }
+
+  let gradSeq = 0;
+  function travelerCat(){
+    const id = 'travelerGrad'+(gradSeq++);
+    return `
+    <svg viewBox="0 0 220 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="${id}" x1="10%" y1="0%" x2="90%" y2="100%">
+          <stop offset="0%" stop-color="#9AA9EE"/>
+          <stop offset="55%" stop-color="#5C6FBE"/>
+          <stop offset="100%" stop-color="#333F73"/>
+        </linearGradient>
+      </defs>
+      ${catBody('url(#'+id+')', 'rgba(255,255,255,.28)', {blush:'#B9C4F5', stroke:'rgba(255,255,255,.4)'})}
+      <circle class="firefly" cx="38" cy="58" r="3.4" fill="#FFE9A8" style="animation-delay:.1s"/>
+      <circle class="firefly" cx="186" cy="86" r="2.6" fill="#FFD873" style="animation-delay:.6s"/>
+      <circle class="firefly" cx="58" cy="150" r="2.4" fill="#FFE9A8" style="animation-delay:1.1s"/>
+    </svg>`;
+  }
+
+  function blackCat(){
+    const id = 'blackGrad'+(gradSeq++);
+    return `
+    <svg viewBox="0 0 220 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="${id}" x1="10%" y1="0%" x2="90%" y2="100%">
+          <stop offset="0%" stop-color="#3A4356"/>
+          <stop offset="60%" stop-color="#232A3B"/>
+          <stop offset="100%" stop-color="#12151F"/>
+        </linearGradient>
+      </defs>
+      ${catBody('url(#'+id+')', 'rgba(255,255,255,.10)', {blush:'#5A4E7A', stroke:'rgba(255,255,255,.18)', eyeColor:'#FFD873', mouthColor:'#B8A8E0'})}
+      <circle class="firefly" cx="46" cy="52" r="2.6" fill="#FFD873" style="animation-delay:.2s"/>
+      <circle class="firefly" cx="178" cy="70" r="2" fill="#FFD873" style="animation-delay:.8s"/>
+    </svg>`;
+  }
+
+  function pearlCat(){
+    const id = 'pearlGrad'+(gradSeq++);
+    return `
+    <svg viewBox="0 0 220 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="${id}" x1="5%" y1="0%" x2="95%" y2="100%">
+          <stop offset="0%" stop-color="#FFE3F0"/>
+          <stop offset="45%" stop-color="#DCEBFF"/>
+          <stop offset="100%" stop-color="#C9E9FF"/>
+        </linearGradient>
+      </defs>
+      ${catBody('url(#'+id+')', '#FFF6FB', {blush:'#FFC9E0', stroke:'rgba(2,132,199,.2)'})}
+      <circle class="firefly" cx="52" cy="60" r="2.4" fill="#FFF" style="animation-delay:.1s"/>
+      <circle class="firefly" cx="172" cy="58" r="2" fill="#FFD9EE" style="animation-delay:.6s"/>
+      <circle class="firefly" cx="110" cy="30" r="1.8" fill="#FFF" style="animation-delay:1s"/>
+    </svg>`;
+  }
+
+  const CATS = {
+    traveler: travelerCat,
+    black: blackCat,
+    pearl: pearlCat,
+    orange: ()=>catSVG('#F2A65A', '#FFDDB0', {}),
+    white:  ()=>catSVG('#F3F6F8', '#DCEBF5', {blush:'#FFC2C2'}),
+    grey:   ()=>catSVG('#AAB6C2', '#D7E1E8', {}),
+    calico: ()=>catSVG('#F3F6F8', '#DCEBF5', {patches:`
+        <ellipse cx="70" cy="98" rx="26" ry="20" fill="#F2A65A" opacity=".9"/>
+        <ellipse cx="150" cy="105" rx="22" ry="26" fill="#3A4656" opacity=".85"/>
+      `}),
+    gold: ()=>catSVG('#E8B24A', '#FFEBBE', {blush:'#FFD9A0', patches:`
+        <ellipse cx="95" cy="90" rx="6" ry="6" fill="#FFF3D0" opacity=".8"/>
+        <ellipse cx="140" cy="100" rx="4" ry="4" fill="#FFF3D0" opacity=".7"/>
+      `}),
+    cloud: ()=>catSVG('#8FA4C2', '#DCE6EF', {patches:`
+        <ellipse cx="80" cy="95" rx="20" ry="14" fill="#6C84A8" opacity=".55"/>
+        <ellipse cx="145" cy="100" rx="18" ry="16" fill="#6C84A8" opacity=".45"/>
+      `}),
+    tabby: ()=>catSVG('#D98F52', '#FFDDB0', {patches:`
+        <path d="M60,85 Q75,75 90,85" stroke="#8A5326" stroke-width="6" fill="none" opacity=".55" stroke-linecap="round"/>
+        <path d="M130,85 Q145,75 160,85" stroke="#8A5326" stroke-width="6" fill="none" opacity=".55" stroke-linecap="round"/>
+        <path d="M75,145 Q95,155 115,145" stroke="#8A5326" stroke-width="6" fill="none" opacity=".4" stroke-linecap="round"/>
+        <path d="M105,150 Q125,160 145,150" stroke="#8A5326" stroke-width="6" fill="none" opacity=".4" stroke-linecap="round"/>
+      `}),
+    persian: ()=>catSVG('#F6EFE3', '#FFFBF3', {blush:'#FFD3D3', ruff:`
+        <ellipse cx="110" cy="128" rx="96" ry="70" fill="#FFFBF3" opacity=".9"/>
+      `, patches:`
+        <ellipse cx="90" cy="108" rx="4" ry="10" fill="#EADFC9" opacity=".7"/>
+        <ellipse cx="130" cy="108" rx="4" ry="10" fill="#EADFC9" opacity=".7"/>
+      `}),
+  };
+
+  const introCatEl = document.getElementById('introCat');
+  introCatEl.classList.add('traveler-glow');
+  introCatEl.innerHTML = CATS.traveler();
+
+  const SCENES = [
+    { grad:'linear-gradient(160deg,#BEE7FB,#EAF9E9)',
+      decor:`<svg viewBox="0 0 300 190"><ellipse cx="45" cy="150" rx="30" ry="46" fill="#8FD9B8" opacity=".8"/><ellipse cx="255" cy="155" rx="26" ry="40" fill="#8FD9B8" opacity=".7"/><path d="M150,190 L150,140 M150,140 L110,110 M150,140 L190,110" stroke="#7fbfa0" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="200" cy="60" r="4" fill="#FFD873" class="tw"/><circle cx="90" cy="45" r="3" fill="#FFD873" class="tw" style="animation-delay:.6s"/></svg>` },
+    { grad:'linear-gradient(160deg,#CDEFFC,#FFF6E0)',
+      decor:`<svg viewBox="0 0 300 190"><rect x="118" y="110" width="64" height="46" rx="4" fill="#FFD873" opacity=".9"/><rect x="118" y="110" width="64" height="12" fill="#F2A65A"/><rect x="145" y="90" width="10" height="66" fill="#F2A65A"/><path d="M150,90 Q130,66 112,84 Q118,96 150,90Z" fill="#FF9E7A" opacity=".85"/><path d="M150,90 Q170,66 188,84 Q182,96 150,90Z" fill="#FF9E7A" opacity=".85"/></svg>` },
+    { grad:'linear-gradient(160deg,#BFE9FF,#E8FFF1)',
+      decor:`<svg viewBox="0 0 300 190"><path d="M0,190 L0,120 Q60,90 110,130 L110,190 Z" fill="#9FD8B0" opacity=".85"/><path d="M190,190 Q186,120 200,90 Q210,120 205,150 Q214,120 222,100" stroke="#4FAE7A" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="205" cy="100" rx="10" ry="14" fill="#63C48D"/><ellipse cx="222" cy="88" rx="8" ry="11" fill="#63C48D"/></svg>` },
+    { grad:'linear-gradient(160deg,#2C4770,#4A6FA5)',
+      decor:`<svg viewBox="0 0 300 190"><circle cx="250" cy="40" r="20" fill="#FFEFC2" opacity=".9"/><path d="M60,20 L100,55 M110,10 L145,42 M170,25 L200,52 M40,60 L70,90" stroke="#FFD873" stroke-width="3" stroke-linecap="round" class="meteor"/></svg>` },
+    { grad:'linear-gradient(160deg,#9BE7FF,#D9F7FF)',
+      decor:`<svg viewBox="0 0 300 190"><ellipse cx="150" cy="165" rx="120" ry="24" fill="#5FCBEE" opacity=".55"/><ellipse cx="150" cy="165" rx="70" ry="14" fill="none" stroke="#fff" stroke-width="3" opacity=".7" class="ripple"/><ellipse cx="150" cy="165" rx="40" ry="8" fill="none" stroke="#fff" stroke-width="3" opacity=".7" class="ripple" style="animation-delay:.6s"/></svg>` },
+    { grad:'linear-gradient(160deg,#FFE9C7,#CDEFFC)',
+      decor:`<svg viewBox="0 0 300 190"><rect x="95" y="110" width="110" height="60" fill="#FFF3DC" stroke="#E8A93A" stroke-width="3"/><path d="M85,110 L215,110 L200,80 L100,80 Z" fill="#FF9E7A"/><path d="M100,80 L112,110 M124,80 L136,110 M148,80 L160,110 M172,80 L184,110 M196,80 L208,110" stroke="#fff" stroke-width="8" opacity=".55"/></svg>` },
+    { grad:'linear-gradient(160deg,#8FA9C4,#C9DCE9)',
+      decor:`<svg viewBox="0 0 300 190"><ellipse cx="80" cy="35" rx="46" ry="22" fill="#7C93AE" opacity=".8"/><ellipse cx="150" cy="25" rx="55" ry="26" fill="#7C93AE" opacity=".85"/><path d="M95,150 L150,105 L205,150" fill="none" stroke="#5C7690" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="108" y="150" width="84" height="30" fill="#DCE7EE" opacity=".9"/><path d="M120,60 L110,90 M150,55 L138,88 M180,62 L170,92" stroke="#EAF6FF" stroke-width="3" opacity=".8" class="rain"/></svg>` },
+    { grad:'linear-gradient(160deg,#FFE9A8,#CDEFFC)',
+      decor:`<svg viewBox="0 0 300 190"><path d="M110,180 L110,90 Q150,55 190,90 L190,180 Z" fill="#F3E3B8" stroke="#E8A93A" stroke-width="4"/><circle cx="70" cy="150" r="12" fill="#FFD873" stroke="#E8A93A" stroke-width="2" class="tw"/><circle cx="235" cy="140" r="9" fill="#FFD873" stroke="#E8A93A" stroke-width="2" class="tw" style="animation-delay:.4s"/><circle cx="90" cy="120" r="7" fill="#FFD873" stroke="#E8A93A" stroke-width="2" class="tw" style="animation-delay:.8s"/></svg>` },
+  ];
+
+  const styleTag = document.createElement('style');
+  styleTag.textContent = `
+    .tw{ animation: twinkle 1.8s ease-in-out infinite; }
+    .ripple{ animation: rippleGrow 2.4s ease-out infinite; transform-origin:center; }
+    @keyframes rippleGrow{ 0%{ transform:scale(.6); opacity:.9;} 100%{ transform:scale(1.5); opacity:0;} }
+    .meteor{ animation: meteorFall 2.2s linear infinite; }
+    @keyframes meteorFall{ 0%{ transform:translate(-10px,-10px); opacity:0;} 15%{opacity:1;} 100%{ transform:translate(24px,24px); opacity:0;} }
+    .rain{ animation: rainFall 1s linear infinite; }
+    @keyframes rainFall{ 0%{ transform:translateY(-4px); opacity:0;} 30%{opacity:1;} 100%{ transform:translateY(10px); opacity:0;} }
+  `;
+  document.head.appendChild(styleTag);
+  document.getElementById('introDecor').innerHTML = SCENES[0].decor;
+
+  const questions = [
+    { scene: "แสงจันทร์นำคุณมาถึงทางแยกสามสายกลางป่าเรืองแสง มีเสียงเรียกแว่วมาจากทุกทิศ จะเลือกทางไหนดี?",
+      options: [
+        {text:"เดินตามกลิ่นปลาทอดหอมฟุ้ง ไปตามใจปากก่อนเลย", type:"stray"},
+        {text:"ลัดเข้าทางมืดที่มีแสงประกายลึกลับ เพราะดูตื่นเต้นกว่าเยอะ", type:"dreamer"},
+        {text:"เลือกเฉพาะทางที่มีป้าย “ปลอดภัย 100%” เท่านั้น", type:"stingy"},
+        {text:"สำรวจทั้งสามทางคร่าว ๆ ก่อน แล้วค่อยเลือกทางที่สมเหตุสมผลที่สุด", type:"wise"},
+      ] },
+    { scene: "เดินมาไม่ไกล มีกล่องของขวัญปริศนาผูกริบบิ้นแวววาว วางล่อตาอยู่กลางทาง",
+      options: [
+        {text:"แกะเลย! ของขวัญมีไว้ให้เปิดตอนนี้แหละ", type:"stray"},
+        {text:"เขย่าดูว่าจะยิ่งใหญ่แค่ไหน แล้วเปิดแบบไม่คิดหน้าคิดหลัง", type:"dreamer"},
+        {text:"เก็บใส่กระเป๋าไว้เฉย ๆ ไม่กล้าเปิดสักที", type:"stingy"},
+        {text:"พลิกดูป้ายชื่อคนส่งก่อน แล้วค่อยเปิดอย่างระมัดระวัง", type:"wise"},
+      ] },
+    { scene: "ผ่านมาถึงสวนริมผา เจ้ากระรอกชวนลงทุนปลูก “ต้นถั่ววิเศษ” ว่าคืนเดียวจะโตเป็นปราสาท",
+      options: [
+        {text:"ปลูกทันทีโดยไม่ถามอะไรเพิ่ม เดี๋ยวเมล็ดเก่าไปก่อน", type:"stray"},
+        {text:"ทุ่มเมล็ดถั่วทั้งหมดที่มี เชื่อว่าจะรวยเละแน่นอน", type:"dreamer"},
+        {text:"ปฏิเสธทันที เก็บเมล็ดถั่วไว้ในกระเป๋าดีที่สุดแล้ว", type:"stingy"},
+        {text:"ปลูกแค่บางส่วน แล้วเก็บที่เหลือไว้รอดูผลก่อน", type:"wise"},
+      ] },
+    { scene: "คืนนี้ฝนดาวตกกำลังจะโปรยลงมา ทุกคนแนะนำให้สร้างที่หลบภัยไว้ก่อนดึก",
+      options: [
+        {text:"ดูฝนดาวตกให้เต็มอิ่มก่อน ค่อยหาที่หลบทีหลัง", type:"stray"},
+        {text:"ไม่สร้างหรอก ดาวตกสวยจะตาย เดี๋ยวมันก็ผ่านไปเอง", type:"dreamer"},
+        {text:"สร้างที่หลบแน่นหนาจนไม่ได้ออกไปดูดาวเลยสักครั้ง", type:"stingy"},
+        {text:"สร้างที่หลบพอกันฝนได้ แล้วยังเปิดช่องดูดาวตกได้บ้าง", type:"wise"},
+      ] },
+    { scene: "รุ่งเช้าคุณเจอสระน้ำมนตร์ลึกลับ ใครโดดลงไปจะได้พรวิเศษ แต่ก้นสระมีบางอย่างซ่อนอยู่",
+      options: [
+        {text:"โดดลงไปแบบไม่คิดหน้าคิดหลัง เพราะเบื่อรอแล้ว", type:"stray"},
+        {text:"โดดลงไปเลย พรดีขนาดนี้ต้องรีบคว้าไว้ก่อนใคร", type:"dreamer"},
+        {text:"ยืนดูอยู่นาน จนพรวิเศษหมดไปให้ตัวอื่นก่อน", type:"stingy"},
+        {text:"ลองใช้ไม้จุ่มดูก่อนว่าก้นสระมีอะไร แล้วค่อยตัดสินใจ", type:"wise"},
+      ] },
+    { scene: "เดินทางต่อจนเจอร้านขายเสบียงริมหาด มีของให้เลือกซื้อเต็มไปหมด",
+      options: [
+        {text:"ซื้อของอร่อยที่สุดในร้านจนกระเป๋าเงินเกลี้ยง", type:"stray"},
+        {text:"ซื้อของแพงสุดหรูโดยไม่ถามราคา เชื่อว่าคุ้มแน่", type:"dreamer"},
+        {text:"เดินวนดูทุกชิ้นแต่สุดท้ายไม่ซื้ออะไรเลย กลัวเสียดาย", type:"stingy"},
+        {text:"เลือกซื้อแค่ของที่จำเป็นจริง ๆ แล้วเก็บเงินที่เหลือไว้", type:"wise"},
+      ] },
+    { scene: "คืนนี้พายุจะเข้าฝั่ง เพื่อนชวนไปช่วยกันซ่อมหลังคาป้องกันบ้าน",
+      options: [
+        {text:"ไปนั่งดูพายุจากระเบียงเพราะมันสวยดี ปล่อยหลังคาไว้แบบนั้น", type:"stray"},
+        {text:"รู้สึกว่าตัวเองไม่มีวันโดนพายุหรอก ไม่ต้องซ่อมก็ได้", type:"dreamer"},
+        {text:"ซ่อมหลังคาแน่นจนไม่มีทางออกไปไหนได้อีกเลย", type:"stingy"},
+        {text:"ช่วยซ่อมหลังคาให้พอกันพายุได้ แล้วยังมีเวลาไปกินข้าวกับเพื่อน", type:"wise"},
+      ] },
+    { scene: "ในที่สุดก็มาถึงประตูสุดท้ายที่จะพาคุณกลับบ้าน มีถุงเหรียญทองจันทร์วางล่ออยู่",
+      options: [
+        {text:"หยิบไปกินขนมให้หมดตั้งแต่คืนนี้เลย", type:"stray"},
+        {text:"หยิบไปเดิมพันกับนางฟ้าจันทร์ ขอเพิ่มเป็นสิบเท่า", type:"dreamer"},
+        {text:"หยิบไปฝังไว้ใต้ต้นไม้ ไม่แตะต้องมันอีกเลย", type:"stingy"},
+        {text:"แบ่งเหรียญไว้ใช้บ้าง เก็บบ้าง แล้วปล่อยให้บางส่วนงอกเงย", type:"wise"},
+      ] },
+  ];
+
+  const chapterNums = ['๑','๒','๓','๔','๕','๖','๗','๘'];
+
+  // Nine cat archetypes, mapped from combinations of the three pyramid layers
+  // (reserve / protect / grow) plus, for the "all-strong" branch, how many
+  // thoughtful ("wise") choices were made along the way.
+  const results = {
+    stray:   { cat:'orange',  title:"แมวส้ม",      sub:"นักช้อปตามใจฉบับหาดจันทร์เจ้า",
+      copy:'คุณคว้าของถูกใจไว้ก่อนเสมอ สนุกกับวันนี้เต็มที่ แต่ฐานเงินสำรองยังบางไป พอพายุมาเยือนแบบไม่ทันตั้งตัว จึงอาจตั้งหลักลำบากกว่าคนอื่น' },
+    dreamer: { cat:'white',   title:"แมวขาว",      sub:"นักฝันไร้เกราะแห่งราตรี",
+      copy:'หัวใจนักฝัน กล้าเสี่ยงเพื่อสิ่งที่ยิ่งใหญ่กว่าเดิมเสมอ แต่มักลืมสวมเกราะป้องกันไว้ก่อนออกเดินทาง หากเกิดเหตุไม่คาดฝัน แผนทั้งหมดอาจสะดุดได้ง่าย' },
+    stingy:  { cat:'grey',    title:"แมวเทา",      sub:"นักสะสมเหรียญผู้รอบคอบ",
+      copy:'ระมัดระวังที่สุดในอาณาจักร มีฐานที่มั่นคงและป้องกันตัวเองดี แต่ไม่ค่อยยอมปล่อยเหรียญออกไปทำงาน เหรียญที่นอนนิ่งอยู่นานจึงค่อย ๆ ด้อยค่าลงตามกาลเวลา' },
+    black:   { cat:'black',   title:"แมวดำ",       sub:"นักเสี่ยงดวงแห่งราตรีมืด",
+      copy:'กล้าทุ่มทุกอย่างไปกับการต่อยอด และผลตอบแทนก็งอกเงยไม่เลว แต่แทบไม่เหลือเงินสำรองหรือเกราะป้องกันเลย หากพลาดขึ้นมาสักครั้ง อาจไม่มีตาข่ายรองรับ' },
+    tabby:   { cat:'tabby',   title:"แมวลายเสือ",   sub:"นักป้องกันตัวยงผู้หยุดนิ่ง",
+      copy:'ใส่ใจเรื่องความคุ้มครองและป้องกันความเสี่ยงเป็นอย่างดี รู้สึกอุ่นใจในทุกฉาก แต่ยังไม่มีฐานเงินสำรองที่หนาพอ และเงินก็ยังไม่ได้ออกไปทำงานเพิ่มค่าเลย' },
+    persian: { cat:'persian', title:"แมวขนฟู",     sub:"นักสะสมความมั่นคงในเปลือกนุ่ม",
+      copy:'เก็บเงินสำรองไว้แน่นหนาราวปุยขนหนา ๆ รู้สึกปลอดภัยดี แต่ยังไม่ได้วางเกราะป้องกันความเสี่ยงไว้ และไม่ได้ให้เงินส่วนเกินออกไปงอกเงยเลย' },
+    cloud:   { cat:'cloud',   title:"แมวลายเมฆ",    sub:"นักเดินทางที่ยังหาจังหวะไม่เจอ",
+      copy:'ยังไม่เจอจังหวะที่ลงตัวสักด้าน ทั้งเงินสำรอง การป้องกันความเสี่ยง และการต่อยอด ต่างก็บางไปพร้อมกัน แต่ไม่เป็นไร ทุกการเดินทางเริ่มจากก้าวแรกเสมอ' },
+    calico:  { cat:'calico',  title:"แมวสามสี",     sub:"แมวมงคลแห่งความสมดุล",
+      copy:'หายากและเป็นมงคลที่สุดในอาณาจักร ดูแลได้ครบทั้งสามด้านในระดับที่ใช้ได้ดี ทั้งฐานเงินสำรอง การป้องกันความเสี่ยง และการต่อยอด เหลือแค่ค่อย ๆ เติมแต่ละด้านให้แน่นขึ้นอีกนิด' },
+    pearl:   { cat:'pearl',   title:"แมวไข่มุก",     sub:"นักเดินทางที่พร้อมสู่ระดับถัดไป",
+      copy:'วางรากฐานทั้งสามด้านไว้อย่างแข็งแรงและรอบคอบมาตลอดทาง ถึงเวลาที่จะมองหาด่านถัดไปแล้ว นั่นคือการบริหารจัดการภาษีให้ทำงานร่วมกับแผนการเงินที่มีอยู่ให้คุ้มค่ายิ่งขึ้น' },
+    gold:    { cat:'gold',    title:"แมวทองคำ",     sub:"เจ้าแห่งพีระมิดหาดจันทร์เจ้า",
+      copy:'ไปได้ไกลกว่านักเดินทางส่วนใหญ่แล้ว ทั้งฐานเงินสำรอง เกราะป้องกัน และการต่อยอดต่างแข็งแรงครบเครื่อง เหรียญของคุณกำลังงอกเงยได้อย่างสวยงามในทุกสภาพอากาศ' },
+  };
+
+  const taglines = {
+    stray: 'ลองเริ่มจากช่องเงินสำรองก่อนเลยนะ กันเงินไว้ในบัญชีแยกต่างหาก จะช่วยให้อุ่นใจขึ้นเยอะ 🌊',
+    dreamer: 'ฝันให้ไกลได้ แต่พกเกราะป้องกันไปด้วยสักชั้นนะ ความคุ้มครองพื้นฐานช่วยให้เสี่ยงได้อย่างสบายใจขึ้น 🛡️',
+    stingy: 'ลองปล่อยเหรียญบางส่วนออกไปทำงานดูบ้างนะ เริ่มจากจำนวนน้อย ๆ ก่อนก็ได้ 🌱',
+    black: 'ลองกันเงินสำรองและวางเกราะป้องกันไว้บ้าง จะช่วยให้สิ่งที่ต่อยอดไว้อยู่รอดในวันที่ฟ้าไม่เป็นใจ ⚓',
+    tabby: 'มีเกราะที่ดีแล้ว ต่อไปลองเสริมฐานเงินสำรองและเริ่มให้เงินงอกเงยดูบ้างนะ 🌱',
+    persian: 'มีฐานที่แน่นหนาแล้ว ลองเสริมเกราะป้องกันและปล่อยเงินส่วนเกินออกไปทำงานดูบ้างนะ 🛡️',
+    cloud: 'เริ่มจากฐานเงินสำรองและเกราะป้องกันก่อน แล้วค่อยไปต่อยอดทีหลังนะ ทีละก้าวก็ถึงฝั่งได้ ⚓',
+    calico: 'รักษาสมดุลแบบนี้ไว้ต่อไป แล้วค่อย ๆ เติมแต่ละชั้นให้หนาขึ้นอีกนิด ✨',
+    pearl: 'ลองศึกษาการบริหารภาษีควบคู่ไปด้วย เช่น กองทุนลดหย่อนภาษีหรือการวางแผนมรดก จะช่วยให้ทุกอย่างที่สร้างมาคุ้มค่ายิ่งขึ้น 💰',
+    gold: 'ลองดูแลสิทธิประโยชน์ทางภาษีควบคู่ไปกับการต่อยอด จะยิ่งคุ้มค่า 💰',
+  };
+
+  function layerComment(layer, pct){
+    const tiers = {
+      reserve: {
+        low: 'ฐานเงินสำรองของคุณยังบางไป หากเกิดเหตุไม่คาดฝันขึ้นมา แผนทั้งหมดอาจสั่นคลอนได้ง่าย',
+        mid: 'มีฐานเงินสำรองอยู่บ้างแล้ว แต่ยังไม่หนาพอจะรับมือเหตุฉุกเฉินระยะยาว',
+        high: 'ฐานเงินสำรองของคุณแน่นหนามาก เป็นรากฐานที่มั่นคงที่สุดของพีระมิดการเงิน',
+      },
+      protect: {
+        low: 'ชั้นป้องกันความเสี่ยงของคุณยังบางมาก หากเกิดเหตุไม่คาดฝันอย่างเจ็บป่วยหรืออุบัติเหตุ อาจกระทบแผนการเงินทั้งหมดที่สร้างมา',
+        mid: 'มีการป้องกันความเสี่ยงอยู่บ้างแล้ว แต่ยังน่าทบทวนว่าครอบคลุมพอกับชีวิตตอนนี้หรือยัง',
+        high: 'ชั้นป้องกันความเสี่ยงของคุณแข็งแรงดี มีเกราะที่มั่นคงรองรับเหตุไม่คาดฝันได้ในระดับหนึ่งแล้ว',
+      },
+      grow: {
+        low: 'เหรียญของคุณยังไม่ค่อยได้ออกไปทำงานเลย ปล่อยไว้เฉย ๆ มูลค่าอาจค่อย ๆ ลดลงตามเงินเฟ้อ',
+        mid: 'เริ่มให้เงินงอกเงยแล้ว แต่ยังกระจุกอยู่ไม่กี่ที่',
+        high: 'ต่อยอดความมั่งคั่งได้ยอดเยี่ยม เหรียญของคุณกำลังทำงานหนักแทนคุณอยู่',
+      },
+    };
+    const t = tiers[layer];
+    if(pct<50) return t.low;
+    if(pct<80) return t.mid;
+    return t.high;
+  }
+
+  function layerTip(layer, pct){
+    const tiers = {
+      reserve: {
+        low: 'ลองเริ่มกันเงินรายเดือนไว้ในบัญชีแยกจากบัญชีใช้จ่ายประจำ ให้ครอบคลุมค่าใช้จ่าย 3-6 เดือนเป็นอันดับแรก',
+        mid: 'ลองทยอยเติมให้ครบ 6 เดือนของค่าใช้จ่าย จะทำให้ฐานของพีระมิดมั่นคงขึ้นอีกขั้น',
+        high: 'รักษาระดับนี้ไว้ ลองย้ายเงินส่วนเกินไปไว้ในบัญชีออมทรัพย์ดอกเบี้ยสูง ให้เงินสำรองทำงานเล็กน้อยระหว่างที่ยังไม่ได้ใช้',
+      },
+      protect: {
+        low: 'ลองศึกษาความคุ้มครองพื้นฐานอย่างประกันสุขภาพหรือประกันอุบัติเหตุไว้เป็นทางเลือกหนึ่ง เพื่อลดความเสี่ยงที่อาจเกิดขึ้นแบบไม่ทันตั้งตัว',
+        mid: 'ลองทบทวนวงเงินความคุ้มครองที่มีอยู่สักปีละครั้ง ให้สอดคล้องกับค่าครองชีพและภาระที่เปลี่ยนไป',
+        high: 'ลองทบทวนกรมธรรม์หรือความคุ้มครองที่มีอยู่เป็นระยะ เพื่อให้แน่ใจว่ายังตอบโจทย์ชีวิตที่เปลี่ยนไป',
+      },
+      grow: {
+        low: 'ลองเริ่มศึกษาการลงทุนพื้นฐานอย่างกองทุนรวมหรือสินทรัพย์ระยะยาว เริ่มจากจำนวนน้อย ๆ ก่อนก็ได้',
+        mid: 'ลองกระจายไปในสินทรัพย์ที่หลากหลายขึ้น และดูกองทุนที่มีสิทธิลดหย่อนภาษีอย่าง SSF หรือ RMF เป็นอีกทางเลือกเสริม',
+        high: 'ลองดูแลเรื่องสิทธิประโยชน์ทางภาษีและการวางแผนระยะยาวควบคู่ไปด้วย จะช่วยให้ผลลัพธ์ยั่งยืนขึ้นไปอีกขั้น',
+      },
+    };
+    const t = tiers[layer];
+    if(pct<50) return t.low;
+    if(pct<80) return t.mid;
+    return t.high;
+  }
+
+  function determineArchetype(reserveP, protectP, growP, wiseCount, total){
+    const weakR = reserveP<50, weakP = protectP<50, weakG = growP<50;
+    const weakCount = [weakR,weakP,weakG].filter(Boolean).length;
+
+    if(weakCount===3) return 'cloud';
+
+    if(weakCount===0){
+      const avg = (reserveP+protectP+growP)/3;
+      const wiseRatio = wiseCount/total;
+      if(avg>=85 && wiseRatio>=0.6) return 'gold';
+      if(avg>=68 && wiseRatio>=0.45) return 'pearl';
+      return 'calico';
+    }
+
+    if(weakCount===2){
+      if(!weakR) return 'persian';   // reserve strong, protect & grow weak
+      if(!weakP) return 'tabby';     // protect strong, reserve & grow weak
+      return 'black';                // grow strong, reserve & protect weak
+    }
+
+    if(weakR) return 'stray';
+    if(weakP) return 'dreamer';
+    return 'stingy';
+  }
+
+  let current = 0;
+  const scores = {stray:0, dreamer:0, stingy:0, wise:0};
+
+  const screenIntro = document.getElementById('screen-intro');
+  const screenQuestion = document.getElementById('screen-question');
+  const screenResult = document.getElementById('screen-result');
+  const moonFill = document.getElementById('moonFill');
+  const moonLabel = document.getElementById('moonLabel');
+  const questionCat = document.getElementById('questionCat');
+  const stageBg = document.getElementById('stageBg');
+  const stageDecor = document.getElementById('stageDecor');
+
+  function updateMoon(){
+    const pct = (current/questions.length)*100;
+    moonFill.style.width = pct+'%';
+    moonLabel.textContent = current+'/'+questions.length;
+  }
+
+  function renderDots(){
+    const row = document.getElementById('dotsRow');
+    row.innerHTML='';
+    for(let i=0;i<questions.length;i++){
+      const d = document.createElement('span');
+      d.className = 'dot'+(i<current ? ' filled':'');
+      row.appendChild(d);
+    }
+  }
+
+  function renderQuestion(){
+    const q = questions[current];
+    const scn = SCENES[current];
+
+    document.getElementById('qCounter').textContent = `บทที่ ${chapterNums[current]}`;
+    document.getElementById('sceneText').textContent = q.scene;
+    questionCat.classList.add('traveler-glow');
+    questionCat.innerHTML = CATS.traveler();
+    stageBg.style.background = scn.grad;
+    stageDecor.innerHTML = scn.decor;
+
+    const optRow = document.getElementById('optionsRow');
+    optRow.innerHTML='';
+    q.options.forEach((opt)=>{
+      const btn = document.createElement('button');
+      btn.className='opt';
+      btn.innerHTML = `<span class="paw">🐾</span>${opt.text}`;
+      btn.addEventListener('click', ()=> selectOption(opt.type));
+      optRow.appendChild(btn);
+    });
+    renderDots();
+    updateMoon();
+
+    if(!reduceMotion){
+      document.getElementById('sceneText').classList.remove('scene-fade');
+      void document.getElementById('sceneText').offsetWidth;
+      document.getElementById('sceneText').classList.add('scene-fade');
+    }
+  }
+
+  function selectOption(type){
+    scores[type] += 1;
+    current += 1;
+    if(current < questions.length){
+      renderQuestion();
+    } else {
+      updateMoon();
+      showResult();
+    }
+  }
+
+  function spawnSparkles(container){
+    const emojis = ['✨','⭐','💫'];
+    for(let i=0;i<6;i++){
+      const s = document.createElement('span');
+      s.className='sparkle';
+      s.textContent = emojis[i % emojis.length];
+      s.style.left = (20 + Math.random()*180)+'px';
+      s.style.top = (60 + Math.random()*60)+'px';
+      s.style.animationDelay = (Math.random()*.3)+'s';
+      container.appendChild(s);
+      setTimeout(()=> s.remove(), 1200);
+    }
+  }
+
+  function showResult(){
+    const total = questions.length;
+    const reserveStrength = Math.round(100 - (scores.stray/total*100));
+    const protectStrength = Math.round(100 - (scores.dreamer/total*100));
+    const growStrength = Math.round(100 - (scores.stingy/total*100));
+
+    const key = determineArchetype(reserveStrength, protectStrength, growStrength, scores.wise, total);
+    const r = results[key];
+
+    const resultCatEl = document.getElementById('resultCat');
+    const resultStage = resultCatEl.closest('.stage');
+
+    document.getElementById('resultDecor').innerHTML = SCENES[7].decor;
+
+    if(reduceMotion){
+      resultCatEl.classList.remove('traveler-glow');
+      resultCatEl.innerHTML = CATS[r.cat]();
+    } else {
+      resultCatEl.classList.add('traveler-glow');
+      resultCatEl.innerHTML = CATS.traveler();
+      setTimeout(()=>{
+        resultCatEl.style.transition='opacity .25s ease';
+        resultCatEl.style.opacity='0';
+        setTimeout(()=>{
+          resultCatEl.classList.remove('traveler-glow');
+          resultCatEl.innerHTML = CATS[r.cat]();
+          resultCatEl.style.opacity='1';
+          spawnSparkles(resultStage);
+        }, 260);
+      }, 500);
+    }
+
+    document.getElementById('resultTitle').textContent = r.title;
+    document.getElementById('resultSub').textContent = r.sub;
+    document.getElementById('resultCopy').innerHTML = r.copy;
+
+    document.getElementById('bandReserve').setAttribute('fill-opacity', (0.3 + 0.7*(reserveStrength/100)).toFixed(2));
+    document.getElementById('bandProtect').setAttribute('fill-opacity', (0.3 + 0.7*(protectStrength/100)).toFixed(2));
+    document.getElementById('bandGrow').setAttribute('fill-opacity', (0.3 + 0.7*(growStrength/100)).toFixed(2));
+    document.getElementById('pctReserveTxt').textContent = reserveStrength+'%';
+    document.getElementById('pctProtectTxt').textContent = protectStrength+'%';
+    document.getElementById('pctGrowTxt').textContent = growStrength+'%';
+
+    document.getElementById('pctReserve').textContent = reserveStrength+'%';
+    document.getElementById('pctProtect').textContent = protectStrength+'%';
+    document.getElementById('pctGrow').textContent = growStrength+'%';
+    document.getElementById('commentReserve').textContent = layerComment('reserve', reserveStrength);
+    document.getElementById('commentProtect').textContent = layerComment('protect', protectStrength);
+    document.getElementById('commentGrow').textContent = layerComment('grow', growStrength);
+    document.getElementById('tipReserve').innerHTML = '<span class="bulb">💡</span>'+layerTip('reserve', reserveStrength);
+    document.getElementById('tipProtect').innerHTML = '<span class="bulb">💡</span>'+layerTip('protect', protectStrength);
+    document.getElementById('tipGrow').innerHTML = '<span class="bulb">💡</span>'+layerTip('grow', growStrength);
+
+    document.getElementById('callout').innerHTML = taglines[key];
+
+    screenQuestion.classList.add('hidden');
+    screenResult.classList.remove('hidden');
+  }
+
+  function resetQuiz(){
+    current = 0;
+    scores.stray = 0; scores.dreamer = 0; scores.stingy = 0; scores.wise = 0;
+    document.getElementById('resultCat').style.opacity='1';
+    ['bandReserve','bandProtect','bandGrow'].forEach(id=>{
+      document.getElementById(id).setAttribute('fill-opacity','0');
+    });
+    screenResult.classList.add('hidden');
+    screenIntro.classList.remove('hidden');
+    updateMoon();
+  }
+
+  document.getElementById('startBtn').addEventListener('click', ()=>{
+    screenIntro.classList.add('hidden');
+    screenQuestion.classList.remove('hidden');
+    renderQuestion();
+  });
+
+  document.getElementById('againBtn').addEventListener('click', resetQuiz);
+
+  document.getElementById('copyBtn').addEventListener('click', ()=>{
+    const btn = document.getElementById('copyBtn');
+    const original = btn.textContent;
+    navigator.clipboard.writeText(window.location.href).then(()=>{
+      btn.textContent = 'คัดลอกแล้ว ✓';
+      setTimeout(()=>{ btn.textContent = original; }, 1800);
+    }).catch(()=>{
+      btn.textContent = 'คัดลอกไม่สำเร็จ';
+      setTimeout(()=>{ btn.textContent = original; }, 1800);
+    });
+  });
+
+  updateMoon();
+})();
+</script>
+
+</body>
+</html>
