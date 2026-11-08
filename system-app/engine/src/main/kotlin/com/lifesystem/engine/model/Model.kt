@@ -37,6 +37,22 @@ data class Quest(
 
 data class Inventory(val hasSunscreen: Boolean, val hasTapeMeasure: Boolean, val hasArmband: Boolean)
 
+enum class Sex { MALE, FEMALE }
+
+enum class MealSlot { BREAKFAST, LUNCH, DINNER, SNACK }
+
+/** Menu entry; kcal/protein/price are estimates (±20 %). [order] is what to say to the shop. */
+data class MenuItem(
+    val id: String,
+    val slot: MealSlot,
+    val name: String,
+    val order: String,
+    val kcal: Int,
+    val protein: Int,
+    val price: Int,
+    val sprite: String,
+)
+
 /** One snapshot of measurable progress. Null = not measured. */
 data class Metrics(
     val weightAvg7: Double?,
