@@ -71,6 +71,15 @@ class RepositoryTest {
         assertTrue(mains.isNotEmpty())
     }
 
+    @Test fun reduceRemaining_halvesWhatIsLeft() = runTest {
+        repo.ensureBoard(day0)
+        repo.addProgress(day0, "squat", 4)
+        repo.reduceRemaining(day0, "squat")
+        val q = db.dao().quest(day0, "squat")!!
+        assertEquals(4 + (20 - 4) / 2, q.target)
+        assertFalse(q.done)
+    }
+
     @Test fun noProfile_noBoard() = runTest {
         val empty = Repository(Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), SystemDb::class.java).allowMainThreadQueries().build())
         assertTrue(empty.ensureBoard(day0).isEmpty())

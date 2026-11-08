@@ -64,6 +64,13 @@ class Repository(private val db: SystemDb, private val nowMs: () -> Long = Syste
         dao.upsertQuest(q.copy(progress = p, done = p >= q.target))
     }
 
+    /** Injury stop: halve what is left of today's target (spec §6.4). */
+    suspend fun reduceRemaining(epochDay: Long, questId: String) {
+        val q = dao.quest(epochDay, questId) ?: return
+        val newTarget = q.progress + (q.target - q.progress) / 2
+        dao.upsertQuest(q.copy(target = newTarget, done = q.progress >= newTarget))
+    }
+
     suspend fun complete(epochDay: Long, questId: String) {
         val q = dao.quest(epochDay, questId) ?: return
         dao.upsertQuest(q.copy(progress = q.target, done = true))
