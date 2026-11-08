@@ -1,0 +1,95 @@
+package com.lifesystem.app.popup
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import com.lifesystem.app.MainActivity
+import com.lifesystem.app.SystemApp
+import com.lifesystem.app.data.MealLogEntity
+import com.lifesystem.app.data.MeasureType
+import com.lifesystem.app.data.QuestEntity
+import com.lifesystem.app.data.Targets
+import com.lifesystem.app.schedule.AlarmScheduler
+import com.lifesystem.app.schedule.PopupKind
+import com.lifesystem.app.ui.theme.SystemTheme
+import com.lifesystem.engine.model.MealSlot
+import com.lifesystem.engine.nutrition.MealPlanner
+import com.lifesystem.engine.nutrition.MenuCatalog
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.LocalTime
+
+/** Shows a System window over the lock screen (spec §15.3). */
+class PopupActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setShowWhenLocked(true)
+        setTurnScreenOn(true)
+        val kind = intent.getStringExtra(AlarmScheduler.EXTRA_KIND) ?: PopupKind.DAILY_QUEST.name
+        val slotIndex = intent.getIntExtra(AlarmScheduler.EXTRA_MEAL_SLOT, 1)
+        val repo = (application as SystemApp).repository
+        val today = SystemApp.today()
+
+        setContent {
+            SystemTheme {
+                val scope = rememberCoroutineScope()
+                when (kind) {
+                    PopupKind.MEAL.name -> {
+                        val slot = MealSlot.values().getOrElse(slotIndex) { MealSlot.LUNCH }
+                        val options = remember { MenuCatalog.items.filter { it.slot == slot } }
+                        var index by remember { mutableIntStateOf(0) }
+                        var left by remember { mutableStateOf(Pair(0, 0)) }
+                        LaunchedEffect(Unit) {
+                            val profile = repo.profile() ?: return@LaunchedEffect
+                            val targets = Targets.of(profile, repo.latest(MeasureType.WEIGHT)?.value)
+                            val plan = MealPlanner.best(MenuCatalog.items, targets.kcal, targets.budget)
+                            index = options.indexOf(plan?.picks?.get(slot)).coerceAtLeast(0)
+                            val eaten = repo.meals(today).first()
+                            left = Pair(targets.kcal - eaten.sumOf { it.kcal }, targets.budget - eaten.sumOf { it.price })
+                        }
+                        val item = options[index]
+                        MealPopup(
+                            slotLabel = slot.name,
+                            item = item,
+                            leftKcal = left.first - item.kcal,
+                            leftBudget = left.second - item.price,
+                            onEat = {
+                                scope.launch {
+                                    repo.logMeal(MealLogEntity(epochDay = today, slot = slot.name, menuId = item.id, kcal = item.kcal, protein = item.protein, price = item.price))
+                                    finish()
+                                }
+                            },
+                            onSwap = { index = (index + 1) % options.size },
+                            onOther = { openApp("meal"); finish() },
+                        )
+                    }
+                    PopupKind.SLEEP_REMINDER.name -> SleepReminderPopup(onOk = { finish() })
+                    else -> {
+                        var quests by remember { mutableStateOf<List<QuestEntity>>(emptyList()) }
+                        LaunchedEffect(Unit) { quests = repo.ensureBoard(today) }
+                        val left = Duration.between(LocalDateTime.now(), LocalDateTime.now().with(LocalTime.MAX))
+                        DailyQuestPopup(
+                            quests = quests,
+                            timeLeft = "%02d:%02d".format(left.toHours(), left.toMinutesPart()),
+                            onAccept = { openApp("quests"); finish() },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun openApp(route: String) {
+        startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_ROUTE, route).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+}
