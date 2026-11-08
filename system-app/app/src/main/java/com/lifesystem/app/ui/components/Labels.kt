@@ -2,6 +2,9 @@ package com.lifesystem.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +52,19 @@ fun Chip(text: String, color: Color) {
     Box(Modifier.border(1.dp, color).padding(horizontal = 6.dp, vertical = 2.dp)) {
         Text(text, style = TextStyle(fontFamily = Oxanium, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = 1.sp, color = color))
     }
+}
+
+/** Selectable chip, ≥ 44 dp tall, wraps its text. */
+@Composable
+fun ChoiceChip(text: String, selected: Boolean, color: Color, onClick: () -> Unit) {
+    Box(
+        Modifier.heightIn(min = 44.dp)
+            .background(if (selected) color.copy(alpha = 0.18f) else Color.Transparent)
+            .border(1.dp, if (selected) color else color.copy(alpha = 0.35f))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, style = Txt.body.copy(color = if (selected) Color.White else SysColors.Sub)) }
 }
 
 @Composable

@@ -119,14 +119,15 @@ private fun Stat3(label: String, value: String, color: Color) {
 }
 
 @Composable
-fun SleepReminderPopup(onOk: () -> Unit) {
+fun SleepReminderPopup(onOk: () -> Unit, onInBed: () -> Unit) {
     PopupShell(SysColors.Hidden) {
         SystemFrame(accent = SysColors.Hidden) {
             SystemHeader(accent = SysColors.Hidden)
             SystemTag("SYSTEM", SysColors.Hidden)
             Text("อีก 30 นาทีถึงเวลานอน", style = body.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White))
             Text("วางมือถือ เขียนไดอารี่ 3 บรรทัด แล้วเข้านอน การนอนครบ 7.5 ชม. = CONDITION OPTIMAL (EXP +10%)", style = sub)
-            SystemButton("รับทราบ", SysColors.Hidden, onOk)
+            SystemButton("เข้านอนแล้ว", SysColors.Hidden, onInBed)
+            SystemButton("รับทราบ", SysColors.Hidden, onOk, primary = false)
         }
     }
 }

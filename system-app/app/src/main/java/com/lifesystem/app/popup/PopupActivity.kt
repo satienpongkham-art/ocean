@@ -73,7 +73,19 @@ class PopupActivity : ComponentActivity() {
                             onOther = { openApp("meal"); finish() },
                         )
                     }
-                    PopupKind.SLEEP_REMINDER.name -> SleepReminderPopup(onOk = { finish() })
+                    PopupKind.SLEEP_REMINDER.name -> SleepReminderPopup(
+                        onOk = { finish() },
+                        onInBed = {
+                            scope.launch {
+                                val sleepMin = repo.profile()?.sleepMin
+                                val now = nowMinute()
+                                if (sleepMin != null && PopupRules.bedOnTime(now, sleepMin)) {
+                                    repo.complete(PopupRules.bedDay(today, now, sleepMin), "sleep")
+                                }
+                                finish()
+                            }
+                        },
+                    )
                     else -> {
                         var quests by remember { mutableStateOf<List<QuestEntity>>(emptyList()) }
                         LaunchedEffect(Unit) { quests = repo.ensureBoard(today) }
@@ -81,13 +93,21 @@ class PopupActivity : ComponentActivity() {
                         DailyQuestPopup(
                             quests = quests,
                             timeLeft = "%02d:%02d".format(left.toHours(), left.toMinutesPart()),
-                            onAccept = { openApp("quests"); finish() },
+                            onAccept = {
+                                scope.launch {
+                                    val wakeMin = repo.profile()?.wakeMin
+                                    if (wakeMin != null && PopupRules.wakeOnTime(nowMinute(), wakeMin)) repo.complete(today, "wake")
+                                    openApp("quests"); finish()
+                                }
+                            },
                         )
                     }
                 }
             }
         }
     }
+
+    private fun nowMinute(): Int = LocalTime.now().let { it.hour * 60 + it.minute }
 
     private fun openApp(route: String) {
         startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_ROUTE, route).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
