@@ -41,6 +41,10 @@ class AlarmScheduler(private val context: Context) {
         schedule(REQ_SLEEP, AlarmMath.nextTrigger(nowMs, reminder, zone), PopupKind.SLEEP_REMINDER, null)
     }
 
+    /** Onboarding check: a DAILY_QUEST popup in [delayMs] (spec §3 step 9). */
+    fun scheduleTest(delayMs: Long = 10_000L) =
+        schedule(REQ_TEST, System.currentTimeMillis() + delayMs, PopupKind.DAILY_QUEST, null)
+
     private fun schedule(requestCode: Int, atMs: Long, kind: PopupKind, mealSlot: Int?) {
         val intent = Intent(context, AlarmReceiver::class.java)
             .putExtra(EXTRA_KIND, kind.name)
@@ -60,6 +64,7 @@ class AlarmScheduler(private val context: Context) {
         private const val REQ_WAKE = 100
         private const val REQ_MEAL = 200
         private const val REQ_SLEEP = 300
+        private const val REQ_TEST = 900
         private const val WINDOW_MS = 10 * 60 * 1000L
     }
 }
