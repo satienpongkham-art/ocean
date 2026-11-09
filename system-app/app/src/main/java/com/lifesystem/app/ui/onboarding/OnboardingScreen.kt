@@ -133,6 +133,7 @@ fun OnboardingScreen(repo: Repository, today: Long, onDone: () -> Unit) {
                     if (Build.VERSION.SDK_INT >= 31) SystemButton("3 · อนุญาตปลุกตรงเวลา", SysColors.Cyan, { open(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM) }, primary = false)
                     SystemButton("4 · แบตเตอรี่: ไม่จำกัด", SysColors.Cyan, { open(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) }, primary = false)
                     Text("Samsung: ตั้งค่า → แบตเตอรี่ → ขีดจำกัดการใช้งานเบื้องหลัง → แอปที่ไม่เข้าสู่โหมดสลีปเลย → เพิ่ม System", style = Txt.sub)
+                    com.lifesystem.app.ui.menu.HealthAccessPanel()
                 }
                 else -> {
                     Text("ทดสอบหน้าต่างเด้ง", style = Txt.title)

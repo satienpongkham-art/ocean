@@ -133,10 +133,10 @@ fun QuestInfoWindow(
                     Text("GOALS", style = TextStyle(fontFamily = Oxanium, fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 2.sp, color = SysColors.Mint), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 }
             }
-            goals.forEach { g ->
+            Column { goals.forEach { g ->
                 val c = if (g.done) SysColors.Mint else SysColors.Text
                 Row(
-                    Modifier.fillMaxWidth().heightIn(min = 40.dp).clickable(role = Role.Button) { onGoal(g) }.padding(horizontal = 4.dp),
+                    Modifier.fillMaxWidth().heightIn(min = 36.dp).clickable(role = Role.Button) { onGoal(g) }.padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(if (g.done) "✓ " else "- ", style = mono.copy(color = c))
@@ -146,7 +146,7 @@ fun QuestInfoWindow(
                         style = mono.copy(color = if (g.note != null) SysColors.Emergency else c),
                     )
                 }
-            }
+            } }
             if (caution != null) {
                 Text(
                     buildCaution(caution),

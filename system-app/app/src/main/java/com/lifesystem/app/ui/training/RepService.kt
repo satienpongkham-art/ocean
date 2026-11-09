@@ -42,12 +42,14 @@ class RepService : Service() {
     private var ropeActiveMs = 0L
     private var ropeCredited = 0
     private var wakeLock: PowerManager.WakeLock? = null
+    private var sessionDay: Long? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val questId = intent?.getStringExtra(EXTRA_QUEST) ?: return START_NOT_STICKY.also { stopSelf() }
         val epochDay = intent.getLongExtra(EXTRA_DAY, SystemApp.today())
+        sessionDay = epochDay
         val exercise = Exercise.valueOf(intent.getStringExtra(EXTRA_EXERCISE) ?: Exercise.PUSHUP.name)
         goForeground()
         // A new start replaces any running session: release the old sensors and tone first.
@@ -67,9 +69,10 @@ class RepService : Service() {
             src.start(exercise) { ev ->
                 when (ev) {
                     is RepEvent.Rep -> {
-                        val credit = when (exercise) {
-                            Exercise.ROPE -> ropeSeconds()
-                            Exercise.WALK -> walkSessions()
+                        val credit = when {
+                            questId == BOSS_PUSHUP -> 0 // max-set test: recorded once when the set ends
+                            exercise == Exercise.ROPE -> ropeSeconds()
+                            exercise == Exercise.WALK -> walkSessions()
                             else -> 1
                         }
                         _state.value = _state.value.copy(reps = _state.value.reps + 1, lastInvalid = null)
@@ -126,6 +129,15 @@ class RepService : Service() {
     }
 
     override fun onDestroy() {
+        val s = _state.value
+        if (s.questId == BOSS_PUSHUP && s.reps > 0 && sessionDay != null) {
+            val app = application as SystemApp
+            val day = sessionDay!!
+            app.appScope.launch {
+                app.repository.logMeasurement(com.lifesystem.app.data.MeasureType.PUSHUP_MAX, s.reps.toDouble())
+                app.repository.complete(day, BOSS_PUSHUP)
+            }
+        }
         source?.stop()
         tone?.release()
         wakeLock?.takeIf { it.isHeld }?.release()
@@ -139,6 +151,7 @@ class RepService : Service() {
         private const val EXTRA_DAY = "day"
         private const val EXTRA_EXERCISE = "exercise"
         private const val NOTIF_ID = 4242
+        const val BOSS_PUSHUP = "boss_pushup"
         private const val MAX_SESSION_MS = 30 * 60 * 1000L
         private val _state = MutableStateFlow(RepState())
         val state: StateFlow<RepState> = _state

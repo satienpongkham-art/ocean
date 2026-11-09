@@ -56,7 +56,7 @@ fun accentFor(prop: String): Color = when (prop) {
 
 /** Avatar in the pose of a quest category: the category's prop and aura colour, plus equipped gear. */
 @Composable
-fun CategoryAvatar(look: AvatarLook, prop: String, pixel: Float = 3f) {
+fun CategoryAvatar(look: AvatarLook, prop: String, pixel: Float = 3.5f) {
     AvatarView(look.stage, pixel = pixel.dp, outfit = look.outfit, weapon = look.weapon.takeIf { prop == "STR" || prop == "AGI" }, aura = accentFor(prop), prop = prop)
 }
 

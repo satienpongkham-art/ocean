@@ -65,8 +65,11 @@ fun TrainingScreen(repo: Repository, today: Long, questId: String) {
         onDispose { (ctx as? Activity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
     }
 
-    val target = quest?.target ?: 0
-    val progress = quest?.progress ?: 0
+    val boss = questId == RepService.BOSS_PUSHUP
+    val minute = java.time.LocalTime.now().let { it.hour * 60 + it.minute }
+    val windowOpen = quest?.openAt(minute) ?: true
+    val target = if (boss) 0 else quest?.target ?: 0
+    val progress = if (boss) rep.reps.takeIf { running } ?: 0 else quest?.progress ?: 0
     val sets = remember(target) { if (exercise == Exercise.ROPE) listOf(target) else TrainingProgram.sets(target, if (exercise == Exercise.PUSHUP) 20 else 30) }
     var acc = 0
     val setNo = sets.indexOfFirst { acc += it; progress < acc }.let { if (it < 0) sets.size else it + 1 }
@@ -74,7 +77,8 @@ fun TrainingScreen(repo: Repository, today: Long, questId: String) {
     Column(Modifier.padding(horizontal = 16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ScreenHeader("TRAINING", if (sets.isEmpty()) "" else "SET ${setNo.coerceAtMost(sets.size)} / ${sets.size}")
         Text(quest?.title ?: "—", style = Txt.title)
-        Text(placement.getValue(exercise), style = Txt.body.copy(color = SysColors.Sub))
+        Text(if (boss) "BOSS TEST: วางมือถือใต้หน้าอก วิดรวดเดียวให้มากที่สุด แล้วกด \"จบเซ็ต\" · ผลนี้คือค่า STR" else placement.getValue(exercise), style = Txt.body.copy(color = SysColors.Sub))
+        if (!windowOpen) Text("ประตูนี้ยังไม่เปิดหรือปิดไปแล้ว · นับไม่ได้นอกเวลา", style = Txt.body.copy(color = SysColors.CrimsonText))
         Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
             Ring(if (target == 0) 0f else progress / target.toFloat(), if (rep.lastInvalid != null && running) SysColors.Crimson else SysColors.Cyan)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -91,15 +95,17 @@ fun TrainingScreen(repo: Repository, today: Long, questId: String) {
         if (availability == Availability.UNSUPPORTED) {
             Text("มือถือเครื่องนี้ไม่มีเซนเซอร์ที่ท่านี้ต้องใช้ ระบบนับไม่ได้", style = Txt.body.copy(color = SysColors.CrimsonText))
         } else if (!running) {
-            SystemButton("เริ่มนับ", SysColors.Cyan, { RepService.start(ctx, today, questId, exercise) }, enabled = quest != null && quest.done.not())
+            SystemButton("เริ่มนับ", SysColors.Cyan, { RepService.start(ctx, today, questId, exercise) }, enabled = quest != null && quest.done.not() && windowOpen)
         } else {
-            SystemButton("หยุดพัก", SysColors.Cyan, { RepService.stop(ctx) }, primary = false)
+            SystemButton(if (boss) "จบเซ็ต · บันทึกผล" else "หยุดพัก", SysColors.Cyan, { RepService.stop(ctx) }, primary = false)
         }
-        SystemButton("เจ็บ · หยุดทันที", SysColors.Crimson, {
-            RepService.stop(ctx)
-            scope.launch { repo.reduceRemaining(today, questId) }
-        }, primary = false)
-        Text("เจ็บแปลบที่ข้อต่อ (ไม่ใช่เมื่อยกล้าม) ให้หยุดทันที ระบบจะลดเป้าที่เหลือของวันนี้ลงครึ่งหนึ่ง", style = Txt.sub)
+        if (!boss) {
+            SystemButton("เจ็บ · หยุดทันที", SysColors.Crimson, {
+                RepService.stop(ctx)
+                scope.launch { repo.reduceRemaining(today, questId) }
+            }, primary = false)
+            Text("เจ็บแปลบที่ข้อต่อ (ไม่ใช่เมื่อยกล้าม) ให้หยุดทันที ระบบจะลดเป้าที่เหลือของวันนี้ลงครึ่งหนึ่ง · ใช้ได้วันละครั้ง", style = Txt.sub)
+        }
     }
 }
 

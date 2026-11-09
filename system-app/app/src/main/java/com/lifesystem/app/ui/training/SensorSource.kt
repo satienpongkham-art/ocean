@@ -35,7 +35,7 @@ interface SensorSource {
 }
 
 /** Feeds Android sensors into the engine counters. */
-class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener {
+class AndroidSensorSource(private val context: Context) : SensorSource, SensorEventListener {
     private val sm = context.getSystemService(SensorManager::class.java)
     private val proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY)
     private val accel = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -67,7 +67,12 @@ class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener 
             Exercise.SQUAT, Exercise.SITUP -> sm.registerListener(this, gravity, SensorManager.SENSOR_DELAY_GAME)
             Exercise.ROPE -> sm.registerListener(this, accel, SensorManager.SENSOR_DELAY_FASTEST)
             // Step detector when present (needs activity recognition permission); otherwise accelerometer peaks.
-            Exercise.WALK -> sm.registerListener(this, stepDetector ?: accel, SensorManager.SENSOR_DELAY_GAME)
+            Exercise.WALK -> {
+                val canStep = stepDetector != null && androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.ACTIVITY_RECOGNITION,
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                sm.registerListener(this, if (canStep) stepDetector else accel, SensorManager.SENSOR_DELAY_GAME)
+            }
         }
     }
 

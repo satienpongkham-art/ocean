@@ -33,45 +33,57 @@ object AvatarArt {
         "job_sage" to Outfit(0xFF22406E, 0xFF152A49, 0xFF141E33, longCoat = true),
     )
 
-    /** Shirt width per torso row (8 rows), from round belly (stage 1) to V-shape (stage 5). */
+    /** Shirt width per torso row (8 rows, even numbers so it stays centred): round belly (1) → V-shape (5). */
     private val torso = listOf(
-        listOf(11, 13, 13, 13, 13, 13, 11, 11),
-        listOf(12, 12, 12, 12, 12, 11, 11, 10),
-        listOf(12, 12, 11, 11, 10, 10, 10, 9),
-        listOf(13, 13, 12, 11, 10, 9, 9, 9),
-        listOf(14, 14, 12, 11, 10, 9, 8, 8),
+        listOf(12, 14, 14, 14, 14, 14, 12, 12),
+        listOf(12, 12, 12, 12, 12, 12, 12, 10),
+        listOf(12, 12, 12, 10, 10, 10, 10, 10),
+        listOf(14, 14, 12, 12, 10, 10, 10, 10),
+        listOf(16, 14, 12, 12, 10, 10, 8, 8),
     )
 
-    private const val W = 16
+    private const val W = 20
 
-    private fun centered(content: String): String {
-        val left = (W - content.length) / 2
-        return ".".repeat(left) + content + ".".repeat(W - left - content.length)
-    }
+    private fun row(cells: CharArray) = String(cells)
 
     fun body(stage: Int, outfitId: String? = null): Sprite {
         val s = stage.coerceIn(1, 5)
         val o = outfitId?.let { outfits[it] } ?: defaultOutfit
-        val cheek = if (s <= 2) 'D' else 'S'
         val head = listOf(
             "....HHHHHHH.....", "...HHHHHHHHH....", "..HHHHHHHHHHH...", "..HHSSSSSSSHH...",
             "..HSSSSSSSSSH...", "..SSSESSSESSS...", "..SSSSSSSSSSS...",
-            if (s <= 2) "..${cheek}SSSSMSSSS$cheek..." else "...SSSSMSSSS....",
+            if (s <= 2) "..DSSSSMSSSSD..." else "...SSSSMSSSS....",
             if (s <= 2) "...DSSSSSSSD...." else "....SSSSSSS.....",
             "....DDSSSDD.....",
-        ).map { it.substring(0, W) }
+        ).map { "..$it.." } // 16 → 20 wide, centred
         val widths = torso[s - 1]
+        val widest = widths.take(6).max()
+        val armL = (W - widest) / 2 - 2 // 2-px arms hang straight beside the widest part
+        val armR = (W + widest) / 2
         val torsoRows = widths.mapIndexed { i, w ->
-            val shirt = buildString {
-                repeat(w) { x -> append(if (x == 0 || x == w - 1 || i >= 6 || (s >= 4 && i == 2 && x == w / 2)) 'w' else 'W') }
+            val cells = CharArray(W) { '.' }
+            val left = (W - w) / 2
+            for (x in 0 until w) {
+                val edge = x == 0 || x == w - 1
+                cells[left + x] = if (edge || i >= 6) 'w' else 'W'
             }
-            centered(if (i in 1..5) "S$shirt" + "S" else shirt)
+            if (i <= 6) {
+                val c = if (i <= 1) 'W' else 'S' // short sleeves on top
+                for (a in 0..1) { cells[armL + a] = c; cells[armR + a] = c }
+                if (i <= 1) { cells[armL] = 'w'; cells[armR + 1] = 'w' }
+            }
+            row(cells)
         }
         val waist = widths.last()
-        val leg = (waist - 1) / 2
-        val legRow = "P".repeat(leg) + "." + "P".repeat(leg)
-        val legs = List(4) { centered(if (o.longCoat && it < 2) "w$legRow" + "w" else legRow) }
-        val feet = centered("F".repeat(leg) + "." + "F".repeat(leg))
+        val leg = (waist - 3) / 2 // two legs with a gap between them
+        val legs = List(4) {
+            val cells = CharArray(W) { '.' }
+            val left = (W - waist) / 2 + 1
+            for (x in 0 until leg) { cells[left + x] = 'P'; cells[left + leg + 0 + x + (waist - 2 - 2 * leg)] = 'P' }
+            if (o.longCoat && it < 2) { cells[left - 1] = 'w'; cells[left + waist - 2] = 'w' }
+            row(cells)
+        }
+        val feet = legs.last().replace('P', 'F').replace('w', '.')
         return Sprite(head + torsoRows + legs + feet, skin + mapOf('W' to o.shirt, 'w' to o.shade, 'P' to o.pants))
     }
 
@@ -125,7 +137,7 @@ fun AvatarView(
     Box(modifier, contentAlignment = Alignment.Center) {
         if (aura != null) {
             Canvas(Modifier.size(pixel * (body.width + 8), pixel * (body.height + 4))) {
-                drawOval(Brush.radialGradient(listOf(aura.copy(alpha = 0.55f), aura.copy(alpha = 0.12f), Color.Transparent)))
+                drawOval(Brush.radialGradient(listOf(aura.copy(alpha = 0.85f), aura.copy(alpha = 0.35f), Color.Transparent)))
             }
         }
         Row(verticalAlignment = Alignment.Bottom) {

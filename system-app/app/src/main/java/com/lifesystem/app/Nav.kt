@@ -45,6 +45,7 @@ import com.lifesystem.app.ui.quest.QuestLogScreen
 import com.lifesystem.app.ui.quest.QuestViewModel
 import com.lifesystem.app.ui.status.StatusScreen
 import com.lifesystem.app.ui.theme.SysColors
+import com.lifesystem.engine.model.QuestType
 import com.lifesystem.engine.model.Verify
 import kotlinx.coroutines.flow.map
 
@@ -56,15 +57,21 @@ object Routes {
     const val BODY = "body"
     const val JOURNAL = "journal"
     const val MAINTENANCE = "maintenance"
+    const val GATE = "gate"
+    const val SHOP = "shop"
+    const val MENU = "menu"
+    const val TITLES = "titles"
 }
 
-private val tabs = listOf(Routes.STATUS to "STATUS", Routes.QUESTS to "QUEST", Routes.MEAL to "MEAL", Routes.BODY to "BODY", Routes.JOURNAL to "LOG")
+private val tabs = listOf(Routes.STATUS to "STATUS", Routes.QUESTS to "QUEST", Routes.GATE to "GATE", Routes.SHOP to "SHOP", Routes.MENU to "MENU")
 
 /** Where tapping a quest that cannot be ticked by hand should go. */
 fun routeFor(q: QuestEntity): String = when {
     q.verify == Verify.SENSOR.name -> "${Routes.TRAINING}/${q.questId}"
+    q.type == QuestType.BOSS.name -> Routes.GATE
     q.questId == "journal" -> Routes.JOURNAL
     q.questId.startsWith("mt_") -> Routes.MAINTENANCE
+    q.questId == "steps" || q.questId == "screen_off" || q.questId == "sleep" -> Routes.MENU
     else -> Routes.BODY
 }
 
