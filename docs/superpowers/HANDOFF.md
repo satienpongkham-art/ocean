@@ -32,7 +32,7 @@ Open: real-device fixes (item 1), item 13 minors, dumbbell/plank are honour-base
    the rest give a full-clear bonus. Engine: `Quest.core`, DayCloser uses core for penalty.
 3. **Rest day**: Sunday = no training volume (boss measurements only). Alternate sit-ups with plank/dead bug (lower back load).
 4. **Settings screen**: wake/sleep/meal times, weekly budget, inventory, goal weight, which popups are enabled; re-arm alarms on save.
-5. **Hard-mode app lock**: AccessibilityService (or usage polling + overlay) blocks chosen apps until morning/training quests are done;
+5. **Hard-mode app lock**: usage-events polling GuardService + SYSTEM_ALERT_WINDOW (v0.3.1; Accessibility removed — Play Protect enhanced fraud protection in TH blocks sideloaded apps that declare it. Never add Accessibility, SMS or notification-listener permissions) blocks chosen apps until morning/training quests are done;
    never lock phone/SMS/maps/bank/work apps; 2 sick days per month; no paid unlock.
 6. **Money penalty (B+C)**: failing a core day adds a "transfer 50–100 ฿ to savings" quest; confirming logs a VAULT deposit.
 7. **Flip cover-screen widget** (Glance app widget, small square): level, core quests x/y, next gate/boss, countdown.

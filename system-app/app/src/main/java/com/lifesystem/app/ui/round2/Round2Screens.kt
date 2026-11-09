@@ -38,7 +38,7 @@ import com.lifesystem.app.data.getSetting
 import com.lifesystem.app.data.putSetting
 import com.lifesystem.app.data.skillInput
 import com.lifesystem.app.data.weeklyReport
-import com.lifesystem.app.lock.LockService
+import com.lifesystem.app.lock.GuardService
 import com.lifesystem.app.system.SystemSound
 import com.lifesystem.app.ui.components.BigNumber
 import com.lifesystem.app.ui.components.ChoiceChip
@@ -77,7 +77,7 @@ fun FocusScreen(repo: Repository, today: Long) {
     var until by remember { mutableLongStateOf(0L) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var msg by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) { until = repo.getSetting(LockService.FOCUS_UNTIL, "0").toLongOrNull() ?: 0L }
+    LaunchedEffect(Unit) { until = repo.getSetting(GuardService.FOCUS_UNTIL, "0").toLongOrNull() ?: 0L }
     LaunchedEffect(until) {
         while (until > 0) {
             now = System.currentTimeMillis()
@@ -87,7 +87,7 @@ fun FocusScreen(repo: Repository, today: Long) {
                     repo.putSetting(key, "1"); repo.addProgress(today, "focus", 1)
                     SystemSound.play(ctx, SystemSound.Kind.CLEAR); msg = "ดันเจี้ยนเคลียร์ · ได้ 1 รอบ"
                 }
-                repo.putSetting(LockService.FOCUS_UNTIL, "0"); until = 0
+                repo.putSetting(GuardService.FOCUS_UNTIL, "0"); until = 0
             }
             delay(1000)
         }
@@ -98,11 +98,11 @@ fun FocusScreen(repo: Repository, today: Long) {
             val left = ((until - now) / 1000).coerceAtLeast(0)
             BigNumber("%02d:%02d".format(left / 60, left % 60), size = 64)
             HudBar(1f - left / ((until - now).coerceAtLeast(1) / 1000f + left).coerceAtLeast(1f), SysColors.Hidden)
-            SystemButton("ถอนตัว (ไม่ได้รอบ)", SysColors.Crimson, { scope.launch { repo.putSetting(LockService.FOCUS_UNTIL, "0"); until = 0; msg = "ถอนตัวจากดันเจี้ยน" } }, primary = false)
+            SystemButton("ถอนตัว (ไม่ได้รอบ)", SysColors.Crimson, { scope.launch { repo.putSetting(GuardService.FOCUS_UNTIL, "0"); until = 0; msg = "ถอนตัวจากดันเจี้ยน" } }, primary = false)
         } else {
             listOf(25, 50).forEach { m ->
                 SystemButton("เข้าดันเจี้ยน $m นาที", SysColors.Hidden, {
-                    scope.launch { val u = System.currentTimeMillis() + m * 60_000L; repo.putSetting(LockService.FOCUS_UNTIL, u.toString()); until = u }
+                    scope.launch { val u = System.currentTimeMillis() + m * 60_000L; repo.putSetting(GuardService.FOCUS_UNTIL, u.toString()); until = u; GuardService.sync(ctx) }
                 })
             }
         }

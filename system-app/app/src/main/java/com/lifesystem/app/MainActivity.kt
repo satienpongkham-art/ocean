@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
             app.daySync.sync(SystemApp.today())
             rearmAlarms(this@MainActivity)
             com.lifesystem.app.system.SystemWidget.refresh(app)
+            com.lifesystem.app.lock.GuardService.sync(app)
         }
     }
 

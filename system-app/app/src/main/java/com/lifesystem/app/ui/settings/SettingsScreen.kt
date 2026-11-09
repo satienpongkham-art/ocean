@@ -134,7 +134,7 @@ fun SettingsScreen(repo: Repository, today: Long, onBackup: () -> Unit) {
         }
         Section("System") {
             Toggle("เสียง System (สำเร็จ · เลเวลอัป · ประตูเปิด)", sound) { sound = it }
-            Toggle("ตรวจหลังค่อม (ก้มมองจอนาน 15 นาที → เตือน)", posture) { posture = it }
+            Toggle("ตรวจหลังค่อม (ก้มมองจอนาน 15 นาที → เตือน · มีไอคอนแจ้งเตือนค้างไว้)", posture) { posture = it }
             Toggle("Screen-time Boss (ต้องอนุญาตเวลาใช้งานแอป)", screenBoss) { screenBoss = it }
             if (screenBoss) SysField("เพดานโซเชียล/เกมต่อวัน (นาที)", cap, { cap = it.filter(Char::isDigit) }, number = true)
         }
@@ -149,8 +149,11 @@ fun SettingsScreen(repo: Repository, today: Long, onBackup: () -> Unit) {
             Toggle("เปิดล็อกแอป", lockOn) { lockOn = it }
             Text("ล็อกเช้า: ตั้งแต่ตื่นจนกว่าจะทำเควสต์ตื่น + ชั่งน้ำหนักเสร็จ · ล็อกฝึก: ตั้งแต่เวลาด้านล่างจนกว่าวิดพื้น + สควอทครบ · ล็อกลงโทษ: ระหว่างเควสต์ลงโทษ · โทรศัพท์ ข้อความ แผนที่ ไม่ถูกล็อก", style = Txt.sub)
             SysField("ล็อกฝึกเริ่ม (HH:MM)", trainingFrom, { trainingFrom = it })
-            SystemButton("เปิดสิทธิ์ Accessibility ให้ System", SysColors.Hidden, {
-                ctx.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            SystemButton((if (com.lifesystem.app.lock.GuardService.canOverlay(ctx)) "✓ " else "○ ") + "อนุญาตแสดงทับแอปอื่น (ใช้เด้งหน้าล็อก)", SysColors.Hidden, {
+                ctx.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:" + ctx.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }, primary = false)
+            SystemButton((if (app.screenSource.granted()) "✓ " else "○ ") + "อนุญาตเวลาใช้งานแอป (ใช้รู้ว่าเปิดแอปไหน)", SysColors.Hidden, {
+                ctx.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }, primary = false)
             Text("แอปที่จะล็อก:", style = Txt.sub)
             launchable.forEach { (pkg, label) -> Toggle(label, pkg in lockApps) { on -> lockApps = if (on) lockApps + pkg else lockApps - pkg } }
@@ -182,6 +185,7 @@ fun SettingsScreen(repo: Repository, today: Long, onBackup: () -> Unit) {
                 repo.putSetting(Keys.LOCK_APPS, lockApps.joinToString(","))
                 repo.putSetting(Keys.LOCK_TRAINING_FROM, (OnboardingInput.minutes(trainingFrom) ?: 18 * 60).toString())
                 rearmAlarms(app)
+                com.lifesystem.app.lock.GuardService.sync(app)
                 msg = "บันทึกแล้ว · เวลาใหม่มีผลกับป๊อปอัปทันที · เควสต์ใหม่มีผลกับกระดานพรุ่งนี้"
             }
         })

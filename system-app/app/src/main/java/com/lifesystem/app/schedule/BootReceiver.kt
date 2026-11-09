@@ -14,6 +14,7 @@ class BootReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 rearmAlarms(context)
+                com.lifesystem.app.lock.GuardService.sync(context)
             } finally {
                 pending.finish()
             }
