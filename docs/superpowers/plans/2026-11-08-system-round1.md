@@ -112,11 +112,11 @@ system-app/
 @Test fun expCap_is150Percent() { assertEquals(750, Progression.expCap(1)) }
 @Test fun condition_fromSleep() { assertEquals(OPTIMAL, conditionFromSleep(7.5)); assertEquals(NORMAL, conditionFromSleep(7.0)); assertEquals(FATIGUED, conditionFromSleep(6.4)); assertEquals(NORMAL, conditionFromSleep(null)) }
 @Test fun multipliers() { assertEquals(0.7, conditionMultiplier(FATIGUED), 1e-9); assertEquals(0.10, expBonus(OPTIMAL), 1e-9) }
-@Test fun gate_passesOnWaistDrop() { /* best.waist 102.0, now 100.9, exp 500 at L1 */ assertTrue(r is Pass && "waist" in r.improved) }
-@Test fun gate_waistDropBelowNoise_noImprovement() { /* 102.0 -> 101.2 */ assertEquals(NoImprovement, r) }
+@Test fun gate_passesOnWaistDrop() { /* best.waist 96.0, now 94.9, exp 500 at L1 */ assertTrue(r is Pass && "waist" in r.improved) }
+@Test fun gate_waistDropBelowNoise_noImprovement() { /* 96.0 -> 95.2 */ assertEquals(NoImprovement, r) }
 @Test fun gate_thresholds() { /* weight −0.3, pushup +1, plank +5, rope +10 each alone → Pass */ }
 @Test fun gate_needsExp() { /* exp 499 at L1 */ assertEquals(NotEnoughExp(1), r) }
-@Test fun gate_redFlag_fastWeightLoss() { /* weightAvg7PrevWeek 90.0, weightAvg7 88.6 (1.56%) */ assertTrue(r is RedFlag) }
+@Test fun gate_redFlag_fastWeightLoss() { /* weightAvg7PrevWeek 70.0, weightAvg7 68.6 (2.0%) */ assertTrue(r is RedFlag) }
 @Test fun gate_redFlag_sleep() { /* sleepAvg7h 5.9 */ assertTrue(r is RedFlag) }
 @Test fun gate_ignoresMissingMetrics() { /* best all null except pushup 10; now pushup 11 */ assertTrue(r is Pass) }
 ```
@@ -140,7 +140,7 @@ system-app/
 
 ```kotlin
 @Test fun str_bands() { assertEquals(E, str(16)); assertEquals(D, str(17)); assertEquals(C, str(28)); assertEquals(B, str(29)); assertEquals(A, str(36)); assertEquals(S, str(50)); assertEquals(UNKNOWN, str(null)) }
-@Test fun vit_bands() { /* height 184: waist 110.4→0.60 E; 102→0.554 D; 95→0.516 C; 90→0.489 B; 82→0.446 with STR B → A; 82 with STR C → B */ }
+@Test fun vit_bands() { /* height 170: waist 102→0.60 E; 94→0.553 D; 88→0.518 C; 83→0.488 B; 76→0.447 with STR B → A; 76 with STR C → B */ }
 @Test fun agi_bands() { assertEquals(E, agi(59)); assertEquals(D, agi(60)); assertEquals(C, agi(120)); assertEquals(B, agi(300)); assertEquals(A, agi(600)); assertEquals(S, agi(900)) }
 @Test fun int_cefr() { assertEquals(E, int("A1")); assertEquals(S, int("C2")); assertEquals(UNKNOWN, int(null)) }
 @Test fun fromScore() { assertEquals(E, fromScore(19)); assertEquals(D, fromScore(20)); assertEquals(S, fromScore(100)) }
@@ -244,8 +244,8 @@ system-app/
 - [ ] **Step 1: Failing tests:**
 
 ```kotlin
-@Test fun bmr_mifflin() { assertEquals(1930.0, bmr(MALE, 90.0, 184.0, 25), 1.0) }
-@Test fun targets() { assertEquals(2154, kcalTarget(tdee(1930.0))) /* 1930*1.375-500 rounded */ ; assertEquals(144, proteinTarget(90.0, 80.0)) /* 1.8 g/kg of goal weight */ }
+@Test fun bmr_mifflin() { assertEquals(1617.5, bmr(MALE, 70.0, 170.0, 30), 1.0) }
+@Test fun targets() { assertEquals(1724, kcalTarget(tdee(1617.5))) /* 1617.5*1.375-500 rounded */ ; assertEquals(108, proteinTarget(70.0, 60.0)) /* 1.8 g/kg of goal weight */ }
 @Test fun catalog_hasEverySlot() { MealSlot.values().forEach { s -> assertTrue(MenuCatalog.items.count { it.slot == s } >= 3) } }
 @Test fun bestPlan_respectsBudget_andPrefersProtein() { val p = best(MenuCatalog.items, 2150, 285)!!; assertTrue(p.price <= 285); assertEquals(4, p.picks.size) }
 @Test fun bestPlan_returnsNullWhenNothingFitsBudget() { assertNull(best(MenuCatalog.items, 2150, 100)) }
@@ -354,7 +354,7 @@ system-app/
 ```kotlin
 @Test fun nextTrigger_laterToday() { /* now 06:00 Asia/Bangkok, 07:00 → today 07:00 */ }
 @Test fun nextTrigger_rollsToTomorrowAfterTime() { /* now 07:00:01 → tomorrow 07:00 */ }
-@Test fun scheduleMode_fallsBackWhenExactDenied() { /* Robolectric: canScheduleExactAlarms=false → INEXACT_FALLBACK and setWindow used */ }
+@Test fun scheduleMode_fallsBackWhenExactDenied() { /* Robolectric: canScheduleExactAlarms=false → INEXACT_FALLBACK and setAndAllowWhileIdle used (Doze-safe) */ }
 @Test fun scheduleAll_setsWakeMealsAndSleepReminder() { /* 1 + mealTimes.size + 1 alarms registered */ }
 ```
 

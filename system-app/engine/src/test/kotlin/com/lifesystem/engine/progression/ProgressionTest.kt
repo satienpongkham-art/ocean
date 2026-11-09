@@ -37,16 +37,16 @@ class ProgressionTest {
     }
 
     @Test fun gate_passesOnWaistDrop() {
-        val r = LevelGate.evaluate(1, 500, m(waist = 102.0), m(waist = 100.9))
+        val r = LevelGate.evaluate(1, 500, m(waist = 96.0), m(waist = 94.9))
         assertTrue(r is GateResult.Pass && "waist" in r.improved)
     }
 
     @Test fun gate_waistDropBelowNoise_noImprovement() {
-        assertEquals(GateResult.NoImprovement, LevelGate.evaluate(1, 500, m(waist = 102.0), m(waist = 101.2)))
+        assertEquals(GateResult.NoImprovement, LevelGate.evaluate(1, 500, m(waist = 96.0), m(waist = 95.2)))
     }
 
     @Test fun gate_thresholds() {
-        assertTrue(LevelGate.evaluate(1, 500, m(weight = 90.0), m(weight = 89.7)) is GateResult.Pass)
+        assertTrue(LevelGate.evaluate(1, 500, m(weight = 70.0), m(weight = 69.7)) is GateResult.Pass)
         assertTrue(LevelGate.evaluate(1, 500, m(pushup = 10), m(pushup = 11)) is GateResult.Pass)
         assertTrue(LevelGate.evaluate(1, 500, m(plank = 30), m(plank = 35)) is GateResult.Pass)
         assertTrue(LevelGate.evaluate(1, 500, m(rope = 60), m(rope = 70)) is GateResult.Pass)
@@ -54,16 +54,16 @@ class ProgressionTest {
     }
 
     @Test fun gate_needsExp() {
-        assertEquals(GateResult.NotEnoughExp(1), LevelGate.evaluate(1, 499, m(waist = 102.0), m(waist = 100.0)))
+        assertEquals(GateResult.NotEnoughExp(1), LevelGate.evaluate(1, 499, m(waist = 96.0), m(waist = 94.0)))
     }
 
     @Test fun gate_redFlag_fastWeightLoss() {
-        val r = LevelGate.evaluate(1, 500, m(weight = 90.0), m(weight = 88.6, prevWeight = 90.0))
+        val r = LevelGate.evaluate(1, 500, m(weight = 70.0), m(weight = 68.6, prevWeight = 70.0))
         assertTrue(r is GateResult.RedFlag)
     }
 
     @Test fun gate_redFlag_sleep() {
-        val r = LevelGate.evaluate(1, 500, m(waist = 102.0), m(waist = 100.0, sleep = 5.9))
+        val r = LevelGate.evaluate(1, 500, m(waist = 96.0), m(waist = 94.0, sleep = 5.9))
         assertTrue(r is GateResult.RedFlag)
     }
 

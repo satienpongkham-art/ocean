@@ -7,8 +7,8 @@ data class DailyTargets(val kcal: Int, val protein: Int, val budget: Int, val wa
 
 object Targets {
     /** Defaults used until the first weight is logged. */
-    const val FALLBACK_KCAL = 2150
-    const val FALLBACK_PROTEIN = 140
+    const val FALLBACK_KCAL = 2000
+    const val FALLBACK_PROTEIN = 120
 
     fun of(profile: ProfileEntity, latestWeightKg: Double?): DailyTargets {
         if (latestWeightKg == null) return DailyTargets(FALLBACK_KCAL, FALLBACK_PROTEIN, profile.dailyBudget, Nutrition.WATER_ML_DEFAULT)

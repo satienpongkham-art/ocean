@@ -9,14 +9,14 @@ import org.junit.Test
 
 class NutritionTest {
     @Test fun bmr_mifflin() {
-        assertEquals(1930.0, Nutrition.bmr(MALE, 90.0, 184.0, 25), 1.0)
-        assertEquals(1764.0, Nutrition.bmr(FEMALE, 90.0, 184.0, 25), 1.0)
+        assertEquals(1617.5, Nutrition.bmr(MALE, 70.0, 170.0, 30), 1.0)
+        assertEquals(1451.5, Nutrition.bmr(FEMALE, 70.0, 170.0, 30), 1.0)
     }
 
     @Test fun targets() {
-        assertEquals(2154, Nutrition.kcalTarget(Nutrition.tdee(1930.0)))
-        assertEquals(144, Nutrition.proteinTarget(90.0, 80.0))
-        assertEquals(162, Nutrition.proteinTarget(90.0, null))
+        assertEquals(1724, Nutrition.kcalTarget(Nutrition.tdee(1617.5)))
+        assertEquals(108, Nutrition.proteinTarget(70.0, 60.0))
+        assertEquals(126, Nutrition.proteinTarget(70.0, null))
         assertEquals(2500, Nutrition.WATER_ML_DEFAULT)
     }
 

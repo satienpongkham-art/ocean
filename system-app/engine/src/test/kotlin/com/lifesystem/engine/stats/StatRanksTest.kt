@@ -18,13 +18,13 @@ class StatRanksTest {
     }
 
     @Test fun vit_bands() {
-        assertEquals(E, StatRanks.vit(110.4, 184.0, C))
-        assertEquals(D, StatRanks.vit(102.0, 184.0, C))
-        assertEquals(C, StatRanks.vit(95.0, 184.0, C))
-        assertEquals(B, StatRanks.vit(90.0, 184.0, C))
-        assertEquals(A, StatRanks.vit(82.0, 184.0, B))
-        assertEquals(B, StatRanks.vit(82.0, 184.0, C))
-        assertEquals(UNKNOWN, StatRanks.vit(null, 184.0, C))
+        assertEquals(E, StatRanks.vit(102.0, 170.0, C))
+        assertEquals(D, StatRanks.vit(94.0, 170.0, C))
+        assertEquals(C, StatRanks.vit(88.0, 170.0, C))
+        assertEquals(B, StatRanks.vit(83.0, 170.0, C))
+        assertEquals(A, StatRanks.vit(76.0, 170.0, B))
+        assertEquals(B, StatRanks.vit(76.0, 170.0, C))
+        assertEquals(UNKNOWN, StatRanks.vit(null, 170.0, C))
     }
 
     @Test fun agi_bands() {
@@ -55,5 +55,5 @@ class StatRanksTest {
         assertEquals(D, StatRanks.overall(listOf(D, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN)))
     }
 
-    @Test fun whtr() = assertEquals(0.5, StatRanks.whtr(92.0, 184.0), 1e-9)
+    @Test fun whtr() = assertEquals(0.5, StatRanks.whtr(85.0, 170.0), 1e-9)
 }
