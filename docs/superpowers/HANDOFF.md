@@ -50,4 +50,12 @@ Read this first when continuing the work in a new session.
 6. Dumbbell program (5 kg pair): curl, row, press, timers for rest.
 7. Skill tree: unlocks from real results (e.g. 30 push-ups in one set → harder variation).
 9. System sounds: quest clear, level up, gate open (respect silent mode; can be turned off in settings).
-(Not picked: season pass, monthly rank exams.) More system ideas were offered; check the chat for any extra picks.
+(Not picked: season pass, monthly rank exams.)
+
+Extra system ideas picked (second batch):
+- Buff/Debuff: status effects from real behaviour — Rested (slept enough, EXP +10 %), Sugar Crash (soda → next day EXP −10 %),
+  Night Owl (screen on after midnight → condition down); icons under the avatar with the reason.
+- Shadow Run: race your own numbers from the same time last week (e.g. push-ups by 14:00); beating the shadow = bonus.
+- Story chapters: milestones unlock short original System story chapters + a special reward (e.g. Ch.1 "การตื่นขึ้น" = 7 core days).
+- Trust level: consistency checks between self-ticks and sensor data (e.g. "slept on time" vs screen on); high trust → more EXP
+  for self-verified quests, low trust → System asks for proof.
