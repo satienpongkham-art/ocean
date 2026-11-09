@@ -1,9 +1,9 @@
-# System app — handoff (2026-11-09)
+# System app — handoff (2026-11-09, updated after round 2)
 
 Read this first when continuing the work in a new session.
 
 ## State
-- Branch `ccr-fd37657d-kceuzn` · app v0.2.0 (versionCode 2) · CI green · APK published to release `system-latest`
+- Branch `ccr-fd37657d-kceuzn` · app v0.3.0 (versionCode 3, DB v3) · CI green · APK published to release `system-latest`
   (`releases/download/system-latest/System.apk`). Repo is **private** now.
 - Engine (pure Kotlin, `system-app/engine`) + Android app (`system-app/app`). 169 tests (engine + Robolectric).
 - Plans: `plans/2026-11-08-system-round1.md`, `plans/2026-11-09-system-round1_5.md`. Spec: `specs/2026-11-08-system-design.md`.
@@ -23,7 +23,10 @@ Read this first when continuing the work in a new session.
    `https://maven-central.storage-download.googleapis.com/maven2/` into `~/.m2/repository/...`.
 3. JDK 21 locally is fine (jvmTarget 17 via compilerOptions).
 
-## Backlog — Round 2 (owner asked to finish all; order = priority)
+## Round 2 status: items 2–12 and all picks below are implemented in v0.3.0 (plan `plans/2026-11-09-system-round2.md`).
+Open: real-device fixes (item 1), item 13 minors, dumbbell/plank are honour-based timers, heart-rate zones need a watch.
+
+## Backlog — Round 2 (original list)
 1. Fixes from the owner's real-device testing (ask for their list first).
 2. **CORE vs DAILY**: only 6–8 core quests cause a penalty (wake, push-up, squat, journal, sleep, weigh, + penalty quests);
    the rest give a full-clear bonus. Engine: `Quest.core`, DayCloser uses core for penalty.
