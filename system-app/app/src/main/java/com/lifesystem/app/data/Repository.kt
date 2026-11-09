@@ -7,12 +7,19 @@ import com.lifesystem.engine.model.Inventory
 import com.lifesystem.engine.progression.Progression
 import com.lifesystem.engine.quest.BoardGenerator
 import com.lifesystem.engine.quest.DayCloser
+import com.lifesystem.engine.achievements.Achievements
+import com.lifesystem.engine.boss.Boss
+import com.lifesystem.engine.gate.GateGenerator
+import com.lifesystem.engine.job.Job
+import com.lifesystem.engine.job.JobRules
+import com.lifesystem.engine.model.QuestType
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 /** Single entry point for app state. All game rules come from the engine. */
-class Repository(private val db: SystemDb, private val nowMs: () -> Long = System::currentTimeMillis) {
-    private val dao = db.dao()
+class Repository(internal val db: SystemDb, internal val nowMs: () -> Long = System::currentTimeMillis) {
+    internal val dao = db.dao()
 
     suspend fun saveProfile(p: ProfileEntity) = dao.upsertProfile(p)
     suspend fun profile(): ProfileEntity? = dao.profile()
@@ -26,32 +33,52 @@ class Repository(private val db: SystemDb, private val nowMs: () -> Long = Syste
      */
     suspend fun ensureBoard(todayEpochDay: Long): List<QuestEntity> {
         val profile = dao.profile() ?: return emptyList()
+        var closedAny = false
         db.withTransaction {
-            dao.unclosedBefore(todayEpochDay).forEach { closeDay(it) }
+            dao.unclosedBefore(todayEpochDay).forEach { closeDay(it); closedAny = true }
             if (dao.day(todayEpochDay) == null) {
                 val penalty = dao.lastDayBefore(todayEpochDay)?.penaltyTomorrow == true
                 val condition = condition()
                 val due = Maintenance.due(Maintenance.defaults, dao.maintenance().associate { it.routineId to it.lastDoneEpochDay }, todayEpochDay)
                 val inventory = Inventory(profile.hasSunscreen, profile.hasTapeMeasure, profile.hasArmband)
-                val quests = BoardGenerator.generate(dayNumber(profile, todayEpochDay).coerceAtLeast(1), condition, inventory, due, penalty)
+                val gates = GateGenerator.generate(todayEpochDay, wallet().level, profile.wakeMin, profile.sleepMin).flatMap(GateGenerator::quests)
+                val quests = BoardGenerator.generate(
+                    dayNumber(profile, todayEpochDay).coerceAtLeast(1), condition, inventory, due, penalty, bossDay = Boss.isBossDay(todayEpochDay),
+                ) + gates
                 dao.insertQuests(quests.map { QuestEntity.from(todayEpochDay, it) })
                 dao.upsertDay(DayEntity(todayEpochDay, condition.name))
             }
         }
+        if (closedAny) refreshAchievements(todayEpochDay)
         return dao.questsFor(todayEpochDay)
     }
 
     private suspend fun closeDay(day: DayEntity) {
         val rows = dao.questsFor(day.epochDay)
-        val graceDay = dao.profile()?.day0EpochDay == day.epochDay
+        val profile = dao.profile()
+        if (day.rest) {
+            // Rest ticket: the day counts for nothing either way.
+            dao.upsertDay(day.copy(closed = true, penaltyTomorrow = false, goldEarned = 0, expEarned = 0))
+            return
+        }
+        val graceDay = profile?.day0EpochDay == day.epochDay
         val result = DayCloser.close(rows.map { it.toQuest() }, rows.associate { it.questId to it.progress }, graceDay)
-        val w = wallet()
+
+        val gates = rows.filter { it.type == QuestType.GATE.name }.groupBy { it.questId.substringBefore('_').removePrefix("gate").toIntOrNull() ?: 0 }
+        val cleared = gates.filterValues { qs -> qs.all { it.progress >= it.target } }.keys
+        cleared.forEach { addConsumable(GateGenerator.drop(day.epochDay, it).name, 1) }
+
         val condition = runCatching { Condition.valueOf(day.condition) }.getOrDefault(Condition.NORMAL)
-        val earned = (result.expEarned * (1 + Progression.expBonus(condition))).toInt()
+        val jobStat = profile?.job?.let { j -> runCatching { Job.valueOf(j).stat.name }.getOrNull() }
+        val jobExtra = if (jobStat == null) 0.0 else rows.filter { it.progress >= it.target && it.stat == jobStat }.sumOf { it.exp } * JobRules.EXP_BONUS
+        val earned = ((result.expEarned + jobExtra) * (1 + Progression.expBonus(condition)) * day.expMultiplier).toInt()
+        val gold = (result.goldEarned * (1 + if (profile?.titleId != null) Achievements.TITLE_GOLD_BONUS else 0.0)).roundToInt()
+
+        val w = wallet()
         val exp = (w.exp + earned).coerceAtMost(Progression.expCap(w.level))
-        dao.upsertDay(day.copy(closed = true, goldEarned = result.goldEarned, expEarned = earned,
+        dao.upsertDay(day.copy(closed = true, goldEarned = gold, expEarned = earned, gatesCleared = cleared.size,
             penaltyTomorrow = result.penaltyTomorrow, mainDone = result.mainDone, mainTotal = result.mainTotal))
-        dao.upsertWallet(w.copy(exp = exp, gold = w.gold + result.goldEarned))
+        dao.upsertWallet(w.copy(exp = exp, gold = w.gold + gold))
     }
 
     private suspend fun condition(): Condition {
@@ -62,7 +89,14 @@ class Repository(private val db: SystemDb, private val nowMs: () -> Long = Syste
     fun board(epochDay: Long): Flow<List<QuestEntity>> = dao.questsFlow(epochDay)
     suspend fun quest(epochDay: Long, questId: String): QuestEntity? = dao.quest(epochDay, questId)
 
-    suspend fun addProgress(epochDay: Long, questId: String, amount: Int) = dao.addProgress(epochDay, questId, amount)
+    /** Adds progress; gate quests only accept it inside their window. */
+    suspend fun addProgress(epochDay: Long, questId: String, amount: Int) {
+        val q = dao.quest(epochDay, questId) ?: return
+        if (!q.openAt(minuteOfDay())) return
+        dao.addProgress(epochDay, questId, amount)
+    }
+
+    internal fun minuteOfDay(): Int = java.time.Instant.ofEpochMilli(nowMs()).atZone(java.time.ZoneId.systemDefault()).toLocalTime().let { it.hour * 60 + it.minute }
 
     /**
      * Injury stop: halve what is left of today's target (spec §6.4).

@@ -17,6 +17,7 @@ import com.lifesystem.app.SystemApp
 import com.lifesystem.app.schedule.AlarmReceiver
 import com.lifesystem.engine.sensors.Exercise
 import com.lifesystem.engine.sensors.RepEvent
+import com.lifesystem.engine.training.TrainingProgram
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,7 +53,7 @@ class RepService : Service() {
         // A new start replaces any running session: release the old sensors and tone first.
         source?.stop(); source = null
         tone?.release()
-        lastJumpMs = null; ropeActiveMs = 0L; ropeCredited = 0
+        lastJumpMs = null; ropeActiveMs = 0L; ropeCredited = 0; walkSteps = 0
         // Keep the CPU awake while counting with the screen off (phone in a pocket).
         if (wakeLock?.isHeld != true) {
             wakeLock = getSystemService(PowerManager::class.java)
@@ -66,7 +67,11 @@ class RepService : Service() {
             src.start(exercise) { ev ->
                 when (ev) {
                     is RepEvent.Rep -> {
-                        val credit = if (exercise == Exercise.ROPE) ropeSeconds() else 1
+                        val credit = when (exercise) {
+                            Exercise.ROPE -> ropeSeconds()
+                            Exercise.WALK -> walkSessions()
+                            else -> 1
+                        }
                         _state.value = _state.value.copy(reps = _state.value.reps + 1, lastInvalid = null)
                         feedback()
                         if (credit > 0) scope.launch {
@@ -80,6 +85,14 @@ class RepService : Service() {
             }
         }
         return START_NOT_STICKY
+    }
+
+    private var walkSteps = 0
+
+    /** One "walk after a meal" session per [TrainingProgram.WALK_SESSION_STEPS] steps. */
+    private fun walkSessions(): Int {
+        walkSteps++
+        return if (walkSteps % TrainingProgram.WALK_SESSION_STEPS == 0) 1 else 0
     }
 
     /** Rope progress is in seconds: count time between jumps that are ≤ 1.5 s apart. */
@@ -142,7 +155,9 @@ class RepService : Service() {
 
         fun exerciseFor(questId: String): Exercise = when {
             questId.contains("squat") -> Exercise.SQUAT
+            questId.contains("situp") -> Exercise.SITUP
             questId.contains("rope") -> Exercise.ROPE
+            questId.contains("walk") -> Exercise.WALK
             else -> Exercise.PUSHUP
         }
     }

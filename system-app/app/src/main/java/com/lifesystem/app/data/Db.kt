@@ -9,9 +9,10 @@ import androidx.room.RoomDatabase
     entities = [
         ProfileEntity::class, QuestEntity::class, DayEntity::class, MeasurementEntity::class,
         MealLogEntity::class, MaintenanceEntity::class, JournalEntity::class, WalletEntity::class,
+        OwnedItemEntity::class, VaultEntryEntity::class, RewardEntity::class, AchievementEntity::class, BossResultEntity::class,
     ],
-    version = 1,
-    exportSchema = false,
+    version = 2,
+    exportSchema = true,
 )
 abstract class SystemDb : RoomDatabase() {
     abstract fun dao(): SystemDao
@@ -20,7 +21,7 @@ abstract class SystemDb : RoomDatabase() {
         @Volatile private var instance: SystemDb? = null
 
         fun get(context: Context): SystemDb = instance ?: synchronized(this) {
-            instance ?: Room.databaseBuilder(context.applicationContext, SystemDb::class.java, "system.db").build().also { instance = it }
+            instance ?: Room.databaseBuilder(context.applicationContext, SystemDb::class.java, "system.db").addMigrations(Migrations.M1_2).build().also { instance = it }
         }
     }
 }

@@ -44,6 +44,38 @@ interface SystemDao {
     @Upsert suspend fun upsertJournal(j: JournalEntity)
     @Query("SELECT * FROM journal WHERE epochDay = :day") suspend fun journal(day: Long): JournalEntity?
 
+    @Upsert suspend fun upsertOwned(i: OwnedItemEntity)
+    @Query("SELECT * FROM owned_item") suspend fun owned(): List<OwnedItemEntity>
+    @Query("SELECT * FROM owned_item") fun ownedFlow(): Flow<List<OwnedItemEntity>>
+    @Query("SELECT * FROM owned_item WHERE id = :id") suspend fun ownedItem(id: String): OwnedItemEntity?
+    @Query("DELETE FROM owned_item WHERE id = :id") suspend fun deleteOwned(id: String)
+
+    @Insert suspend fun insertVault(e: VaultEntryEntity)
+    @Query("SELECT * FROM vault_entry ORDER BY tMs DESC") fun vaultFlow(): Flow<List<VaultEntryEntity>>
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM vault_entry") suspend fun vaultBalance(): Int
+
+    @Insert suspend fun insertReward(r: RewardEntity): Long
+    @Upsert suspend fun upsertReward(r: RewardEntity)
+    @Query("SELECT * FROM reward WHERE id = :id") suspend fun reward(id: Long): RewardEntity?
+    @Query("SELECT * FROM reward ORDER BY redeemedMs IS NOT NULL, price") fun rewardsFlow(): Flow<List<RewardEntity>>
+    @Query("DELETE FROM reward WHERE id = :id AND redeemedMs IS NULL") suspend fun deleteReward(id: Long)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertAchievement(a: AchievementEntity): Long
+    @Query("SELECT * FROM achievement") suspend fun achievements(): List<AchievementEntity>
+    @Query("SELECT * FROM achievement") fun achievementsFlow(): Flow<List<AchievementEntity>>
+
+    @Upsert suspend fun upsertBoss(b: BossResultEntity)
+    @Query("SELECT * FROM boss_result WHERE epochDay = :day") suspend fun boss(day: Long): BossResultEntity?
+    @Query("SELECT COUNT(*) FROM boss_result WHERE defeated = 1") suspend fun bossesDefeated(): Int
+
+    @Query("SELECT * FROM day WHERE closed = 1 ORDER BY epochDay") suspend fun closedDays(): List<DayEntity>
+    @Query("SELECT * FROM quest WHERE epochDay IN (SELECT epochDay FROM day WHERE closed = 1)") suspend fun closedQuests(): List<QuestEntity>
+    @Query("SELECT COUNT(DISTINCT menuId) FROM meal_log WHERE menuId IS NOT NULL") suspend fun distinctMenus(): Int
+    @Query("SELECT * FROM measurement WHERE type = :type AND tMs >= :fromMs AND tMs < :toMs ORDER BY tMs") suspend fun measurementsBetween(type: String, fromMs: Long, toMs: Long): List<MeasurementEntity>
+    @Query("DELETE FROM quest WHERE epochDay = :day AND questId = :id") suspend fun deleteQuest(day: Long, id: String)
+    @Query("SELECT * FROM measurement WHERE type = :type ORDER BY tMs ASC LIMIT 1") suspend fun earliest(type: String): MeasurementEntity?
+    @Query("SELECT * FROM measurement WHERE type = :type AND tMs >= :fromMs ORDER BY tMs") fun sinceFlow(type: String, fromMs: Long): Flow<List<MeasurementEntity>>
+
     @Upsert suspend fun upsertWallet(w: WalletEntity)
     @Query("SELECT * FROM wallet WHERE id = 1") suspend fun wallet(): WalletEntity?
     @Query("SELECT * FROM wallet WHERE id = 1") fun walletFlow(): Flow<WalletEntity?>

@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.lifesystem.engine.model.QuestType
 import com.lifesystem.engine.quest.BoardGenerator
+import com.lifesystem.engine.training.TrainingProgram
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -72,22 +73,24 @@ class RepositoryTest {
 
     @Test fun reduceRemaining_oncePerDay_andNeverCompletesTheQuest() = runTest {
         repo.ensureBoard(day0)
+        val full = db.dao().quest(day0, "pushup")!!.target
         repeat(5) { repo.reduceRemaining(day0, "pushup") }
         val q = db.dao().quest(day0, "pushup")!!
-        assertEquals(5, q.target)
+        assertEquals(full / 2, q.target)
         assertTrue(q.excused)
         assertFalse(q.done)
         repo.addProgress(day0, "pushup", 4)
         repo.reduceRemaining(day0, "pushup")
-        assertEquals(5, db.dao().quest(day0, "pushup")!!.target)
+        assertEquals(full / 2, db.dao().quest(day0, "pushup")!!.target)
     }
 
     @Test fun reduceRemaining_keepsAtLeastOneRepLeft() = runTest {
         repo.ensureBoard(day0)
-        repo.addProgress(day0, "pushup", 9)
+        val full = db.dao().quest(day0, "pushup")!!.target
+        repo.addProgress(day0, "pushup", full - 1)
         repo.reduceRemaining(day0, "pushup")
         val q = db.dao().quest(day0, "pushup")!!
-        assertEquals(10, q.target)
+        assertEquals(full, q.target)
         assertFalse(q.done)
     }
 
@@ -105,7 +108,7 @@ class RepositoryTest {
 
     @Test fun addProgress_capsAtTarget_andMarksDone() = runTest {
         repo.ensureBoard(day0)
-        repo.addProgress(day0, "pushup", 15)
+        repo.addProgress(day0, "pushup", 999)
         val q = db.dao().questsFor(day0).first { it.questId == "pushup" }
         assertEquals(q.target, q.progress)
         assertTrue(q.done)
@@ -113,7 +116,7 @@ class RepositoryTest {
 
     @Test fun closingAwardsExpAndGold() = runTest {
         val board = repo.ensureBoard(day0)
-        board.forEach { repo.addProgress(day0, it.questId, it.target) }
+        board.forEach { repo.complete(day0, it.questId) } // complete ignores gate windows
         repo.ensureBoard(day0 + 1)
         val w = repo.wallet()
         val mains = board.filter { it.type == QuestType.DAILY_MAIN.name }
@@ -128,7 +131,7 @@ class RepositoryTest {
         repo.addProgress(day0, "squat", 4)
         repo.reduceRemaining(day0, "squat")
         val q = db.dao().quest(day0, "squat")!!
-        assertEquals(4 + (20 - 4) / 2, q.target)
+        assertEquals(4 + (TrainingProgram.squatTotal(1) - 4) / 2, q.target)
         assertFalse(q.done)
     }
 

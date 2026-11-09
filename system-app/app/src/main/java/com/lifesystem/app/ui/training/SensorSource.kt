@@ -11,6 +11,7 @@ import com.lifesystem.engine.sensors.Exercise
 import com.lifesystem.engine.sensors.JumpCounter
 import com.lifesystem.engine.sensors.PushupCounter
 import com.lifesystem.engine.sensors.RepEvent
+import com.lifesystem.engine.sensors.SitupCounter
 import com.lifesystem.engine.sensors.SquatCounter
 import kotlin.math.acos
 import kotlin.math.sqrt
@@ -39,11 +40,14 @@ class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener 
     private val proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY)
     private val accel = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private val gravity = sm.getDefaultSensor(Sensor.TYPE_GRAVITY) ?: accel
+    private val stepDetector = sm.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
 
     private var exercise: Exercise? = null
     private var onEvent: (RepEvent) -> Unit = {}
     private var pushup = PushupCounter()
     private var squat = SquatCounter()
+    private var situp = SitupCounter()
+    private var steps = 0
     private var jump = JumpCounter()
     private var standing: FloatArray? = null
 
@@ -53,14 +57,17 @@ class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener 
         stop()
         this.exercise = exercise
         this.onEvent = onEvent
-        pushup = PushupCounter(); squat = SquatCounter(); jump = JumpCounter(); standing = null; calibrator = StandingCalibrator()
+        pushup = PushupCounter(); squat = SquatCounter(); situp = SitupCounter(); jump = JumpCounter(); steps = 0
+        standing = null; calibrator = StandingCalibrator()
         when (exercise) {
             Exercise.PUSHUP -> {
                 sm.registerListener(this, proximity, SensorManager.SENSOR_DELAY_GAME)
                 sm.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)
             }
-            Exercise.SQUAT -> sm.registerListener(this, gravity, SensorManager.SENSOR_DELAY_GAME)
+            Exercise.SQUAT, Exercise.SITUP -> sm.registerListener(this, gravity, SensorManager.SENSOR_DELAY_GAME)
             Exercise.ROPE -> sm.registerListener(this, accel, SensorManager.SENSOR_DELAY_FASTEST)
+            // Step detector when present (needs activity recognition permission); otherwise accelerometer peaks.
+            Exercise.WALK -> sm.registerListener(this, stepDetector ?: accel, SensorManager.SENSOR_DELAY_GAME)
         }
     }
 
@@ -83,7 +90,15 @@ class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener 
                 val ref = standing ?: calibrator.offer(t, now)?.also { standing = it }
                 if (ref != null) squat.onThighAngle(t, thighAngleDeg(ref, now)) else null
             }
+            Exercise.SITUP -> {
+                // Lying on the back, phone flat on the chest: the reference is the still lying pose.
+                val now = e.values.copyOf(3)
+                val ref = standing ?: calibrator.offer(t, now)?.also { standing = it }
+                if (ref != null) situp.onTorsoAngle(t, thighAngleDeg(ref, now)) else null
+            }
             Exercise.ROPE -> jump.onAccel(t, e.values[0], e.values[1], e.values[2])
+            Exercise.WALK -> if (e.sensor.type == Sensor.TYPE_STEP_DETECTOR) RepEvent.Rep(++steps)
+                else jump.onAccel(t, e.values[0], e.values[1], e.values[2])
             null -> null
         }
         ev?.let(onEvent)
