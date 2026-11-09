@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lifesystem.app.data.Repository
+import com.lifesystem.app.data.shadowNow
 import com.lifesystem.app.ui.components.BigNumber
 import com.lifesystem.app.ui.components.Chip
 import com.lifesystem.app.ui.components.ScreenHeader
@@ -90,6 +92,14 @@ fun TrainingScreen(repo: Repository, today: Long, questId: String) {
             Chip(if (availability == Availability.OK) "SENSOR OK" else "SENSOR UNSUPPORTED", if (availability == Availability.OK) SysColors.Mint else SysColors.CrimsonText)
             Chip(if (running) "LIVE" else "STANDBY", if (running) SysColors.CrimsonText else SysColors.Sub)
             if (quest?.done == true) Chip("COMPLETE", SysColors.Mint)
+        }
+        if (questId in com.lifesystem.engine.shadow.Shadow.RACED) {
+            var shadow by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+            androidx.compose.runtime.LaunchedEffect(progress) { shadow = repo.shadowNow(today, questId) }
+            if (shadow > 0) Text(
+                "SHADOW · ตัวคุณสัปดาห์ก่อน เวลานี้ทำได้ $shadow" + if (progress > shadow) " · นำอยู่ +${progress - shadow}" else " · ตามอยู่ ${shadow - progress}",
+                style = Txt.body.copy(color = if (progress > shadow) SysColors.Mint else SysColors.Hidden),
+            )
         }
         rep.lastInvalid?.takeIf { running }?.let { Text("[ INVALID ] ครั้งนี้ไม่นับ · $it", style = Txt.body.copy(color = SysColors.CrimsonText)) }
         if (availability == Availability.UNSUPPORTED) {

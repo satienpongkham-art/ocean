@@ -3,4 +3,6 @@
     <string name="sc_system">เรียก SYSTEM</string>
     <string name="sc_quest">QUEST</string>
     <string name="sc_gate">GATE</string>
+    <string name="lock_service_desc">System ใช้สิทธิ์นี้เพื่อรู้ว่าตอนนี้เปิดแอปไหน แล้วล็อกแอปที่ผู้เล่นเลือกไว้จนกว่าจะทำเควสต์เสร็จ และเตือนเมื่อก้มมองจอนาน ไม่อ่านข้อความหรือเนื้อหาบนจอ ไม่ส่งข้อมูลออกนอกเครื่อง</string>
+    <string name="widget_desc">SYSTEM: เลเวล เควสต์ CORE และประตูถัดไป</string>
 </resources>

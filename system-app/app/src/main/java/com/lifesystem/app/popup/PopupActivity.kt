@@ -88,6 +88,7 @@ class PopupActivity : ComponentActivity() {
                             gate = repo.board(today).first().filter { it.questId.startsWith("gate${gateIndex}_") }
                             look = repo.avatarLook()
                         }
+                        LaunchedEffect(Unit) { com.lifesystem.app.system.SystemSound.play(this@PopupActivity, com.lifesystem.app.system.SystemSound.Kind.ALERT) }
                         GatePopup(gate, onAccept = { openApp("gate"); finish() }, look = look)
                     }
                     PopupKind.SLEEP_REMINDER.name -> {

@@ -39,6 +39,7 @@ import com.lifesystem.app.data.AvatarLook
 import com.lifesystem.app.data.Repository
 import com.lifesystem.app.data.avatarLook
 import com.lifesystem.app.data.qty
+import com.lifesystem.app.data.getSetting
 import com.lifesystem.app.ui.components.AvatarArt
 import com.lifesystem.app.ui.components.AvatarView
 import com.lifesystem.app.ui.components.LabeledBar
@@ -90,7 +91,16 @@ suspend fun loadSystemCall(repo: Repository, today: Long): SystemCallUi {
         nextMealMin = p.mealMinutes().filter { it >= now }.minOrNull(),
         steps = steps?.let { it.progress to it.target },
     )
-    return SystemCallUi(p.name, w.level, w.exp, w.gold, p.titleId?.let { Achievements.byId(it)?.name }, repo.avatarLook(), SystemMessages.build(state))
+    val extra = buildList {
+        val newChapter = repo.getSetting(com.lifesystem.app.data.Keys.CHAPTER_NEW, "")
+        if (newChapter.isNotBlank()) add(SysMessage(MsgLevel.ALERT, "บทใหม่ปลดล็อก · บทที่ $newChapter", "chapters"))
+        val dow = java.time.LocalDate.ofEpochDay(today).dayOfWeek
+        val seen = repo.getSetting(com.lifesystem.app.data.Keys.REPORT_SEEN, "0").toLongOrNull() ?: 0L
+        if ((dow == java.time.DayOfWeek.SUNDAY || dow == java.time.DayOfWeek.MONDAY) && today - seen >= 2) add(SysMessage(MsgLevel.WARN, "รายงานประจำสัปดาห์พร้อมแล้ว", "report"))
+        val fund = board.firstOrNull { it.questId == "penalty_fund" && !it.done }
+        if (fund != null) add(SysMessage(MsgLevel.ALERT, "โทษปรับ: โอน ${fund.unit} เข้าบัญชีเก็บ แล้วแตะเควสต์เพื่อยืนยัน", "quests"))
+    }
+    return SystemCallUi(p.name, w.level, w.exp, w.gold, p.titleId?.let { Achievements.byId(it)?.name }, repo.avatarLook(), extra + SystemMessages.build(state))
 }
 
 /** Floating diamond that calls the System window from any screen. */

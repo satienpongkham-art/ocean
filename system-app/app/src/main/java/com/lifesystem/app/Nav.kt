@@ -102,7 +102,10 @@ fun SystemNav(repo: Repository, today: Long, route: String?, problems: List<Stri
     val nav = rememberNavController()
     val app = LocalContext.current.applicationContext as SystemApp
     // Keyed by day: a new day gets a fresh view model (and board) instead of the one created yesterday.
-    val questVm: QuestViewModel = viewModel(key = "quests-$today", factory = remember(today) { viewModelFactory { initializer { QuestViewModel(repo, today, { app.daySync.sync(it) }, { !app.autoSleep() }) } } })
+    val questVm: QuestViewModel = viewModel(key = "quests-$today", factory = remember(today) { viewModelFactory { initializer { QuestViewModel(repo, today, { app.daySync.sync(it) }, { !app.autoSleep() }) {
+        com.lifesystem.app.system.SystemSound.play(app, com.lifesystem.app.system.SystemSound.Kind.CLEAR)
+        com.lifesystem.app.system.SystemWidget.refresh(app)
+    } } } })
     var systemOpen by remember { mutableStateOf(false) }
     LaunchedEffect(route, load != null) {
         if (route != null && profile != null) {

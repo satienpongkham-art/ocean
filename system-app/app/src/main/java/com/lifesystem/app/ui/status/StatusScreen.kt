@@ -34,6 +34,9 @@ import com.lifesystem.app.data.useExpScroll
 import com.lifesystem.app.data.usePenaltyShield
 import com.lifesystem.app.data.useRestTicket
 import com.lifesystem.app.data.waistDrop
+import com.lifesystem.app.data.effectsToday
+import com.lifesystem.app.data.getInt
+import com.lifesystem.app.data.skillInput
 import com.lifesystem.app.ui.components.AvatarArt
 import com.lifesystem.app.ui.components.AvatarView
 import com.lifesystem.app.ui.components.LineChart
@@ -80,6 +83,9 @@ data class StatusUi(
     val waists: List<Double> = emptyList(),
     val pushups: List<Double> = emptyList(),
     val sleeps: List<Double> = emptyList(),
+    val effects: List<com.lifesystem.engine.effects.Effect> = emptyList(),
+    val trust: Int = 70,
+    val skills: Int = 0,
 )
 
 suspend fun loadStatus(repo: Repository, today: Long): StatusUi {
@@ -94,6 +100,8 @@ suspend fun loadStatus(repo: Repository, today: Long): StatusUi {
         repo.avatarLook(), repo.waistDrop(),
         listOf("EXP_SCROLL", "REST_TICKET", "PENALTY_SHIELD", "COSMETIC_SHARD").associateWith { repo.qty(it) },
         series(MeasureType.WEIGHT), series(MeasureType.WAIST), series(MeasureType.PUSHUP_MAX), series(MeasureType.SLEEP_H),
+        repo.effectsToday(today), repo.getInt(com.lifesystem.app.data.Keys.TRUST, com.lifesystem.engine.trust.Trust.START),
+        com.lifesystem.engine.skills.SkillTree.unlocked(repo.skillInput()).size,
     )
 }
 
@@ -157,6 +165,11 @@ fun StatusScreen(repo: Repository, today: Long) {
                 if (ui.exp >= Progression.expCap(ui.level)) Chip("[ LIMIT ] EXP เต็ม · รอชนะบอสวันอาทิตย์", SysColors.Emergency)
                 else Text("เลเวลขึ้นเมื่อชนะบอสวันอาทิตย์ (ต้องดีขึ้นจริงอย่างน้อย 1 อย่าง)", style = Txt.sub)
                 Text(nextStageHint(ui.look.stage, ui.waistDrop), style = Txt.sub.copy(color = SysColors.CyanHi))
+                if (ui.effects.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ui.effects.forEach { e -> Chip((if (e.buff) "▲ " else "▼ ") + e.label, if (e.buff) SysColors.Mint else SysColors.CrimsonText) }
+                }
+                ui.effects.forEach { e -> Text(e.desc, style = Txt.sub.copy(fontSize = 10.sp)) }
+                Text("TRUST ${ui.trust} · ${when { ui.trust >= 80 -> "เควสต์ยืนยันเองได้ EXP ×1.2"; ui.trust <= 40 -> "เควสต์ยืนยันเองได้ EXP ×0.8"; else -> "ปกติ" }} · SKILL ${ui.skills}/8", style = Txt.sub)
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

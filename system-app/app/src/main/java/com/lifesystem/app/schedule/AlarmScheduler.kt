@@ -8,6 +8,8 @@ import android.content.Intent
 import android.os.Build
 import com.lifesystem.app.data.ProfileEntity
 import com.lifesystem.engine.gate.GateGenerator
+import com.lifesystem.app.data.getBool
+import com.lifesystem.app.data.getSetting
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -34,13 +36,24 @@ class AlarmScheduler(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !am.canScheduleExactAlarms()) ScheduleMode.INEXACT_FALLBACK
         else ScheduleMode.EXACT
 
-    fun scheduleAll(profile: ProfileEntity, nowMs: Long = System.currentTimeMillis(), zone: ZoneId = ZoneId.systemDefault()) {
+    fun scheduleAll(
+        profile: ProfileEntity,
+        nowMs: Long = System.currentTimeMillis(),
+        zone: ZoneId = ZoneId.systemDefault(),
+        meals: Set<Int> = setOf(0, 1, 2, 3),
+        sleepReminder: Boolean = true,
+    ) {
         schedule(REQ_WAKE, AlarmMath.nextTrigger(nowMs, profile.wakeMin, zone), PopupKind.DAILY_QUEST, null)
         profile.mealMinutes().forEachIndexed { i, minute ->
-            schedule(REQ_MEAL + i, AlarmMath.nextTrigger(nowMs, minute, zone), PopupKind.MEAL, i)
+            if (i in meals) schedule(REQ_MEAL + i, AlarmMath.nextTrigger(nowMs, minute, zone), PopupKind.MEAL, i) else cancel(REQ_MEAL + i)
         }
         val reminder = (profile.sleepMin - 30 + 24 * 60) % (24 * 60)
-        schedule(REQ_SLEEP, AlarmMath.nextTrigger(nowMs, reminder, zone), PopupKind.SLEEP_REMINDER, null)
+        if (sleepReminder) schedule(REQ_SLEEP, AlarmMath.nextTrigger(nowMs, reminder, zone), PopupKind.SLEEP_REMINDER, null) else cancel(REQ_SLEEP)
+    }
+
+    private fun cancel(requestCode: Int) {
+        val pi = PendingIntent.getBroadcast(context, requestCode, Intent(context, AlarmReceiver::class.java), PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+        if (pi != null) { am.cancel(pi); pi.cancel() }
     }
 
     /** Thai warnings for anything that would stop popups from appearing; empty = all good. */
@@ -98,6 +111,7 @@ suspend fun rearmAlarms(context: Context) {
     val repo = (context.applicationContext as com.lifesystem.app.SystemApp).repository
     val profile = repo.profile() ?: return
     val s = AlarmScheduler(context)
-    s.scheduleAll(profile)
+    val meals = repo.getSetting(com.lifesystem.app.data.Keys.POPUP_MEALS, "0,1,2,3").split(',').mapNotNull { it.trim().toIntOrNull() }.toSet()
+    s.scheduleAll(profile, meals = meals, sleepReminder = repo.getBool(com.lifesystem.app.data.Keys.POPUP_SLEEP, true))
     s.scheduleGates(com.lifesystem.app.SystemApp.today(), repo.wallet().level, profile)
 }

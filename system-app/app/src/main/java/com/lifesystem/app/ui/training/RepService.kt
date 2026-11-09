@@ -80,7 +80,11 @@ class RepService : Service() {
                         if (credit > 0) scope.launch {
                             repo.addProgress(epochDay, questId, credit)
                             // Target reached: stop sensors and the foreground service on our own.
-                            if (repo.quest(epochDay, questId)?.done == true) stopSelf()
+                            if (repo.quest(epochDay, questId)?.done == true) {
+                                com.lifesystem.app.system.SystemSound.play(this@RepService, com.lifesystem.app.system.SystemSound.Kind.CLEAR)
+                                com.lifesystem.app.system.SystemWidget.refresh(this@RepService)
+                                stopSelf()
+                            }
                         }
                     }
                     is RepEvent.Invalid -> _state.value = _state.value.copy(lastInvalid = ev.reason)

@@ -146,3 +146,19 @@ suspend fun Repository.weeklyReport(todayEpochDay: Long): Report {
     suspend fun firstLast(type: String) = dao.measurementsBetween(type, from, to).let { it.firstOrNull()?.value to it.lastOrNull()?.value }
     return ReportCard.build(summaries, firstLast(MeasureType.WEIGHT), firstLast(MeasureType.WAIST))
 }
+
+/** Shadow Run (R2.10): last week's progress on this quest by the same time of day. */
+suspend fun Repository.shadowNow(todayEpochDay: Long, questId: String): Int {
+    val zone = java.time.ZoneId.systemDefault()
+    val logs = dao.progressLog(todayEpochDay - 7, questId).map { l ->
+        java.time.Instant.ofEpochMilli(l.tMs).atZone(zone).toLocalTime().let { it.hour * 60 + it.minute } to l.amount
+    }
+    return com.lifesystem.engine.shadow.Shadow.progressBy(logs, minuteOfDay())
+}
+
+/** Buffs/debuffs active today (R2.6). */
+suspend fun Repository.effectsToday(todayEpochDay: Long): List<com.lifesystem.engine.effects.Effect> {
+    val condition = runCatching { com.lifesystem.engine.model.Condition.valueOf(dao.day(todayEpochDay)?.condition ?: "NORMAL") }.getOrDefault(com.lifesystem.engine.model.Condition.NORMAL)
+    val soda = dao.quest(todayEpochDay - 1, "no_soda")?.let { it.progress < it.target } ?: false
+    return com.lifesystem.engine.effects.Effects.active(condition, soda, getBool(Keys.nightOwl(todayEpochDay), false))
+}

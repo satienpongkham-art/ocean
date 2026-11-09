@@ -108,6 +108,17 @@ private fun GateCard(today: Long, index: Int, qs: List<QuestEntity>, minute: Int
         avatar = { CategoryAvatar(look, "AGI") },
         onGoal = { g -> if (minute in open until close && !g.done) onTrain(g.id) },
     )
+    if (minute < open) {
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        SystemButton("เพิ่มลงปฏิทิน", SysColors.Cyan, {
+            val day0 = java.time.LocalDate.ofEpochDay(today).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_INSERT, android.provider.CalendarContract.Events.CONTENT_URI)
+                .putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, day0 + open * 60_000L)
+                .putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME, day0 + close * 60_000L)
+                .putExtra(android.provider.CalendarContract.Events.TITLE, "System · GATE $index")
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        }, primary = false)
+    }
 }
 
 @Composable
@@ -157,7 +168,13 @@ private fun BossCard(repo: Repository, today: Long, board: List<QuestEntity>, lo
             }
         }
     }
-    if (stored == null && result == null) SystemButton("ท้าสู้บอส", SysColors.Crimson, { scope.launch { result = repo.fightBoss(today) } })
+    val ctxBoss = androidx.compose.ui.platform.LocalContext.current
+    if (stored == null && result == null) SystemButton("ท้าสู้บอส", SysColors.Crimson, {
+        scope.launch {
+            val o = repo.fightBoss(today); result = o
+            com.lifesystem.app.system.SystemSound.play(ctxBoss, if (o.defeated) com.lifesystem.app.system.SystemSound.Kind.LEVEL_UP else com.lifesystem.app.system.SystemSound.Kind.ALERT)
+        }
+    })
 }
 
 @Composable

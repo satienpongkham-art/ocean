@@ -68,6 +68,8 @@ class QuestViewModel(
     val epochDay: Long,
     private val prepare: suspend (Long) -> Unit = { repo.ensureBoard(it) },
     private val sleepManual: suspend () -> Boolean = { true },
+    /** Called after a successful tick (sound + widget refresh). */
+    private val onCleared: (() -> Unit)? = null,
 ) : ViewModel() {
     private val actions = QuestActions(repo, epochDay, sleepManual = sleepManual)
 
@@ -91,6 +93,7 @@ class QuestViewModel(
     fun tick(questId: String) {
         viewModelScope.launch {
             val ok = actions.tick(questId)
+            if (ok) onCleared?.invoke()
             val p = repo.profile()
             _notice.value = when {
                 ok || p == null -> ""

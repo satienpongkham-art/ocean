@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
             if (app.repository.profile() == null) return@launch
             app.daySync.sync(SystemApp.today())
             rearmAlarms(this@MainActivity)
+            com.lifesystem.app.system.SystemWidget.refresh(app)
         }
     }
 

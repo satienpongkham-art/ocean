@@ -46,6 +46,13 @@ fun MenuScreen(onRoute: (String) -> Unit) {
             Triple("journal", "JOURNAL", "ไดอารี่ 3 บรรทัด + อารมณ์"),
             Triple("maintenance", "MAINTENANCE", "กิจวัตรตามรอบ ตัดเล็บ โกนหนวด ฯลฯ"),
             Triple("titles", "TITLES", "ฉายาและความสำเร็จ"),
+            Triple("focus", "FOCUS DUNGEON", "โฟกัส 25/50 นาที ล็อกแอปอื่น"),
+            Triple("finance", "FINANCE", "บันทึกรายจ่าย 2 แตะ · งบวันนี้"),
+            Triple("report", "WEEKLY REPORT", "สรุป 7 วัน + คำแนะนำ"),
+            Triple("skills", "SKILL TREE", "ทักษะจากผลจริง"),
+            Triple("chapters", "CHAPTERS", "เรื่องราวที่ปลดล็อก"),
+            Triple("vision", "VISION BOARD", "เป้าหมายที่อยากเป็น"),
+            Triple("settings", "SETTINGS", "เวลา งบ ป๊อปอัป ล็อกแอป สำรองข้อมูล"),
         ).forEach { (route, name, desc) ->
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 56.dp).border(1.dp, SysColors.Cyan.copy(alpha = 0.35f)).clickable(role = Role.Button) { onRoute(route) }.padding(horizontal = 12.dp),
