@@ -7,6 +7,9 @@ on:
       - ".github/workflows/system-app.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write   # publish the APK as a release asset
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,3 +33,15 @@ jobs:
         with:
           name: system-app-debug
           path: system-app/app/build/outputs/apk/debug/app-debug.apk
+      # Phones' built-in unzip tools sometimes extract the artifact zip incompletely,
+      # so also publish the APK itself for direct download.
+      - name: Publish APK for direct download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk System.apk
+          gh release view system-latest >/dev/null 2>&1 || \
+            gh release create system-latest --prerelease --target "$GITHUB_SHA" \
+              --title "System (ล่าสุด)" --notes "ไฟล์ติดตั้งล่าสุด อัปเดตทุกครั้งที่ build ใหม่ · ดาวน์โหลด System.apk แล้วติดตั้งทับได้เลย"
+          gh release upload system-latest System.apk --clobber
