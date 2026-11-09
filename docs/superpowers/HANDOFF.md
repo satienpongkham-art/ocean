@@ -41,6 +41,13 @@ Read this first when continuing the work in a new session.
 13. Known minors: late sleepers vs midnight close; jump counter counts walking; onboarding state on rotation;
     MORNING group label fixed 07:00; phones without proximity sensor can't do the push-up quest.
 
-## New ideas proposed to the owner (pending their pick)
-See the chat summary: emergency quests, screen-time boss, posture detector, weekly report card, focus dungeon (deep work),
-dumbbell program, skill tree, season pass (90 days), sound/voice, monthly rank exams.
+## New features the owner picked (2026-11-09) — do after the backlog items 2–8
+1. Emergency quests: random, 1–2 h limit, physically beneficial (e.g. stairs, wall sit), reward item, fail = penalty.
+2. Screen-time boss: daily cap for social/game apps from UsageStats; under cap = G, over = boss HP up + penalty.
+3. Posture detector: phone tilted down (looking at screen) > 15 min continuously → System popup to stretch.
+4. Weekly report card (Sunday): best day, most-missed quests, charts, advice for next week.
+5. Focus dungeon: 25/50-min deep-work session, other apps locked during it, INT EXP.
+6. Dumbbell program (5 kg pair): curl, row, press, timers for rest.
+7. Skill tree: unlocks from real results (e.g. 30 push-ups in one set → harder variation).
+9. System sounds: quest clear, level up, gate open (respect silent mode; can be turned off in settings).
+(Not picked: season pass, monthly rank exams.) More system ideas were offered; check the chat for any extra picks.
