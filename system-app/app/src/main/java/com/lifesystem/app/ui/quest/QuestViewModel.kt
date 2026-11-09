@@ -24,6 +24,8 @@ class QuestActions(
     private val repo: Repository,
     private val epochDay: Long,
     private val nowMin: () -> Int = { LocalTime.now().let { it.hour * 60 + it.minute } },
+    /** False once sleep is tracked automatically (usage access or Health Connect). */
+    private val sleepManual: suspend () -> Boolean = { true },
 ) {
     suspend fun tick(questId: String): Boolean {
         val q = repo.board(epochDay).first().firstOrNull { it.questId == questId } ?: return false
@@ -35,6 +37,7 @@ class QuestActions(
                 repo.complete(epochDay, questId)
             }
             questId == "sleep" -> {
+                if (!sleepManual()) return false
                 val p = repo.profile() ?: return false
                 if (!PopupRules.bedOnTime(nowMin(), p.sleepMin)) return false
                 repo.complete(epochDay, questId)
@@ -53,8 +56,13 @@ class QuestActions(
     }
 }
 
-class QuestViewModel(private val repo: Repository, val epochDay: Long) : ViewModel() {
-    private val actions = QuestActions(repo, epochDay)
+class QuestViewModel(
+    private val repo: Repository,
+    val epochDay: Long,
+    private val prepare: suspend (Long) -> Unit = { repo.ensureBoard(it) },
+    private val sleepManual: suspend () -> Boolean = { true },
+) : ViewModel() {
+    private val actions = QuestActions(repo, epochDay, sleepManual = sleepManual)
 
     val board: StateFlow<List<QuestEntity>> = repo.board(epochDay).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
@@ -64,7 +72,7 @@ class QuestViewModel(private val repo: Repository, val epochDay: Long) : ViewMod
 
     init {
         // Wait for a profile (fresh install finishes onboarding first), then build today's board.
-        viewModelScope.launch { repo.profileFlow().filterNotNull().first(); repo.ensureBoard(epochDay) }
+        viewModelScope.launch { repo.profileFlow().filterNotNull().first(); prepare(epochDay) }
     }
 
     private val _notice = MutableStateFlow("")
@@ -77,6 +85,7 @@ class QuestViewModel(private val repo: Repository, val epochDay: Long) : ViewMod
             _notice.value = when {
                 ok || p == null -> ""
                 questId == "wake" -> "ตื่นตามเวลา: กดได้ช่วง ${hhmm(p.wakeMin - PopupRules.WAKE_EARLY_MIN)}–${hhmm(p.wakeMin + PopupRules.WAKE_GRACE_MIN)} เท่านั้น"
+                questId == "sleep" && !sleepManual() -> "เข้านอนตรงเวลา: System ตรวจจากเวลานอนจริงตอนเช้า ไม่ต้องกด"
                 questId == "sleep" -> "เข้านอนตรงเวลา: กดได้ช่วง ${hhmm(p.sleepMin - PopupRules.BED_EARLY_MIN)}–${hhmm(p.sleepMin + PopupRules.BED_LATE_MIN)} เท่านั้น"
                 else -> ""
             }

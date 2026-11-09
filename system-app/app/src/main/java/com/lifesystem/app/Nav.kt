@@ -77,8 +77,9 @@ fun SystemNav(repo: Repository, today: Long, route: String?, problems: List<Stri
         .collectAsStateWithLifecycle(initialValue = null, minActiveState = androidx.lifecycle.Lifecycle.State.CREATED)
     val profile = load?.profile
     val nav = rememberNavController()
+    val app = LocalContext.current.applicationContext as SystemApp
     // Keyed by day: a new day gets a fresh view model (and board) instead of the one created yesterday.
-    val questVm: QuestViewModel = viewModel(key = "quests-$today", factory = remember(today) { viewModelFactory { initializer { QuestViewModel(repo, today) } } })
+    val questVm: QuestViewModel = viewModel(key = "quests-$today", factory = remember(today) { viewModelFactory { initializer { QuestViewModel(repo, today, { app.daySync.sync(it) }, { !app.autoSleep() }) } } })
     LaunchedEffect(route, load != null) {
         if (route != null && profile != null) {
             if (route != Routes.QUESTS) nav.navigate(route) { launchSingleTop = true }

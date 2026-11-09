@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
         app.appScope.launch {
             val profile = app.repository.profile() ?: return@launch
             scheduler.scheduleAll(profile)
-            app.repository.ensureBoard(SystemApp.today())
+            app.daySync.sync(SystemApp.today())
         }
     }
 

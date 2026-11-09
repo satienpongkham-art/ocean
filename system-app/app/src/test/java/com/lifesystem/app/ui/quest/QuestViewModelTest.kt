@@ -59,11 +59,19 @@ class QuestViewModelTest {
         val (db, repo) = setup()
         repo.saveProfile(ProfileEntity(name = "p", age = 25, sex = "MALE", heightCm = 180.0, day0EpochDay = 100, wakeMin = 420, sleepMin = 1380))
         repo.ensureBoard(100)
-        assertEquals(false, QuestActions(repo, 100) { 600 }.tick("wake"))
-        assertEquals(true, QuestActions(repo, 100) { 440 }.tick("wake"))
-        assertEquals(false, QuestActions(repo, 100) { 1200 }.tick("sleep"))
-        assertEquals(true, QuestActions(repo, 100) { 1370 }.tick("sleep"))
+        assertEquals(false, QuestActions(repo, 100, nowMin = { 600 }).tick("wake"))
+        assertEquals(true, QuestActions(repo, 100, nowMin = { 440 }).tick("wake"))
+        assertEquals(false, QuestActions(repo, 100, nowMin = { 1200 }).tick("sleep"))
+        assertEquals(true, QuestActions(repo, 100, nowMin = { 1370 }).tick("sleep"))
         assertTrue(db.dao().quest(100, "sleep")!!.done)
+        db.close()
+    }
+
+    @Test fun tick_sleep_refusedWhenTrackedAutomatically() = runTest {
+        val (db, repo) = setup()
+        repo.saveProfile(ProfileEntity(name = "p", age = 25, sex = "MALE", heightCm = 180.0, day0EpochDay = 100, sleepMin = 1380))
+        repo.ensureBoard(100)
+        assertEquals(false, QuestActions(repo, 100, nowMin = { 1370 }, sleepManual = { false }).tick("sleep"))
         db.close()
     }
 }

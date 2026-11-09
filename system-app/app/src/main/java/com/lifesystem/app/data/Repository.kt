@@ -96,6 +96,9 @@ class Repository(internal val db: SystemDb, internal val nowMs: () -> Long = Sys
         dao.addProgress(epochDay, questId, amount)
     }
 
+    /** Sets absolute progress (e.g. today's step total from Health Connect). */
+    suspend fun setProgress(epochDay: Long, questId: String, value: Int) = dao.setProgress(epochDay, questId, value)
+
     internal fun minuteOfDay(): Int = java.time.Instant.ofEpochMilli(nowMs()).atZone(java.time.ZoneId.systemDefault()).toLocalTime().let { it.hour * 60 + it.minute }
 
     /**

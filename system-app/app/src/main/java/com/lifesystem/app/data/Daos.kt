@@ -72,6 +72,8 @@ interface SystemDao {
     @Query("SELECT * FROM quest WHERE epochDay IN (SELECT epochDay FROM day WHERE closed = 1)") suspend fun closedQuests(): List<QuestEntity>
     @Query("SELECT COUNT(DISTINCT menuId) FROM meal_log WHERE menuId IS NOT NULL") suspend fun distinctMenus(): Int
     @Query("SELECT * FROM measurement WHERE type = :type AND tMs >= :fromMs AND tMs < :toMs ORDER BY tMs") suspend fun measurementsBetween(type: String, fromMs: Long, toMs: Long): List<MeasurementEntity>
+    @Query("UPDATE quest SET progress = MIN(target, MAX(0, :v)), done = MIN(target, MAX(0, :v)) >= target WHERE epochDay = :day AND questId = :id")
+    suspend fun setProgress(day: Long, id: String, v: Int)
     @Query("DELETE FROM quest WHERE epochDay = :day AND questId = :id") suspend fun deleteQuest(day: Long, id: String)
     @Query("SELECT * FROM measurement WHERE type = :type ORDER BY tMs ASC LIMIT 1") suspend fun earliest(type: String): MeasurementEntity?
     @Query("SELECT * FROM measurement WHERE type = :type AND tMs >= :fromMs ORDER BY tMs") fun sinceFlow(type: String, fromMs: Long): Flow<List<MeasurementEntity>>

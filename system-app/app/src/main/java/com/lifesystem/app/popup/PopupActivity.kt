@@ -92,14 +92,14 @@ class PopupActivity : ComponentActivity() {
                     )
                     else -> {
                         var quests by remember { mutableStateOf<List<QuestEntity>>(emptyList()) }
-                        LaunchedEffect(Unit) { quests = repo.ensureBoard(today) }
+                        LaunchedEffect(Unit) { (application as SystemApp).daySync.sync(today); quests = repo.board(today).first() }
                         val left = Duration.between(LocalDateTime.now(), LocalDateTime.now().with(LocalTime.MAX))
                         DailyQuestPopup(
                             quests = quests,
                             timeLeft = "%02d:%02d".format(left.toHours(), left.toMinutesPart()),
                             onAccept = {
                                 scope.launch {
-                                    repo.ensureBoard(today) // idempotent; guarantees the row exists before completing
+                                    (application as SystemApp).daySync.sync(today) // idempotent; the board exists before completing
                                     val wakeMin = repo.profile()?.wakeMin
                                     if (wakeMin != null && PopupRules.wakeOnTime(nowMinute(), wakeMin)) repo.complete(today, "wake")
                                     openApp("quests"); finish()

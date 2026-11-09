@@ -4,6 +4,7 @@ kotlin = "2.2.0"
 ksp = "2.2.0-2.0.2"
 composeBom = "2025.07.00"
 room = "2.7.2"
+healthConnect = "1.1.0"
 navigation = "2.9.2"
 activityCompose = "1.10.1"
 lifecycle = "2.9.2"
@@ -28,6 +29,7 @@ compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 compose-foundation = { module = "androidx.compose.foundation:foundation" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+health-connect = { module = "androidx.health.connect:connect-client", version.ref = "healthConnect" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
