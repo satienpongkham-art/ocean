@@ -79,6 +79,18 @@ interface SystemDao {
     @Query("SELECT * FROM measurement WHERE type = :type ORDER BY tMs ASC LIMIT 1") suspend fun earliest(type: String): MeasurementEntity?
     @Query("SELECT * FROM measurement WHERE type = :type AND tMs >= :fromMs ORDER BY tMs") fun sinceFlow(type: String, fromMs: Long): Flow<List<MeasurementEntity>>
 
+    @Upsert suspend fun putSetting(s: SettingEntity)
+    @Query("SELECT value FROM setting WHERE `key` = :key") suspend fun setting(key: String): String?
+    @Query("DELETE FROM setting WHERE `key` = :key") suspend fun deleteSetting(key: String)
+
+    @Insert suspend fun insertProgressLog(l: ProgressLogEntity)
+    @Query("SELECT * FROM progress_log WHERE epochDay = :day AND questId = :id ORDER BY tMs") suspend fun progressLog(day: Long, id: String): List<ProgressLogEntity>
+
+    @Insert suspend fun insertExpense(e: ExpenseEntity)
+    @Query("SELECT * FROM expense WHERE epochDay = :day ORDER BY tMs") fun expensesFlow(day: Long): Flow<List<ExpenseEntity>>
+    @Query("SELECT COALESCE(SUM(amount), 0) FROM expense WHERE epochDay = :day") suspend fun spent(day: Long): Int
+    @Query("SELECT COUNT(*) FROM expense WHERE epochDay = :day") suspend fun expenseCount(day: Long): Int
+
     @Upsert suspend fun upsertWallet(w: WalletEntity)
     @Query("SELECT * FROM wallet WHERE id = 1") suspend fun wallet(): WalletEntity?
     @Query("SELECT * FROM wallet WHERE id = 1") fun walletFlow(): Flow<WalletEntity?>

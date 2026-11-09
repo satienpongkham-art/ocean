@@ -39,7 +39,7 @@ class MigrationTest {
             db.execSQL("INSERT INTO wallet VALUES(1,120,1,30)")
             db.version = 1
         }
-        val room = Room.databaseBuilder(ctx, SystemDb::class.java, "migrate.db").addMigrations(Migrations.M1_2).allowMainThreadQueries().build()
+        val room = Room.databaseBuilder(ctx, SystemDb::class.java, "migrate.db").addMigrations(Migrations.M1_2, Migrations.M2_3).allowMainThreadQueries().build()
         val dao = room.dao()
         assertEquals(170.0, dao.profile()!!.heightCm, 0.0)
         assertNull(dao.profile()!!.titleId)
@@ -49,6 +49,30 @@ class MigrationTest {
         assertEquals(30, dao.wallet()!!.gold)
         dao.upsertOwned(OwnedItemEntity("aura_cyan", ItemKind.COSMETIC, 1))
         assertEquals(1, dao.owned().size)
+        room.close()
+    }
+
+    /** v0.2.0 (schema 2, built from the exported schema file) must survive the update to schema 3. */
+    @Test fun v2ToV3_keepsData() = runTest {
+        val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val json = org.json.JSONObject(java.io.File("schemas/com.lifesystem.app.data.SystemDb/2.json").readText()).getJSONObject("database")
+        val file = ctx.getDatabasePath("migrate3.db").apply { parentFile?.mkdirs(); delete() }
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { db ->
+            val entities = json.getJSONArray("entities")
+            for (i in 0 until entities.length()) {
+                db.execSQL(entities.getJSONObject(i).getString("createSql").replace("\${TABLE_NAME}", entities.getJSONObject(i).getString("tableName")))
+            }
+            db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
+            db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '${json.getString("identityHash")}')")
+            db.execSQL("INSERT INTO day (epochDay, condition, closed, goldEarned, expEarned, penaltyTomorrow, mainDone, mainTotal, expMultiplier, rest, gatesCleared) VALUES(100,'NORMAL',1,10,50,0,5,6,1.0,0,1)")
+            db.execSQL("INSERT INTO owned_item VALUES('aura_cyan','COSMETIC',1)")
+            db.version = 2
+        }
+        val room = Room.databaseBuilder(ctx, SystemDb::class.java, "migrate3.db").addMigrations(Migrations.M1_2, Migrations.M2_3).allowMainThreadQueries().build()
+        val dao = room.dao()
+        assertEquals(1, dao.day(100)!!.gatesCleared); assertEquals(0, dao.day(100)!!.coreMisses)
+        assertEquals(1, dao.owned().size)
+        dao.putSetting(SettingEntity("k", "v")); assertEquals("v", dao.setting("k"))
         room.close()
     }
 }

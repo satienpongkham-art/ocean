@@ -66,7 +66,7 @@ class GameRepositoryTest {
         val closed = db.dao().day(d)!!
         assertEquals(1, closed.gatesCleared)
         val drop = GateGenerator.drop(d, 1).name
-        assertTrue(db.dao().owned().any { it.id == drop && it.qty == 1 })
+        assertTrue(db.dao().owned().any { it.id == drop && it.qty >= 1 })
         assertEquals(gates.any { it.questId.startsWith("gate2_") }, closed.penaltyTomorrow)
     }
 

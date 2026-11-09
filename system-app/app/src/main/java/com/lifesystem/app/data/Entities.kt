@@ -87,6 +87,8 @@ data class DayEntity(
     /** Rest ticket used: no penalty and no reward for this day. */
     val rest: Boolean = false,
     val gatesCleared: Int = 0,
+    // v3
+    val coreMisses: Int = 0,
 )
 
 @Entity(tableName = "measurement")
@@ -134,6 +136,18 @@ data class AchievementEntity(@PrimaryKey val id: String, val epochDay: Long)
 
 @Entity(tableName = "boss_result")
 data class BossResultEntity(@PrimaryKey val epochDay: Long, val damage: Int, val defeated: Boolean, val improved: String)
+
+/** v3: simple key/value settings and per-day flags. */
+@Entity(tableName = "setting")
+data class SettingEntity(@PrimaryKey val key: String, val value: String)
+
+/** v3: every progress increment with its time (Shadow Run compares with the same time last week). */
+@Entity(tableName = "progress_log")
+data class ProgressLogEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val epochDay: Long, val questId: String, val tMs: Long, val amount: Int)
+
+/** v3: quick expense log (2 taps: amount + category). */
+@Entity(tableName = "expense")
+data class ExpenseEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val epochDay: Long, val tMs: Long, val amount: Int, val category: String)
 
 object ItemKind {
     const val COSMETIC = "COSMETIC"

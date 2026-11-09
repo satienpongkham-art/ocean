@@ -10,8 +10,9 @@ import androidx.room.RoomDatabase
         ProfileEntity::class, QuestEntity::class, DayEntity::class, MeasurementEntity::class,
         MealLogEntity::class, MaintenanceEntity::class, JournalEntity::class, WalletEntity::class,
         OwnedItemEntity::class, VaultEntryEntity::class, RewardEntity::class, AchievementEntity::class, BossResultEntity::class,
+        SettingEntity::class, ProgressLogEntity::class, ExpenseEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class SystemDb : RoomDatabase() {
@@ -21,7 +22,7 @@ abstract class SystemDb : RoomDatabase() {
         @Volatile private var instance: SystemDb? = null
 
         fun get(context: Context): SystemDb = instance ?: synchronized(this) {
-            instance ?: Room.databaseBuilder(context.applicationContext, SystemDb::class.java, "system.db").addMigrations(Migrations.M1_2).build().also { instance = it }
+            instance ?: Room.databaseBuilder(context.applicationContext, SystemDb::class.java, "system.db").addMigrations(Migrations.M1_2, Migrations.M2_3).build().also { instance = it }
         }
     }
 }

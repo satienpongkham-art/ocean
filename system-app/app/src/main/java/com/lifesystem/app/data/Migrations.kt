@@ -27,4 +27,16 @@ object Migrations {
             ).forEach(db::execSQL)
         }
     }
+
+    /** v0.2.0 → v0.3.0: settings, progress log, expenses, core misses per day. */
+    val M2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            listOf(
+                "ALTER TABLE `day` ADD COLUMN `coreMisses` INTEGER NOT NULL DEFAULT 0",
+                "CREATE TABLE IF NOT EXISTS `setting` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))",
+                "CREATE TABLE IF NOT EXISTS `progress_log` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `epochDay` INTEGER NOT NULL, `questId` TEXT NOT NULL, `tMs` INTEGER NOT NULL, `amount` INTEGER NOT NULL)",
+                "CREATE TABLE IF NOT EXISTS `expense` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `epochDay` INTEGER NOT NULL, `tMs` INTEGER NOT NULL, `amount` INTEGER NOT NULL, `category` TEXT NOT NULL)",
+            ).forEach(db::execSQL)
+        }
+    }
 }
