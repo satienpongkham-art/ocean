@@ -13,6 +13,7 @@ import com.lifesystem.engine.training.TrainingProgram
 
 /** Builds the daily quest board (spec §5.2). Deterministic: same inputs → same board. */
 object BoardGenerator {
+    const val MAX_MAINTENANCE_PER_DAY = 2
     const val FULL_CLEAR_GOLD = 10
     private const val MAIN_GOLD = 4
 
@@ -59,7 +60,7 @@ object BoardGenerator {
         main("journal", "ไดอารี่ 3 บรรทัด", Stat.MND, Group.NIGHT, Verify.AUTO, 25)
         main("sleep", "เข้านอนตรงเวลา", Stat.VIT, Group.NIGHT, Verify.AUTO, 30)
 
-        maintenanceDue.distinct().forEach { id ->
+        maintenanceDue.distinct().take(MAX_MAINTENANCE_PER_DAY).forEach { id ->
             add(Quest("mt_$id", "MAINTENANCE · $id", Stat.CHA, QuestType.MAINTENANCE, Group.DAY, Verify.SELF, 1, "", 15, 2))
         }
     }

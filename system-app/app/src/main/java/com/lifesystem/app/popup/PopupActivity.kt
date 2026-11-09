@@ -48,23 +48,27 @@ class PopupActivity : ComponentActivity() {
                         val slot = MealSlot.values().getOrElse(slotIndex) { MealSlot.LUNCH }
                         val options = remember { MenuCatalog.items.filter { it.slot == slot } }
                         var index by remember { mutableIntStateOf(0) }
-                        var left by remember { mutableStateOf(Pair(0, 0)) }
+                        var left by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+                        var logged by remember { mutableStateOf(false) }
                         LaunchedEffect(Unit) {
                             val profile = repo.profile() ?: return@LaunchedEffect
                             val targets = Targets.of(profile, repo.latest(MeasureType.WEIGHT)?.value)
                             val plan = MealPlanner.best(MenuCatalog.items, targets.kcal, targets.budget)
                             index = options.indexOf(plan?.picks?.get(slot)).coerceAtLeast(0)
                             val eaten = repo.meals(today).first()
+                            logged = eaten.any { it.slot == slot.name }
                             left = Pair(targets.kcal - eaten.sumOf { it.kcal }, targets.budget - eaten.sumOf { it.price })
                         }
                         val item = options[index]
                         MealPopup(
                             slotLabel = slot.name,
                             item = item,
-                            leftKcal = left.first - item.kcal,
-                            leftBudget = left.second - item.price,
+                            leftKcal = left?.let { it.first - item.kcal },
+                            leftBudget = left?.let { it.second - item.price },
+                            logged = logged,
                             onEat = {
-                                scope.launch {
+                                if (!logged) scope.launch {
+                                    logged = true
                                     repo.logMeal(MealLogEntity(epochDay = today, slot = slot.name, menuId = item.id, kcal = item.kcal, protein = item.protein, price = item.price))
                                     finish()
                                 }
@@ -95,6 +99,7 @@ class PopupActivity : ComponentActivity() {
                             timeLeft = "%02d:%02d".format(left.toHours(), left.toMinutesPart()),
                             onAccept = {
                                 scope.launch {
+                                    repo.ensureBoard(today) // idempotent; guarantees the row exists before completing
                                     val wakeMin = repo.profile()?.wakeMin
                                     if (wakeMin != null && PopupRules.wakeOnTime(nowMinute(), wakeMin)) repo.complete(today, "wake")
                                     openApp("quests"); finish()
@@ -105,6 +110,13 @@ class PopupActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** singleTop: a later alarm reuses this instance, so rebuild it for the new popup kind and date. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        recreate()
     }
 
     private fun nowMinute(): Int = LocalTime.now().let { it.hour * 60 + it.minute }

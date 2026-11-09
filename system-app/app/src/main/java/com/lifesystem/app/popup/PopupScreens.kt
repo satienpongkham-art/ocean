@@ -81,7 +81,7 @@ fun DailyQuestPopup(quests: List<QuestEntity>, timeLeft: String, onAccept: () ->
 
 /** Meal-time popup (spec §8.3): pixel dish, numbers, how to order. */
 @Composable
-fun MealPopup(slotLabel: String, item: MenuItem, leftKcal: Int, leftBudget: Int, onEat: () -> Unit, onSwap: () -> Unit, onOther: () -> Unit) {
+fun MealPopup(slotLabel: String, item: MenuItem, leftKcal: Int?, leftBudget: Int?, logged: Boolean, onEat: () -> Unit, onSwap: () -> Unit, onOther: () -> Unit) {
     PopupShell(SysColors.Gold) {
         SystemFrame(accent = SysColors.Gold) {
             SystemHeader(accent = SysColors.Gold)
@@ -100,8 +100,8 @@ fun MealPopup(slotLabel: String, item: MenuItem, leftKcal: Int, leftBudget: Int,
             }
             Text("HOW TO ORDER · พูดกับร้านว่า", style = sub.copy(fontFamily = Oxanium, color = SysColors.Gold))
             Text("\"${item.order}\"", style = body.copy(color = Color(0xFFFFF3D6)))
-            Text("หลังมื้อนี้เหลือ ≈$leftKcal kcal · ฿$leftBudget · ค่าประมาณ ±20%", style = sub)
-            SystemButton("กินตามนี้ · EXP +15", SysColors.Gold, onEat)
+            if (leftKcal != null && leftBudget != null) Text("หลังมื้อนี้เหลือ ≈$leftKcal kcal · ฿$leftBudget · ค่าประมาณ ±20%", style = sub)
+            SystemButton(if (logged) "บันทึกมื้อนี้แล้ว" else "กินตามนี้", SysColors.Gold, onEat, enabled = !logged)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SystemButton("สลับเมนู", SysColors.Cyan, onSwap, Modifier.weight(1f), primary = false)
                 SystemButton("กินอย่างอื่น", SysColors.Sub, onOther, Modifier.weight(1f), primary = false)

@@ -53,7 +53,7 @@ class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener 
         stop()
         this.exercise = exercise
         this.onEvent = onEvent
-        pushup = PushupCounter(); squat = SquatCounter(); jump = JumpCounter(); standing = null
+        pushup = PushupCounter(); squat = SquatCounter(); jump = JumpCounter(); standing = null; calibrator = StandingCalibrator()
         when (exercise) {
             Exercise.PUSHUP -> {
                 sm.registerListener(this, proximity, SensorManager.SENSOR_DELAY_GAME)
@@ -63,6 +63,8 @@ class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener 
             Exercise.ROPE -> sm.registerListener(this, accel, SensorManager.SENSOR_DELAY_FASTEST)
         }
     }
+
+    private var calibrator = StandingCalibrator()
 
     override fun stop() {
         sm.unregisterListener(this)
@@ -78,8 +80,8 @@ class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener 
             }
             Exercise.SQUAT -> {
                 val now = e.values.copyOf(3)
-                val ref = standing ?: now.also { standing = it }
-                squat.onThighAngle(t, thighAngleDeg(ref, now))
+                val ref = standing ?: calibrator.offer(t, now)?.also { standing = it }
+                if (ref != null) squat.onThighAngle(t, thighAngleDeg(ref, now)) else null
             }
             Exercise.ROPE -> jump.onAccel(t, e.values[0], e.values[1], e.values[2])
             null -> null
@@ -88,4 +90,29 @@ class AndroidSensorSource(context: Context) : SensorSource, SensorEventListener 
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+}
+
+/**
+ * Squat reference pose: ignores the first [settleMs] (moving the phone into the pocket),
+ * then takes the mean gravity once the phone has been still for [stillMs].
+ */
+class StandingCalibrator(
+    private val settleMs: Long = 3000,
+    private val stillMs: Long = 1000,
+    private val tolerance: Float = 0.6f,
+) {
+    private var startMs: Long? = null
+    private val window = ArrayDeque<Pair<Long, FloatArray>>()
+
+    fun offer(tMs: Long, gravity: FloatArray): FloatArray? {
+        val start = startMs ?: tMs.also { startMs = it }
+        window.addLast(tMs to gravity.copyOf(3))
+        while (window.first().first < tMs - stillMs) window.removeFirst()
+        if (tMs - start < settleMs || tMs - window.first().first < stillMs - 100) return null
+        for (axis in 0..2) {
+            val values = window.map { it.second[axis] }
+            if (values.max() - values.min() > tolerance) return null
+        }
+        return FloatArray(3) { axis -> window.map { it.second[axis] }.average().toFloat() }
+    }
 }

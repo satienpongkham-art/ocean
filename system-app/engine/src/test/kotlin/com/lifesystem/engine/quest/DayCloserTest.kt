@@ -39,4 +39,10 @@ class DayCloserTest {
         val r = DayCloser.close(quests, allDone() - side.id)
         assertFalse(r.penaltyTomorrow)
     }
+
+    @Test fun close_graceDay_rewardsButNoPenalty() {
+        val r = DayCloser.close(quests, allDone() - "journal", graceDay = true)
+        assertFalse(r.penaltyTomorrow)
+        assertTrue("journal" in r.failed)
+    }
 }

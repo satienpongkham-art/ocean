@@ -24,4 +24,17 @@ class PopupRulesTest {
         assertEquals(99L, PopupRules.bedDay(today = 100, nowMin = 10, sleepMin = 1430))
         assertEquals(100L, PopupRules.bedDay(today = 100, nowMin = 1400, sleepMin = 1430))
     }
+
+    @Test fun wake_tooEarlyDoesNotCount() {
+        assertFalse(PopupRules.wakeOnTime(nowMin = 60, wakeMin = 420))
+        assertTrue(PopupRules.wakeOnTime(nowMin = 300, wakeMin = 420))
+    }
+
+    @Test fun bed_afterMidnightBedtime_creditsPreviousDay() {
+        assertTrue(PopupRules.bedOnTime(nowMin = 15, sleepMin = 30))
+        assertEquals(99L, PopupRules.bedDay(today = 100, nowMin = 15, sleepMin = 30))
+        assertEquals(99L, PopupRules.bedDay(today = 100, nowMin = 45, sleepMin = 30))
+        assertEquals(99L, PopupRules.bedDay(today = 100, nowMin = 0, sleepMin = 0))
+        assertEquals(100L, PopupRules.bedDay(today = 100, nowMin = 1430, sleepMin = 0))
+    }
 }

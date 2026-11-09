@@ -12,9 +12,12 @@ data class DayResult(
     val expEarned: Int,
 )
 
-/** Settles a finished day: rewards for completed quests, penalty if any required quest is short. */
+/**
+ * Settles a finished day: rewards for completed quests, penalty if any required quest is short.
+ * [graceDay] (the install day) still pays rewards but never sets a penalty.
+ */
 object DayCloser {
-    fun close(quests: List<Quest>, progress: Map<String, Int>): DayResult {
+    fun close(quests: List<Quest>, progress: Map<String, Int>, graceDay: Boolean = false): DayResult {
         fun done(q: Quest) = (progress[q.id] ?: 0) >= q.target
         val required = quests.filter { it.required }
         val failed = required.filterNot(::done).map { it.id }
@@ -25,7 +28,7 @@ object DayCloser {
             mainDone = mains.count(::done),
             mainTotal = mains.size,
             failed = failed,
-            penaltyTomorrow = failed.isNotEmpty(),
+            penaltyTomorrow = failed.isNotEmpty() && !graceDay,
             goldEarned = completed.sumOf { it.gold } + if (fullClear) BoardGenerator.FULL_CLEAR_GOLD else 0,
             expEarned = completed.sumOf { it.exp },
         )

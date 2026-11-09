@@ -59,4 +59,11 @@ class BoardGeneratorTest {
     @Test fun sameInputs_sameBoard() = assertEquals(board(day = 3), board(day = 3))
 
     @Test fun idsAreUnique() = board(sunscreen = false, due = listOf("haircut"), penalty = true).map { it.id }.let { assertEquals(it.size, it.toSet().size) }
+
+    @Test fun maintenance_cappedPerDay() {
+        val all = listOf("shave", "nails_hand", "nails_foot", "haircut", "dental")
+        val mt = board(due = all).filter { it.type == QuestType.MAINTENANCE }.map { it.id }
+        assertEquals(listOf("mt_shave", "mt_nails_hand"), mt)
+        assertEquals(2, BoardGenerator.MAX_MAINTENANCE_PER_DAY)
+    }
 }

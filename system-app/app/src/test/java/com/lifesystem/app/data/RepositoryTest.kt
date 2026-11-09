@@ -40,15 +40,67 @@ class RepositoryTest {
     }
 
     @Test fun ensureBoard_isIdempotent_andClosesPreviousDay() = runTest {
-        repo.ensureBoard(day0)
-        repo.addProgress(day0, "pushup", 4)
-        val day2 = repo.ensureBoard(day0 + 1)
-        val closed = db.dao().day(day0)!!
+        val d1 = day0 + 1
+        repo.ensureBoard(d1)
+        repo.addProgress(d1, "pushup", 4)
+        val next = repo.ensureBoard(d1 + 1)
+        val closed = db.dao().day(d1)!!
         assertTrue(closed.closed)
         assertTrue(closed.penaltyTomorrow)
-        assertTrue(day2.any { it.questId == "penalty" })
-        repo.ensureBoard(day0 + 1)
-        assertEquals(day2.size, db.dao().questsFor(day0 + 1).size)
+        assertTrue(next.any { it.questId == "penalty" })
+        repo.ensureBoard(d1 + 1)
+        assertEquals(next.size, db.dao().questsFor(d1 + 1).size)
+    }
+
+    @Test fun installDay_neverCausesPenalty() = runTest {
+        repo.ensureBoard(day0)
+        val next = repo.ensureBoard(day0 + 1)
+        assertTrue(db.dao().day(day0)!!.closed)
+        assertFalse(db.dao().day(day0)!!.penaltyTomorrow)
+        assertFalse(next.any { it.questId == "penalty" })
+    }
+
+    @Test fun seedMaintenance_preventsDay1Flood_andKeepsExisting() = runTest {
+        repo.markMaintenanceDone("shave", day0 - 5)
+        repo.seedMaintenance(day0)
+        val rows = db.dao().maintenance().associate { it.routineId to it.lastDoneEpochDay }
+        assertEquals(day0 - 5, rows["shave"])
+        assertEquals(day0, rows["dental"])
+        val mt = repo.ensureBoard(day0).filter { it.questId.startsWith("mt_") }.map { it.questId }
+        assertEquals(listOf("mt_shave"), mt)
+    }
+
+    @Test fun reduceRemaining_oncePerDay_andNeverCompletesTheQuest() = runTest {
+        repo.ensureBoard(day0)
+        repeat(5) { repo.reduceRemaining(day0, "pushup") }
+        val q = db.dao().quest(day0, "pushup")!!
+        assertEquals(5, q.target)
+        assertTrue(q.excused)
+        assertFalse(q.done)
+        repo.addProgress(day0, "pushup", 4)
+        repo.reduceRemaining(day0, "pushup")
+        assertEquals(5, db.dao().quest(day0, "pushup")!!.target)
+    }
+
+    @Test fun reduceRemaining_keepsAtLeastOneRepLeft() = runTest {
+        repo.ensureBoard(day0)
+        repo.addProgress(day0, "pushup", 9)
+        repo.reduceRemaining(day0, "pushup")
+        val q = db.dao().quest(day0, "pushup")!!
+        assertEquals(10, q.target)
+        assertFalse(q.done)
+    }
+
+    @Test fun optimalCondition_addsTenPercentExp() = runTest {
+        val d1 = day0 + 1
+        repo.logMeasurement(com.lifesystem.app.data.MeasureType.SLEEP_H, 8.0)
+        val board = repo.ensureBoard(d1)
+        assertEquals("OPTIMAL", db.dao().day(d1)!!.condition)
+        val one = board.first { it.questId == "no_soda" }
+        repo.complete(d1, one.questId)
+        val before = repo.wallet().exp
+        repo.ensureBoard(d1 + 1)
+        assertEquals(before + (one.exp * 1.1).toInt(), repo.wallet().exp)
     }
 
     @Test fun addProgress_capsAtTarget_andMarksDone() = runTest {

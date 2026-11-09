@@ -61,7 +61,13 @@ fun MealPlanScreen(repo: Repository, today: Long) {
 
     fun auto() {
         val plan = MealPlanner.best(MenuCatalog.items, targets.kcal, targets.budget)
-        if (plan == null) { hint = "ไม่มีชุดเมนูที่อยู่ในงบวันนี้ · ปรับงบหรือเลือกเอง"; return }
+        if (plan == null) {
+            // Nothing fits the budget: show the cheapest item per slot so the user can still swap and choose.
+            hint = "ไม่มีชุดเมนูที่อยู่ในงบวันนี้ · กด \"สลับ\" เพื่อเลือกเอง"
+            picks.clear()
+            MealSlot.values().forEach { slot -> MenuCatalog.items.filter { it.slot == slot }.minByOrNull { it.price }?.let { picks[slot] = it } }
+            return
+        }
         picks.clear(); picks.putAll(plan.picks); hint = ""
     }
     LaunchedEffect(Unit) {

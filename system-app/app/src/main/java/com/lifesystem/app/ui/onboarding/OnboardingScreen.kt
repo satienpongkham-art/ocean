@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.lifesystem.app.SystemApp
 import com.lifesystem.app.data.MeasureType
 import com.lifesystem.app.data.ProfileEntity
 import com.lifesystem.app.data.Repository
@@ -142,12 +143,17 @@ fun OnboardingScreen(repo: Repository, today: Long, onDone: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (step > 0) SystemButton("ย้อนกลับ", SysColors.Muted, { step-- }, Modifier.weight(1f), primary = false)
                 SystemButton(if (step == steps - 1) "เริ่ม DAY 1" else "ถัดไป", SysColors.Cyan, {
-                    if (step < steps - 1) step++ else scope.launch {
-                        val profile = input.toProfile(today)
-                        repo.saveProfile(profile)
-                        input.day0().forEach { (type, v) -> repo.logMeasurement(type, v) }
-                        AlarmScheduler(ctx).scheduleAll(profile)
-                        repo.ensureBoard(today)
+                    if (step < steps - 1) step++ else {
+                        // App scope: saving the profile swaps this screen out, which would cancel a screen scope mid-way.
+                        val app = ctx.applicationContext as SystemApp
+                        app.appScope.launch {
+                            val profile = input.toProfile(today)
+                            input.day0().forEach { (type, v) -> repo.logMeasurement(type, v) }
+                            repo.seedMaintenance(today)
+                            AlarmScheduler(app).scheduleAll(profile)
+                            repo.saveProfile(profile) // last: this is what switches the UI to the Quest Log
+                            repo.ensureBoard(today)
+                        }
                         onDone()
                     }
                 }, Modifier.weight(1f))

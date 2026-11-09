@@ -9,6 +9,7 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.core.app.NotificationCompat
@@ -39,6 +40,7 @@ class RepService : Service() {
     private var lastJumpMs: Long? = null
     private var ropeActiveMs = 0L
     private var ropeCredited = 0
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -47,6 +49,16 @@ class RepService : Service() {
         val epochDay = intent.getLongExtra(EXTRA_DAY, SystemApp.today())
         val exercise = Exercise.valueOf(intent.getStringExtra(EXTRA_EXERCISE) ?: Exercise.PUSHUP.name)
         goForeground()
+        // A new start replaces any running session: release the old sensors and tone first.
+        source?.stop(); source = null
+        tone?.release()
+        lastJumpMs = null; ropeActiveMs = 0L; ropeCredited = 0
+        // Keep the CPU awake while counting with the screen off (phone in a pocket).
+        if (wakeLock?.isHeld != true) {
+            wakeLock = getSystemService(PowerManager::class.java)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "system:reps")
+                .apply { acquire(MAX_SESSION_MS) }
+        }
         tone = runCatching { ToneGenerator(AudioManager.STREAM_MUSIC, 60) }.getOrNull()
         _state.value = RepState(running = true, questId = questId)
         val repo = (application as SystemApp).repository
@@ -57,7 +69,11 @@ class RepService : Service() {
                         val credit = if (exercise == Exercise.ROPE) ropeSeconds() else 1
                         _state.value = _state.value.copy(reps = _state.value.reps + 1, lastInvalid = null)
                         feedback()
-                        if (credit > 0) scope.launch { repo.addProgress(epochDay, questId, credit) }
+                        if (credit > 0) scope.launch {
+                            repo.addProgress(epochDay, questId, credit)
+                            // Target reached: stop sensors and the foreground service on our own.
+                            if (repo.quest(epochDay, questId)?.done == true) stopSelf()
+                        }
                     }
                     is RepEvent.Invalid -> _state.value = _state.value.copy(lastInvalid = ev.reason)
                 }
@@ -99,6 +115,7 @@ class RepService : Service() {
     override fun onDestroy() {
         source?.stop()
         tone?.release()
+        wakeLock?.takeIf { it.isHeld }?.release()
         _state.value = _state.value.copy(running = false)
         scope.cancel()
         super.onDestroy()
@@ -109,6 +126,7 @@ class RepService : Service() {
         private const val EXTRA_DAY = "day"
         private const val EXTRA_EXERCISE = "exercise"
         private const val NOTIF_ID = 4242
+        private const val MAX_SESSION_MS = 30 * 60 * 1000L
         private val _state = MutableStateFlow(RepState())
         val state: StateFlow<RepState> = _state
 

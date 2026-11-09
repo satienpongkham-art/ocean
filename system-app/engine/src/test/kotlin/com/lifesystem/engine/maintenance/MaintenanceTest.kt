@@ -23,6 +23,6 @@ class MaintenanceTest {
     @Test fun due_returnsLowDurability() {
         val routines = listOf(MaintenanceRoutine("a", "A", 10), MaintenanceRoutine("b", "B", 10), MaintenanceRoutine("c", "C", 10))
         val due = Maintenance.due(routines, mapOf("a" to 100L, "b" to 92L), todayEpochDay = 101)
-        assertEquals(listOf("b", "c"), due)
+        assertEquals(listOf("c", "b"), due) // most worn first, so a daily cap picks the most urgent
     }
 }

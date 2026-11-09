@@ -26,8 +26,12 @@ object Maintenance {
         return left.coerceIn(0.0, 1.0)
     }
 
+    /** Due routines, most worn first. */
     fun due(routines: List<MaintenanceRoutine>, lastDone: Map<String, Long>, todayEpochDay: Long): List<String> =
-        routines.filter { durability(lastDone[it.id], todayEpochDay, it.intervalDays) <= DUE_AT + 1e-9 }.map { it.id }
+        routines.map { it to durability(lastDone[it.id], todayEpochDay, it.intervalDays) }
+            .filter { it.second <= DUE_AT + 1e-9 }
+            .sortedBy { it.second }
+            .map { it.first.id }
 
     fun title(id: String): String = defaults.firstOrNull { it.id == id }?.title ?: id
 }

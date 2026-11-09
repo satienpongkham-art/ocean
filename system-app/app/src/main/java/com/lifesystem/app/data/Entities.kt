@@ -45,6 +45,8 @@ data class QuestEntity(
     val gold: Int,
     val progress: Int = 0,
     val done: Boolean = false,
+    /** Injury stop already used today (once per quest per day). */
+    val excused: Boolean = false,
 ) {
     fun toQuest() = Quest(questId, title, Stat.valueOf(stat), QuestType.valueOf(type), Group.valueOf(grp), Verify.valueOf(verify), target, unit, exp, gold)
 

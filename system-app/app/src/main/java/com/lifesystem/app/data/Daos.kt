@@ -18,6 +18,9 @@ interface SystemDao {
     @Query("SELECT * FROM quest WHERE epochDay = :day") suspend fun questsFor(day: Long): List<QuestEntity>
     @Query("SELECT * FROM quest WHERE epochDay = :day") fun questsFlow(day: Long): Flow<List<QuestEntity>>
     @Query("SELECT * FROM quest WHERE epochDay = :day AND questId = :id") suspend fun quest(day: Long, id: String): QuestEntity?
+    /** Atomic so concurrent rep events never lose an increment. */
+    @Query("UPDATE quest SET progress = MIN(target, MAX(0, progress + :n)), done = MIN(target, MAX(0, progress + :n)) >= target WHERE epochDay = :day AND questId = :id")
+    suspend fun addProgress(day: Long, id: String, n: Int)
 
     @Upsert suspend fun upsertDay(d: DayEntity)
     @Query("SELECT * FROM day WHERE epochDay = :day") suspend fun day(day: Long): DayEntity?
@@ -34,6 +37,7 @@ interface SystemDao {
     @Query("SELECT * FROM meal_log WHERE epochDay = :day") fun mealsFlow(day: Long): Flow<List<MealLogEntity>>
 
     @Upsert suspend fun upsertMaintenance(m: MaintenanceEntity)
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun insertMaintenanceIfMissing(m: List<MaintenanceEntity>)
     @Query("SELECT * FROM maintenance") suspend fun maintenance(): List<MaintenanceEntity>
     @Query("SELECT * FROM maintenance") fun maintenanceFlow(): Flow<List<MaintenanceEntity>>
 

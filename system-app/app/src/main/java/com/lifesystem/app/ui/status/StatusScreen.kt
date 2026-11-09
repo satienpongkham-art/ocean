@@ -162,7 +162,7 @@ private fun RankHex(rank: Rank) {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("RANK", style = Txt.sub.copy(fontSize = 9.sp))
-            Text(if (rank == Rank.UNKNOWN) "E" else rank.name, style = Txt.num.copy(fontSize = 22.sp))
+            Text(if (rank == Rank.UNKNOWN) "?" else rank.name, style = Txt.num.copy(fontSize = 22.sp))
         }
     }
 }

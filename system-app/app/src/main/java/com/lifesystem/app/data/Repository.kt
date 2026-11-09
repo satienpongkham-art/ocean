@@ -43,11 +43,14 @@ class Repository(private val db: SystemDb, private val nowMs: () -> Long = Syste
 
     private suspend fun closeDay(day: DayEntity) {
         val rows = dao.questsFor(day.epochDay)
-        val result = DayCloser.close(rows.map { it.toQuest() }, rows.associate { it.questId to it.progress })
-        dao.upsertDay(day.copy(closed = true, goldEarned = result.goldEarned, expEarned = result.expEarned,
-            penaltyTomorrow = result.penaltyTomorrow, mainDone = result.mainDone, mainTotal = result.mainTotal))
+        val graceDay = dao.profile()?.day0EpochDay == day.epochDay
+        val result = DayCloser.close(rows.map { it.toQuest() }, rows.associate { it.questId to it.progress }, graceDay)
         val w = wallet()
-        val exp = (w.exp + result.expEarned).coerceAtMost(Progression.expCap(w.level))
+        val condition = runCatching { Condition.valueOf(day.condition) }.getOrDefault(Condition.NORMAL)
+        val earned = (result.expEarned * (1 + Progression.expBonus(condition))).toInt()
+        val exp = (w.exp + earned).coerceAtMost(Progression.expCap(w.level))
+        dao.upsertDay(day.copy(closed = true, goldEarned = result.goldEarned, expEarned = earned,
+            penaltyTomorrow = result.penaltyTomorrow, mainDone = result.mainDone, mainTotal = result.mainTotal))
         dao.upsertWallet(w.copy(exp = exp, gold = w.gold + result.goldEarned))
     }
 
@@ -57,18 +60,19 @@ class Repository(private val db: SystemDb, private val nowMs: () -> Long = Syste
     }
 
     fun board(epochDay: Long): Flow<List<QuestEntity>> = dao.questsFlow(epochDay)
+    suspend fun quest(epochDay: Long, questId: String): QuestEntity? = dao.quest(epochDay, questId)
 
-    suspend fun addProgress(epochDay: Long, questId: String, amount: Int) {
-        val q = dao.quest(epochDay, questId) ?: return
-        val p = (q.progress + amount).coerceIn(0, q.target)
-        dao.upsertQuest(q.copy(progress = p, done = p >= q.target))
-    }
+    suspend fun addProgress(epochDay: Long, questId: String, amount: Int) = dao.addProgress(epochDay, questId, amount)
 
-    /** Injury stop: halve what is left of today's target (spec §6.4). */
+    /**
+     * Injury stop: halve what is left of today's target (spec §6.4).
+     * Once per quest per day, and at least one rep always stays, so it can never complete a quest by itself.
+     */
     suspend fun reduceRemaining(epochDay: Long, questId: String) {
         val q = dao.quest(epochDay, questId) ?: return
-        val newTarget = q.progress + (q.target - q.progress) / 2
-        dao.upsertQuest(q.copy(target = newTarget, done = q.progress >= newTarget))
+        if (q.excused || q.done) return
+        val newTarget = maxOf(q.progress + 1, q.progress + (q.target - q.progress) / 2).coerceAtMost(q.target)
+        dao.upsertQuest(q.copy(target = newTarget, excused = true))
     }
 
     suspend fun complete(epochDay: Long, questId: String) {
@@ -97,6 +101,15 @@ class Repository(private val db: SystemDb, private val nowMs: () -> Long = Syste
     }
 
     fun maintenanceFlow() = dao.maintenanceFlow()
+
+    /** At install, treat every routine as just done so Day 1 is not flooded; existing rows are kept. */
+    suspend fun seedMaintenance(todayEpochDay: Long) =
+        dao.insertMaintenanceIfMissing(Maintenance.defaults.map { MaintenanceEntity(it.id, todayEpochDay) })
+
+    suspend fun setHasSunscreen() {
+        val p = dao.profile() ?: return
+        dao.upsertProfile(p.copy(hasSunscreen = true))
+    }
 
     suspend fun saveJournal(epochDay: Long, text: String, emotion: String) = dao.upsertJournal(JournalEntity(epochDay, text, emotion))
     suspend fun journal(epochDay: Long) = dao.journal(epochDay)

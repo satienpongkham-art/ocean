@@ -43,7 +43,7 @@ import kotlinx.coroutines.launch
 
 private val placement = mapOf(
     Exercise.PUSHUP to "วางมือถือหงายบนพื้น ใต้หน้าอก · อกลงถึงจอจึงนับ · มือถือต้องนิ่งอยู่กับพื้น",
-    Exercise.SQUAT to "ยืนตรงแล้วกดเริ่ม จากนั้นใส่มือถือในกระเป๋ากางเกงหน้า · ต้นขาต้องลงเกือบขนานพื้น",
+    Exercise.SQUAT to "กดเริ่ม → ใส่มือถือในกระเป๋ากางเกงหน้า → ยืนตรงนิ่ง ๆ 2 วินาที แล้วเริ่มสควอท · ต้นขาต้องลงเกือบขนานพื้น",
     Exercise.ROPE to "ใส่มือถือในกระเป๋ากางเกง แล้วกระโดดเชือก · นับเวลาที่กระโดดต่อเนื่อง",
 )
 
@@ -51,7 +51,7 @@ private val placement = mapOf(
 fun TrainingScreen(repo: Repository, today: Long, questId: String) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    val board by repo.board(today).collectAsStateWithLifecycle(initialValue = emptyList())
+    val board by remember(today) { repo.board(today) }.collectAsStateWithLifecycle(initialValue = emptyList())
     val quest = board.firstOrNull { it.questId == questId }
     val exercise = remember(questId) { RepService.exerciseFor(questId) }
     val availability = remember { AndroidSensorSource(ctx).availability(exercise) }

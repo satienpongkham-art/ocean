@@ -15,10 +15,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +33,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import android.content.Intent
+import android.provider.Settings
+import com.lifesystem.app.data.ProfileEntity
 import com.lifesystem.app.data.QuestEntity
 import com.lifesystem.app.data.Repository
 import com.lifesystem.app.ui.components.SystemBackground
@@ -41,9 +46,9 @@ import com.lifesystem.app.ui.quest.QuestViewModel
 import com.lifesystem.app.ui.status.StatusScreen
 import com.lifesystem.app.ui.theme.SysColors
 import com.lifesystem.engine.model.Verify
+import kotlinx.coroutines.flow.map
 
 object Routes {
-    const val ONBOARDING = "onboarding"
     const val STATUS = "status"
     const val QUESTS = "quests"
     const val TRAINING = "training"
@@ -63,26 +68,57 @@ fun routeFor(q: QuestEntity): String = when {
     else -> Routes.BODY
 }
 
+/** Wraps the profile so "still loading" (null) differs from "no profile yet". */
+private class ProfileLoad(val profile: ProfileEntity?)
+
 @Composable
-fun SystemNav(repo: Repository, today: Long, startRoute: String?) {
-    val profile by repo.profileFlow().collectAsStateWithLifecycle(initialValue = null, minActiveState = androidx.lifecycle.Lifecycle.State.CREATED)
+fun SystemNav(repo: Repository, today: Long, route: String?, problems: List<String>, onRouteHandled: () -> Unit) {
+    val load by remember { repo.profileFlow().map { ProfileLoad(it) } }
+        .collectAsStateWithLifecycle(initialValue = null, minActiveState = androidx.lifecycle.Lifecycle.State.CREATED)
+    val profile = load?.profile
     val nav = rememberNavController()
-    val questVm: QuestViewModel = viewModel(factory = remember { viewModelFactory { initializer { QuestViewModel(repo, today) } } })
-    val start = remember { startRoute ?: Routes.QUESTS }
+    // Keyed by day: a new day gets a fresh view model (and board) instead of the one created yesterday.
+    val questVm: QuestViewModel = viewModel(key = "quests-$today", factory = remember(today) { viewModelFactory { initializer { QuestViewModel(repo, today) } } })
+    LaunchedEffect(route, load != null) {
+        if (route != null && profile != null) {
+            if (route != Routes.QUESTS) nav.navigate(route) { launchSingleTop = true }
+            else nav.navigate(Routes.QUESTS) { popUpTo(Routes.QUESTS) { inclusive = true } }
+            onRouteHandled()
+        }
+    }
     SystemBackground {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+            if (profile != null && problems.isNotEmpty()) ProblemBanner(problems)
             Box(Modifier.weight(1f).padding(top = 12.dp)) {
-                NavHost(nav, startDestination = start) {
-                    composable(Routes.ONBOARDING) { OnboardingScreen(repo, today) { nav.navigate(Routes.QUESTS) { popUpTo(0) } } }
+                NavHost(nav, startDestination = Routes.QUESTS) {
                     composable(Routes.STATUS) { StatusScreen(repo, today) }
                     composable(Routes.QUESTS) {
-                        if (profile == null) OnboardingScreen(repo, today) { } else QuestLogScreen(questVm) { q -> nav.navigate(routeFor(q)) }
+                        when {
+                            load == null -> Box(Modifier.fillMaxSize())
+                            profile == null -> OnboardingScreen(repo, today) { }
+                            else -> QuestLogScreen(questVm) { q -> nav.navigate(routeFor(q)) }
+                        }
                     }
                     extraRoutes(nav, repo, today)
                 }
             }
             if (profile != null) BottomBar(nav)
         }
+    }
+}
+
+@Composable
+private fun ProblemBanner(problems: List<String>) {
+    val ctx = LocalContext.current
+    Column(
+        Modifier.fillMaxWidth().background(SysColors.Emergency.copy(alpha = 0.12f)).border(1.dp, SysColors.Emergency.copy(alpha = 0.6f))
+            .clickable(role = Role.Button) {
+                ctx.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName))
+            }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text("[ WARNING ] แตะเพื่อแก้", style = Txt.sys.copy(color = SysColors.Emergency, fontSize = 11.sp))
+        problems.forEach { Text("· $it", style = Txt.sub.copy(color = SysColors.Text)) }
     }
 }
 

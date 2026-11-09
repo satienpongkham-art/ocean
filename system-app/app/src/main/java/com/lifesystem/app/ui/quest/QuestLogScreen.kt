@@ -55,6 +55,7 @@ fun QuestEntity.displayTitle(): String =
 fun QuestLogScreen(vm: QuestViewModel, onOpen: (QuestEntity) -> Unit) {
     val board by vm.board.collectAsStateWithLifecycle()
     val dayNumber by vm.dayNumber.collectAsStateWithLifecycle()
+    val notice by vm.notice.collectAsStateWithLifecycle()
     val required = board.filter { it.type != QuestType.DAILY_SIDE.name }
     val done = required.count { it.done }
     val allDone = required.isNotEmpty() && done == required.size
@@ -73,6 +74,7 @@ fun QuestLogScreen(vm: QuestViewModel, onOpen: (QuestEntity) -> Unit) {
                     Chip(if (allDone) "COMPLETE" else "IN PROGRESS", if (allDone) SysColors.Mint else SysColors.CrimsonText)
                 }
             }
+            if (notice.isNotEmpty()) Text(notice, style = Txt.sub.copy(color = SysColors.Emergency), modifier = Modifier.padding(top = 6.dp))
         }
         Group.values().forEach { g ->
             val rows = board.filter { it.grp == g.name }
@@ -99,7 +101,7 @@ fun QuestLogScreen(vm: QuestViewModel, onOpen: (QuestEntity) -> Unit) {
 
 @Composable
 private fun QuestRow(q: QuestEntity, onTick: () -> Unit, onOpen: () -> Unit) {
-    val manual = q.verify == Verify.SELF.name
+    val manual = QuestActions.tickable(q) && !q.done
     val accent = when (q.type) {
         QuestType.PENALTY.name -> SysColors.Crimson
         QuestType.MAINTENANCE.name -> SysColors.Emergency

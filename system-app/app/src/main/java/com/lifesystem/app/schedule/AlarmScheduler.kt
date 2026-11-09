@@ -1,6 +1,7 @@
 package com.lifesystem.app.schedule
 
 import android.app.AlarmManager
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -41,6 +42,16 @@ class AlarmScheduler(private val context: Context) {
         schedule(REQ_SLEEP, AlarmMath.nextTrigger(nowMs, reminder, zone), PopupKind.SLEEP_REMINDER, null)
     }
 
+    /** Thai warnings for anything that would stop popups from appearing; empty = all good. */
+    fun problems(): List<String> {
+        val nm = context.getSystemService(NotificationManager::class.java)
+        return buildList {
+            if (!nm.areNotificationsEnabled()) add("การแจ้งเตือนถูกปิด · ป๊อปอัปจะไม่เด้ง")
+            if (Build.VERSION.SDK_INT >= 34 && !nm.canUseFullScreenIntent()) add("ยังไม่อนุญาตแจ้งเตือนเต็มหน้าจอ · จะขึ้นเป็นแถบเล็กแทน")
+            if (mode() == ScheduleMode.INEXACT_FALLBACK) add("ยังไม่อนุญาตปลุกตรงเวลา · ป๊อปอัปอาจช้าไม่กี่นาที")
+        }
+    }
+
     /** Onboarding check: a DAILY_QUEST popup in [delayMs] (spec §3 step 9). */
     fun scheduleTest(delayMs: Long = 10_000L) =
         schedule(REQ_TEST, System.currentTimeMillis() + delayMs, PopupKind.DAILY_QUEST, null)
@@ -53,7 +64,8 @@ class AlarmScheduler(private val context: Context) {
         val pi = PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         when (mode()) {
             ScheduleMode.EXACT -> am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
-            ScheduleMode.INEXACT_FALLBACK -> am.setWindow(AlarmManager.RTC_WAKEUP, atMs, WINDOW_MS, pi)
+            // Unlike setWindow, this still fires in Doze (may be a few minutes late).
+            ScheduleMode.INEXACT_FALLBACK -> am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
         }
     }
 
@@ -65,6 +77,5 @@ class AlarmScheduler(private val context: Context) {
         private const val REQ_MEAL = 200
         private const val REQ_SLEEP = 300
         private const val REQ_TEST = 900
-        private const val WINDOW_MS = 10 * 60 * 1000L
     }
 }
