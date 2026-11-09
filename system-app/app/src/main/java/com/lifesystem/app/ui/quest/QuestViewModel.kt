@@ -3,7 +3,9 @@ package com.lifesystem.app.ui.quest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifesystem.app.data.QuestEntity
+import com.lifesystem.app.data.AvatarLook
 import com.lifesystem.app.data.Repository
+import com.lifesystem.app.data.avatarLook
 import com.lifesystem.app.popup.PopupRules
 import com.lifesystem.engine.model.Verify
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,8 +74,11 @@ class QuestViewModel(
 
     init {
         // Wait for a profile (fresh install finishes onboarding first), then build today's board.
-        viewModelScope.launch { repo.profileFlow().filterNotNull().first(); prepare(epochDay) }
+        viewModelScope.launch { repo.profileFlow().filterNotNull().first(); prepare(epochDay); _look.value = repo.avatarLook() }
     }
+
+    private val _look = MutableStateFlow(AvatarLook())
+    val look: StateFlow<AvatarLook> = _look
 
     private val _notice = MutableStateFlow("")
     val notice: StateFlow<String> = _notice

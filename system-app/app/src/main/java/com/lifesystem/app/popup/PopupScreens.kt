@@ -19,7 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lifesystem.app.data.AvatarLook
 import com.lifesystem.app.data.QuestEntity
+import com.lifesystem.app.ui.components.GoalRow
+import com.lifesystem.app.ui.components.QuestInfoWindow
+import com.lifesystem.app.ui.quest.CategoryAvatar
+import com.lifesystem.app.ui.quest.QuestWindows
+import com.lifesystem.app.ui.quest.toGoal
 import com.lifesystem.app.ui.components.BigNumber
 import com.lifesystem.app.ui.components.CrimsonFlash
 import com.lifesystem.app.ui.components.PixelSprite
@@ -49,32 +55,48 @@ private fun PopupShell(accent: Color, flash: Boolean = false, content: @Composab
     }
 }
 
-/** 07:00 popup. Hard mode: there is no decline button. */
+/** Wake-time popup in the QUEST INFO style. Hard mode: there is no decline button. */
 @Composable
-fun DailyQuestPopup(quests: List<QuestEntity>, timeLeft: String, onAccept: () -> Unit) {
+fun DailyQuestPopup(quests: List<QuestEntity>, timeLeft: String, onAccept: () -> Unit, look: AvatarLook = AvatarLook()) {
     val penalty = quests.any { it.type == QuestType.PENALTY.name }
     val accent = if (penalty) SysColors.Crimson else SysColors.Cyan
+    val minute = java.time.LocalTime.now().let { it.hour * 60 + it.minute }
+    val shown = quests.filter { it.toQuest().required && it.type != QuestType.GATE.name }
     PopupShell(accent, flash = penalty) {
-        SystemFrame(accent = accent) {
-            SystemHeader(accent = accent)
-            SystemTag(if (penalty) "PENALTY QUEST" else "DAILY QUEST", if (penalty) SysColors.CrimsonText else SysColors.Cyan)
-            Text(if (penalty) "เควสต์ล้มเหลว" else "เควสต์ประจำวัน", style = body.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White))
-            Text(
-                if (penalty) "เมื่อวานผู้เล่นทำเควสต์หลักไม่ครบ ระบบส่งผู้เล่นเข้าสู่เควสต์ลงโทษ" else "ผู้เล่นได้รับเควสต์ใหม่ ทำทุกรายการให้สำเร็จก่อน 23:59",
-                style = sub,
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            QuestInfoWindow(
+                title = if (penalty) "PENALTY QUEST" else "QUEST INFO",
+                subtitle = if (penalty) "เมื่อวานทำเควสต์ไม่ครบ · ชดใช้ก่อน แล้วทำเควสต์วันนี้" else "เควสต์ประจำวัน · ฝึกตนให้เป็นผู้แข็งแกร่ง",
+                accent = accent,
+                goals = shown.take(10).map { it.toGoal(minute) } + if (shown.size > 10) listOf(GoalRow("more", "และอีก ${shown.size - 10} รายการใน QUEST LOG", 0, 0, false, note = "")) else emptyList(),
+                caution = QuestWindows.CAUTION,
+                timer = timeLeft,
+                avatar = { CategoryAvatar(look, if (penalty) "PENALTY" else "STR") },
             )
-            quests.filter { it.type != QuestType.DAILY_SIDE.name }.take(8).forEach { q ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("${q.stat}  ${q.title}", style = body)
-                    Text("${q.progress} / ${q.target}", style = body.copy(fontFamily = Oxanium, color = SysColors.CyanHi))
-                }
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                Column { Text("TIME LEFT", style = sub.copy(fontFamily = Oxanium)); BigNumber(timeLeft) }
-                Text("ล้มเหลว → PENALTY QUEST", style = sub.copy(color = SysColors.CrimsonText))
-            }
             SystemButton("ยอมรับเควสต์", accent, onAccept)
             Text("ปฏิเสธ · ไม่มีตัวเลือกนี้ในโหมดโหด", style = sub.copy(color = SysColors.Muted), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        }
+    }
+}
+
+/** A gate just opened: tasks, time limit, accept opens the GATE tab. */
+@Composable
+fun GatePopup(gate: List<QuestEntity>, onAccept: () -> Unit, look: AvatarLook = AvatarLook()) {
+    val accent = SysColors.Mint
+    val minute = java.time.LocalTime.now().let { it.hour * 60 + it.minute }
+    val close = gate.firstOrNull()?.closeMin ?: minute
+    PopupShell(accent) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            QuestInfoWindow(
+                title = "GATE OPEN",
+                subtitle = (gate.firstOrNull()?.title?.substringBefore(" ·") ?: "GATE") + " · ประตูมิติเปิดแล้ว",
+                accent = accent,
+                goals = gate.map { it.toGoal(minute) },
+                caution = "ผ่านให้ทันเวลา ไม่ผ่าน = บทลงโทษพรุ่งนี้ · ผ่าน = G + ไอเทม",
+                timer = "%02d:%02d".format((close - minute).coerceAtLeast(0) / 60, (close - minute).coerceAtLeast(0) % 60) + " เหลือ",
+                avatar = { CategoryAvatar(look, "AGI") },
+            )
+            SystemButton("เข้าประตู", accent, onAccept)
         }
     }
 }
@@ -119,14 +141,15 @@ private fun Stat3(label: String, value: String, color: Color) {
 }
 
 @Composable
-fun SleepReminderPopup(onOk: () -> Unit, onInBed: () -> Unit) {
+fun SleepReminderPopup(onOk: () -> Unit, onInBed: (() -> Unit)?) {
     PopupShell(SysColors.Hidden) {
         SystemFrame(accent = SysColors.Hidden) {
             SystemHeader(accent = SysColors.Hidden)
             SystemTag("SYSTEM", SysColors.Hidden)
             Text("อีก 30 นาทีถึงเวลานอน", style = body.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White))
             Text("วางมือถือ เขียนไดอารี่ 3 บรรทัด แล้วเข้านอน การนอนครบ 7.5 ชม. = CONDITION OPTIMAL (EXP +10%)", style = sub)
-            SystemButton("เข้านอนแล้ว", SysColors.Hidden, onInBed)
+            if (onInBed != null) SystemButton("เข้านอนแล้ว", SysColors.Hidden, onInBed)
+            else Text("System จะตรวจเวลานอนจริงตอนเช้า · ปิดจอตอนนี้ = ผ่านเควสต์ปิดจอก่อนนอน", style = sub)
             SystemButton("รับทราบ", SysColors.Hidden, onOk, primary = false)
         }
     }

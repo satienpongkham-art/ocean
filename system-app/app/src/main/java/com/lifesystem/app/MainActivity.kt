@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import com.lifesystem.app.schedule.AlarmScheduler
+import com.lifesystem.app.schedule.rearmAlarms
 import com.lifesystem.app.ui.theme.SystemTheme
 import kotlinx.coroutines.launch
 
@@ -70,9 +71,9 @@ class MainActivity : ComponentActivity() {
         problems.value = scheduler.problems()
         // Re-arm alarms on every visit (covers force-stop and permission changes) and make sure today's board exists.
         app.appScope.launch {
-            val profile = app.repository.profile() ?: return@launch
-            scheduler.scheduleAll(profile)
+            if (app.repository.profile() == null) return@launch
             app.daySync.sync(SystemApp.today())
+            rearmAlarms(this@MainActivity)
         }
     }
 

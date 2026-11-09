@@ -7,11 +7,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.lifesystem.app.data.ProfileEntity
+import com.lifesystem.engine.gate.GateGenerator
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 
-enum class PopupKind { DAILY_QUEST, PENALTY, MEAL, SLEEP_REMINDER }
+enum class PopupKind { DAILY_QUEST, PENALTY, MEAL, SLEEP_REMINDER, GATE }
 
 enum class ScheduleMode { EXACT, INEXACT_FALLBACK }
 
@@ -52,15 +53,25 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
+    /** One popup when each of today's gates opens (only gates still in the future). */
+    fun scheduleGates(epochDay: Long, level: Int, profile: ProfileEntity, nowMs: Long = System.currentTimeMillis(), zone: ZoneId = ZoneId.systemDefault()) {
+        val dayStart = java.time.LocalDate.ofEpochDay(epochDay).atStartOfDay(zone).toInstant().toEpochMilli()
+        GateGenerator.generate(epochDay, level, profile.wakeMin, profile.sleepMin).forEach { g ->
+            val at = dayStart + g.openMin * 60_000L
+            if (at > nowMs) schedule(REQ_GATE + g.index, at, PopupKind.GATE, null, g.index)
+        }
+    }
+
     /** Onboarding check: a DAILY_QUEST popup in [delayMs] (spec §3 step 9). */
     fun scheduleTest(delayMs: Long = 10_000L) =
         schedule(REQ_TEST, System.currentTimeMillis() + delayMs, PopupKind.DAILY_QUEST, null)
 
-    private fun schedule(requestCode: Int, atMs: Long, kind: PopupKind, mealSlot: Int?) {
+    private fun schedule(requestCode: Int, atMs: Long, kind: PopupKind, mealSlot: Int?, gate: Int? = null) {
         val intent = Intent(context, AlarmReceiver::class.java)
             .putExtra(EXTRA_KIND, kind.name)
             .putExtra(EXTRA_REQ, requestCode)
         if (mealSlot != null) intent.putExtra(EXTRA_MEAL_SLOT, mealSlot)
+        if (gate != null) intent.putExtra(EXTRA_GATE, gate)
         val pi = PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         when (mode()) {
             ScheduleMode.EXACT -> am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
@@ -73,9 +84,20 @@ class AlarmScheduler(private val context: Context) {
         const val EXTRA_KIND = "popup_kind"
         const val EXTRA_MEAL_SLOT = "meal_slot"
         const val EXTRA_REQ = "req"
+        const val EXTRA_GATE = "gate"
+        private const val REQ_GATE = 400
         private const val REQ_WAKE = 100
         private const val REQ_MEAL = 200
         private const val REQ_SLEEP = 300
         private const val REQ_TEST = 900
     }
+}
+
+/** Re-arms every alarm (daily popups + today's gates). Safe to call often. */
+suspend fun rearmAlarms(context: Context) {
+    val repo = (context.applicationContext as com.lifesystem.app.SystemApp).repository
+    val profile = repo.profile() ?: return
+    val s = AlarmScheduler(context)
+    s.scheduleAll(profile)
+    s.scheduleGates(com.lifesystem.app.SystemApp.today(), repo.wallet().level, profile)
 }

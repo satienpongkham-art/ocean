@@ -13,7 +13,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.lifesystem.app.MainActivity
 import com.lifesystem.app.SystemApp
+import com.lifesystem.app.data.AvatarLook
 import com.lifesystem.app.data.MealLogEntity
+import com.lifesystem.app.data.avatarLook
 import com.lifesystem.app.data.MeasureType
 import com.lifesystem.app.data.QuestEntity
 import com.lifesystem.app.data.Targets
@@ -37,6 +39,7 @@ class PopupActivity : ComponentActivity() {
         setTurnScreenOn(true)
         val kind = intent.getStringExtra(AlarmScheduler.EXTRA_KIND) ?: PopupKind.DAILY_QUEST.name
         val slotIndex = intent.getIntExtra(AlarmScheduler.EXTRA_MEAL_SLOT, 1)
+        val gateIndex = intent.getIntExtra(AlarmScheduler.EXTRA_GATE, 0)
         val repo = (application as SystemApp).repository
         val today = SystemApp.today()
 
@@ -77,9 +80,22 @@ class PopupActivity : ComponentActivity() {
                             onOther = { openApp("meal"); finish() },
                         )
                     }
-                    PopupKind.SLEEP_REMINDER.name -> SleepReminderPopup(
+                    PopupKind.GATE.name -> {
+                        var gate by remember { mutableStateOf<List<QuestEntity>>(emptyList()) }
+                        var look by remember { mutableStateOf(AvatarLook()) }
+                        LaunchedEffect(Unit) {
+                            (application as SystemApp).daySync.sync(today)
+                            gate = repo.board(today).first().filter { it.questId.startsWith("gate${gateIndex}_") }
+                            look = repo.avatarLook()
+                        }
+                        GatePopup(gate, onAccept = { openApp("gate"); finish() }, look = look)
+                    }
+                    PopupKind.SLEEP_REMINDER.name -> {
+                        var auto by remember { mutableStateOf(true) }
+                        LaunchedEffect(Unit) { auto = (application as SystemApp).autoSleep() }
+                        SleepReminderPopup(
                         onOk = { finish() },
-                        onInBed = {
+                        onInBed = if (auto) null else fun() {
                             scope.launch {
                                 val sleepMin = repo.profile()?.sleepMin
                                 val now = nowMinute()
@@ -89,14 +105,17 @@ class PopupActivity : ComponentActivity() {
                                 finish()
                             }
                         },
-                    )
+                        )
+                    }
                     else -> {
                         var quests by remember { mutableStateOf<List<QuestEntity>>(emptyList()) }
-                        LaunchedEffect(Unit) { (application as SystemApp).daySync.sync(today); quests = repo.board(today).first() }
+                        var look by remember { mutableStateOf(AvatarLook()) }
+                        LaunchedEffect(Unit) { (application as SystemApp).daySync.sync(today); quests = repo.board(today).first(); look = repo.avatarLook() }
                         val left = Duration.between(LocalDateTime.now(), LocalDateTime.now().with(LocalTime.MAX))
                         DailyQuestPopup(
                             quests = quests,
                             timeLeft = "%02d:%02d".format(left.toHours(), left.toMinutesPart()),
+                            look = look,
                             onAccept = {
                                 scope.launch {
                                     (application as SystemApp).daySync.sync(today) // idempotent; the board exists before completing

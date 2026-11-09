@@ -18,11 +18,11 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val kind = intent.getStringExtra(AlarmScheduler.EXTRA_KIND) ?: return
         val req = intent.getIntExtra(AlarmScheduler.EXTRA_REQ, 0)
-        showPopup(context, kind, intent.getIntExtra(AlarmScheduler.EXTRA_MEAL_SLOT, -1), req)
+        showPopup(context, kind, intent.getIntExtra(AlarmScheduler.EXTRA_MEAL_SLOT, -1), req, intent.getIntExtra(AlarmScheduler.EXTRA_GATE, 0))
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                (context.applicationContext as SystemApp).repository.profile()?.let { AlarmScheduler(context).scheduleAll(it) }
+                rearmAlarms(context)
             } finally {
                 pending.finish()
             }
@@ -41,17 +41,19 @@ class AlarmReceiver : BroadcastReceiver() {
             }
         }
 
-        fun showPopup(context: Context, kind: String, mealSlot: Int, req: Int) {
+        fun showPopup(context: Context, kind: String, mealSlot: Int, req: Int, gate: Int = 0) {
             ensureChannel(context)
             val open = Intent(context, PopupActivity::class.java)
                 .putExtra(AlarmScheduler.EXTRA_KIND, kind)
                 .putExtra(AlarmScheduler.EXTRA_MEAL_SLOT, mealSlot)
+                .putExtra(AlarmScheduler.EXTRA_GATE, gate)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             val pi = PendingIntent.getActivity(context, req, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             val title = when (kind) {
                 PopupKind.MEAL.name -> "[ MEAL TIME ]"
                 PopupKind.SLEEP_REMINDER.name -> "[ SYSTEM ] เตรียมนอน"
                 PopupKind.PENALTY.name -> "[ PENALTY QUEST ]"
+                PopupKind.GATE.name -> "[ GATE OPEN ] ประตูมิติเปิดแล้ว"
                 else -> "[ DAILY QUEST ]"
             }
             val n = NotificationCompat.Builder(context, CHANNEL)

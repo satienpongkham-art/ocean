@@ -204,3 +204,20 @@ suspend fun Repository.fightBoss(epochDay: Long): Boss.Outcome = db.withTransact
     }
     outcome
 }
+
+// ---------- avatar ----------
+
+data class AvatarLook(
+    val stage: Int = 1,
+    val outfit: String? = null,
+    val weapon: String? = null,
+    val aura: String? = null,
+    val titleId: String? = null,
+    val job: String? = null,
+)
+
+suspend fun Repository.avatarLook(): AvatarLook {
+    val p = profile() ?: return AvatarLook()
+    val stage = com.lifesystem.engine.avatar.AvatarStage.stage(waistDrop(), ranks()[Stat.STR] ?: Rank.UNKNOWN)
+    return AvatarLook(stage, p.outfit, p.weapon, p.aura, p.titleId, p.job)
+}
