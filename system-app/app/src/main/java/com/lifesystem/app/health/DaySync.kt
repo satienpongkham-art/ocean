@@ -1,6 +1,10 @@
 package com.lifesystem.app.health
 
+import com.lifesystem.app.data.Keys
 import com.lifesystem.app.data.MeasureType
+import com.lifesystem.app.data.getInt
+import com.lifesystem.app.data.putBool
+import com.lifesystem.engine.screen.ScreenTimeBoss
 import com.lifesystem.app.data.OwnedItemEntity
 import com.lifesystem.app.data.ProfileEntity
 import com.lifesystem.app.data.Repository
@@ -14,6 +18,8 @@ import java.time.ZoneId
 /** Screen on/off history; null when the user has not granted usage access. */
 interface ScreenSource {
     suspend fun events(fromMs: Long, toMs: Long): List<ScreenEvent>?
+    /** Minutes spent in social/game/video apps (Screen-time Boss); null without usage access. */
+    suspend fun entertainmentMinutes(fromMs: Long, toMs: Long): Int? = null
 }
 
 /** Health Connect (or another health store); null = no data or no permission. */
@@ -55,8 +61,21 @@ class DaySync(
         val mark = "night_$night"
         if (repo.dao.ownedItem(mark) != null) return
         val now = repo.nowMs()
-        val est = screen.events(startOfDayMs(night) + 12 * HOUR, now)?.let { NightAnalyzer.analyze(it, night, p.sleepMin, zone, now) }
+        val events = screen.events(startOfDayMs(night) + 12 * HOUR, now)
+        val est = events?.let { NightAnalyzer.analyze(it, night, p.sleepMin, zone, now) }
         if (est?.screenOffBeforeBed == true) repo.complete(night, "screen_off")
+        if (events != null) {
+            // Night Owl (R2.6): screen turned on between 00:00 and 04:00 of today
+            val midnight = startOfDayMs(today)
+            if (events.any { it.interactive && it.tMs in midnight until midnight + 4 * HOUR }) repo.putBool(Keys.nightOwl(today), true)
+            // Trust input (R2.7): screen still on 30+ min after bedtime
+            val bedMs = startOfDayMs(if (p.sleepMin < 12 * 60) night + 1 else night) + p.sleepMin * 60_000L
+            if (events.any { it.interactive && it.tMs in bedMs + BED_GRACE_MS until bedMs + 4 * HOUR }) repo.putBool(Keys.screenAfterBed(night), true)
+        }
+        // Screen-time Boss (R2.5): judge yesterday's entertainment minutes against the cap
+        screen.entertainmentMinutes(startOfDayMs(night), startOfDayMs(today))?.let { used ->
+            if (ScreenTimeBoss.evaluate(used, repo.getInt(Keys.SCREEN_CAP, ScreenTimeBoss.DEFAULT_CAP_MIN)).win) repo.complete(night, "screen_cap")
+        }
 
         val session = health.sleep(startOfDayMs(night) + 18 * HOUR, startOfDayMs(today) + 14 * HOUR)
             ?: est?.let { e -> e.sleepStartMs?.let { s -> e.sleepEndMs?.let { s to it } } }

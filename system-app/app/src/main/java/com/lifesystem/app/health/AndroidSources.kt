@@ -18,6 +18,7 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.lifesystem.app.data.OwnedItemEntity
 import com.lifesystem.app.data.Repository
+import com.lifesystem.app.data.getSetting
 import com.lifesystem.engine.night.ScreenEvent
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -46,6 +47,20 @@ class UsageScreenSource(private val context: Context) : ScreenSource {
             }
         }
         return out
+    }
+
+    /** Foreground minutes in game/social/video apps, plus any app the player put on the lock list. */
+    override suspend fun entertainmentMinutes(fromMs: Long, toMs: Long): Int? {
+        if (!granted()) return null
+        val usm = context.getSystemService(UsageStatsManager::class.java)
+        val pm = context.packageManager
+        val repo = (context.applicationContext as com.lifesystem.app.SystemApp).repository
+        val extra = repo.getSetting(com.lifesystem.app.data.Keys.LOCK_APPS, "").split(',').filter { it.isNotBlank() }.toSet()
+        val fun_ = setOf(android.content.pm.ApplicationInfo.CATEGORY_GAME, android.content.pm.ApplicationInfo.CATEGORY_SOCIAL, android.content.pm.ApplicationInfo.CATEGORY_VIDEO)
+        val ms = usm.queryAndAggregateUsageStats(fromMs, toMs).values.filter { st ->
+            st.packageName in extra || runCatching { pm.getApplicationInfo(st.packageName, 0).category in fun_ }.getOrDefault(false)
+        }.sumOf { it.totalTimeInForeground }
+        return (ms / 60_000).toInt()
     }
 }
 

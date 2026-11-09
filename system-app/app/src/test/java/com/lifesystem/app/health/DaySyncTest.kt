@@ -6,6 +6,8 @@ import com.lifesystem.app.data.MeasureType
 import com.lifesystem.app.data.ProfileEntity
 import com.lifesystem.app.data.Repository
 import com.lifesystem.app.data.SystemDb
+import com.lifesystem.app.data.getBool
+import com.lifesystem.app.data.putSetting
 import com.lifesystem.engine.night.ScreenEvent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -29,7 +31,10 @@ class DaySyncTest {
     private var now = 0L
     private fun ms(day: Long, minute: Int) = LocalDate.ofEpochDay(day).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() + minute * 60_000L
 
-    private class FakeScreen(var events: List<ScreenEvent>?) : ScreenSource { override suspend fun events(fromMs: Long, toMs: Long) = events?.filter { it.tMs in fromMs..toMs } }
+    private class FakeScreen(var events: List<ScreenEvent>?, var fun_: Int? = null) : ScreenSource {
+        override suspend fun events(fromMs: Long, toMs: Long) = events?.filter { it.tMs in fromMs..toMs }
+        override suspend fun entertainmentMinutes(fromMs: Long, toMs: Long) = fun_
+    }
     private class FakeHealth(var sleep: Pair<Long, Long>? = null, var steps: Int? = null) : HealthSource {
         override suspend fun sleep(fromMs: Long, toMs: Long) = sleep
         override suspend fun steps(fromMs: Long, toMs: Long) = steps
@@ -90,5 +95,18 @@ class DaySyncTest {
         assertEquals(4321, db.dao().quest(day0, "steps")!!.progress)
         DaySync(repo, FakeScreen(null), FakeHealth(steps = 9999)).sync(day0)
         assertTrue(db.dao().quest(day0, "steps")!!.done)
+    }
+
+    @Test fun nightOwl_screenAfterBed_andScreenBoss() = runTest {
+        repo.putSetting(com.lifesystem.app.data.Keys.SCREEN_BOSS, "1")
+        val d = day0 + 1
+        now = ms(d, 600); repo.ensureBoard(d)
+        val ev = listOf(ScreenEvent(ms(d, 22 * 60), false), ScreenEvent(ms(d, 23 * 60 + 50), true), ScreenEvent(ms(d + 1, 60), true), ScreenEvent(ms(d + 1, 90), false), ScreenEvent(ms(d + 1, 7 * 60), true))
+        now = ms(d + 1, 8 * 60)
+        DaySync(repo, FakeScreen(ev, fun_ = 80), FakeHealth()).sync(d + 1)
+        assertTrue(repo.getBool(com.lifesystem.app.data.Keys.nightOwl(d + 1), false))
+        assertTrue(repo.getBool(com.lifesystem.app.data.Keys.screenAfterBed(d), false))
+        assertTrue(db.dao().quest(d, "screen_cap")!!.done)
+        assertEquals("FATIGUED", db.dao().day(d + 1)!!.condition) // 5.5 h of sleep; Night Owl cannot raise it
     }
 }

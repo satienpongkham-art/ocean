@@ -45,7 +45,8 @@ fun QuestEntity.toGoal(minuteOfDay: Int): GoalRow {
         o != null && c != null && !done && minuteOfDay in o until c -> null
         else -> null
     }
-    return GoalRow(questId, displayTitle().removePrefix("GATE ").removePrefix("BOSS · ").removePrefix("PENALTY · "), progress, target, done, unit, note)
+    val label = displayTitle().removePrefix("GATE ").removePrefix("BOSS · ").removePrefix("PENALTY · ").removePrefix("EMERGENCY · ")
+    return GoalRow(questId, if (toQuest().core && type == QuestType.DAILY_MAIN.name) "★ $label" else label, progress, target, done, unit, note)
 }
 
 fun accentFor(prop: String): Color = when (prop) {
@@ -72,7 +73,8 @@ fun QuestLogScreen(vm: QuestViewModel, onOpen: (QuestEntity) -> Unit) {
     val look by vm.look.collectAsStateWithLifecycle()
     val timer = rememberCountdownToMidnight()
     val minute = LocalTime.now().let { it.hour * 60 + it.minute }
-    val required = board.filter { it.toQuest().required && it.type != QuestType.GATE.name }
+    val required = board.filter { it.toQuest().required && it.type != QuestType.GATE.name && it.type != QuestType.EMERGENCY.name }
+    val core = board.filter { it.toQuest().core && it.type != QuestType.GATE.name && it.type != QuestType.EMERGENCY.name }
     val done = required.count { it.done }
     val allDone = required.isNotEmpty() && done == required.size
     val windows = QuestWindows.group(board, minute)
@@ -93,6 +95,7 @@ fun QuestLogScreen(vm: QuestViewModel, onOpen: (QuestEntity) -> Unit) {
                     Chip(if (allDone) "COMPLETE" else "IN PROGRESS", if (allDone) SysColors.Mint else SysColors.CrimsonText)
                 }
             }
+            Text("CORE ${core.count { it.done }}/${core.size} · พลาด CORE = บทลงโทษ · ที่เหลือทำครบได้โบนัส", style = Txt.sub.copy(color = SysColors.CrimsonText), modifier = Modifier.padding(top = 4.dp))
             if (notice.isNotEmpty()) Text(notice, style = Txt.sub.copy(color = SysColors.Emergency), modifier = Modifier.padding(top = 6.dp))
         }
         items(windows, key = { it.key }) { w ->

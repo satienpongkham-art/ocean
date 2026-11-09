@@ -16,6 +16,7 @@ object QuestWindows {
         Triple("LOOK", "ภาพลักษณ์ · ดูแลตัวเอง", setOf("CHA")),
         Triple("MIND", "จิตใจ · สงบและมีวินัย", setOf("MND")),
         Triple("WISDOM", "ปัญญา · อ่านและเรียน", setOf("INT")),
+        Triple("WORK", "งาน · เควสต์ที่ตั้งเอง", setOf("GOLD")),
     )
 
     fun group(board: List<QuestEntity>, minuteOfDay: Int): List<WindowSpec> = buildList {
@@ -24,6 +25,9 @@ object QuestWindows {
 
         val gates = board.filter { it.type == QuestType.GATE.name && (it.closeMin ?: 0) > minuteOfDay }
         if (gates.isNotEmpty()) add(WindowSpec("GATE", "GATE · ประตูมิติวันนี้", "AGI", gates.sortedBy { it.openMin }, "ประตูที่ไม่ผ่านภายในเวลา = บทลงโทษพรุ่งนี้"))
+
+        val emergency = board.filter { it.type == QuestType.EMERGENCY.name && (it.closeMin ?: 0) > minuteOfDay }
+        if (emergency.isNotEmpty()) add(WindowSpec("EMERGENCY", "EMERGENCY QUEST · ภารกิจฉุกเฉิน", "PENALTY", emergency, "ไม่สำเร็จภายในเวลา = บทลงโทษพรุ่งนี้ · สำเร็จ = G + ไอเทม"))
 
         val boss = board.filter { it.type == QuestType.BOSS.name }
         if (boss.isNotEmpty()) add(WindowSpec("BOSS", "BOSS ประจำสัปดาห์ · วัดผลจริง", "STR", boss, null))

@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifesystem.app.data.QuestEntity
 import com.lifesystem.app.data.AvatarLook
+import com.lifesystem.app.data.Keys
 import com.lifesystem.app.data.Repository
+import com.lifesystem.app.data.payPenaltyFund
+import com.lifesystem.app.data.putBool
 import com.lifesystem.app.data.avatarLook
 import com.lifesystem.app.popup.PopupRules
 import com.lifesystem.engine.model.Verify
@@ -43,7 +46,9 @@ class QuestActions(
                 val p = repo.profile() ?: return false
                 if (!PopupRules.bedOnTime(nowMin(), p.sleepMin)) return false
                 repo.complete(epochDay, questId)
+                repo.putBool(Keys.manualSleep(epochDay), true) // trust check input
             }
+            questId == "penalty_fund" -> return repo.payPenaltyFund(epochDay)
             q.verify != Verify.SELF.name -> return false
             questId.startsWith("mt_") -> repo.markMaintenanceDone(questId.removePrefix("mt_"), epochDay)
             questId == "buy_sunscreen" -> { repo.setHasSunscreen(); repo.complete(epochDay, questId) }
@@ -54,7 +59,7 @@ class QuestActions(
 
     companion object {
         /** Quests the Quest Log may offer a tick for (the rules above still decide). */
-        fun tickable(q: QuestEntity) = q.verify == Verify.SELF.name || q.questId == "wake" || q.questId == "sleep"
+        fun tickable(q: QuestEntity) = q.verify == Verify.SELF.name || q.questId in setOf("wake", "sleep", "penalty_fund")
     }
 }
 

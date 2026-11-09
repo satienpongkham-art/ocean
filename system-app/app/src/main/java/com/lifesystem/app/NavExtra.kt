@@ -8,6 +8,7 @@ import com.lifesystem.app.ui.log.BodyLogScreen
 import com.lifesystem.app.ui.log.JournalScreen
 import com.lifesystem.app.ui.log.MaintenanceScreen
 import com.lifesystem.app.ui.meal.MealPlanScreen
+import com.lifesystem.app.ui.training.TimerScreen
 import com.lifesystem.app.ui.training.TrainingScreen
 import com.lifesystem.app.ui.gate.GateScreen
 import com.lifesystem.app.ui.menu.MenuScreen
@@ -29,4 +30,5 @@ fun NavGraphBuilder.extraRoutes(nav: NavHostController, repo: Repository, today:
     composable(Routes.SHOP) { ShopScreen(repo) }
     composable(Routes.MENU) { MenuScreen { nav.navigate(it) } }
     composable(Routes.TITLES) { TitlesScreen(repo) }
+    composable("${Routes.TIMER}/{questId}") { entry -> TimerScreen(repo, today, entry.arguments?.getString("questId") ?: "plank") }
 }

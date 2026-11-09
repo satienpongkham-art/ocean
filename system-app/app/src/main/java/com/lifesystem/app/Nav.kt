@@ -66,6 +66,14 @@ object Routes {
     const val MENU = "menu"
     const val TITLES = "titles"
     const val SYSTEM = "system"
+    const val TIMER = "timer"
+    const val FOCUS = "focus"
+    const val SETTINGS = "settings"
+    const val FINANCE = "finance"
+    const val REPORT = "report"
+    const val SKILLS = "skills"
+    const val CHAPTERS = "chapters"
+    const val VISION = "vision"
 }
 
 private val tabs = listOf(Routes.STATUS to "STATUS", Routes.QUESTS to "QUEST", Routes.GATE to "GATE", Routes.SHOP to "SHOP", Routes.MENU to "MENU")
@@ -73,6 +81,9 @@ private val tabs = listOf(Routes.STATUS to "STATUS", Routes.QUESTS to "QUEST", R
 /** Where tapping a quest that cannot be ticked by hand should go. */
 fun routeFor(q: QuestEntity): String = when {
     q.verify == Verify.SENSOR.name -> "${Routes.TRAINING}/${q.questId}"
+    q.questId == "plank" || q.questId == "emg_wallsit" || q.questId.startsWith("db_") -> "${Routes.TIMER}/${q.questId}"
+    q.questId == "focus" -> Routes.FOCUS
+    q.questId == "screen_cap" -> Routes.SETTINGS
     q.type == QuestType.BOSS.name -> Routes.GATE
     q.questId == "journal" -> Routes.JOURNAL
     q.questId.startsWith("mt_") -> Routes.MAINTENANCE
