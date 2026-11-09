@@ -6,21 +6,42 @@ import kotlin.math.roundToInt
 
 /** Daily volumes (spec §6). Day numbers start at 1 = Day 0 assessment day + first quests. */
 object TrainingProgram {
-    private const val PUSHUP_START = 10
-    private const val PUSHUP_GOAL = 100
-    private const val GOAL_DAY = 30
+    /** Steps of indoor walking that make one "walk after a meal" session (≈ 10 minutes). */
+    const val WALK_SESSION_STEPS = 800
 
-    /** 10 → 100 push-ups/day by day 30, with a 70 % deload every 5th day before day 30. */
-    fun pushupTotal(day: Int): Int {
+    /** Linear ramp through day 1 → day 14 → day 60 anchors (round 1.5 rule R1). */
+    private fun ramp(day: Int, d1: Int, d14: Int, d60: Int): Int {
         val d = day.coerceAtLeast(1)
-        if (d >= GOAL_DAY) return PUSHUP_GOAL
-        val base = (PUSHUP_START + (PUSHUP_GOAL - PUSHUP_START) * (d - 1) / (GOAL_DAY - 1).toDouble()).roundToInt()
-        return if (d % 5 == 0) (base * 0.7).roundToInt() else base
+        val v = when {
+            d <= 14 -> d1 + (d14 - d1) * (d - 1) / 13.0
+            d <= 60 -> d14 + (d60 - d14) * (d - 14) / 46.0
+            else -> d60.toDouble()
+        }
+        return v.roundToInt()
     }
 
-    fun squatTotal(day: Int): Int = minOf(2 * pushupTotal(day), 150)
+    /** Every 5th day is a 70 % recovery day. */
+    private fun deload(day: Int, total: Int): Int = if (day.coerceAtLeast(1) % 5 == 0) (total * 0.7).roundToInt() else total
 
-    fun ropeSeconds(day: Int): Int = minOf(90 + 10 * (day.coerceAtLeast(1) - 1), 600)
+    /** Cumulative push-ups for the day: 50 → 100 (day 14) → 200 (day 60). */
+    fun pushupTotal(day: Int): Int = deload(day, ramp(day, 50, 100, 200))
+
+    fun squatTotal(day: Int): Int = deload(day, ramp(day, 100, 150, 200))
+
+    fun situpTotal(day: Int): Int = deload(day, ramp(day, 50, 100, 200))
+
+    fun ropeSeconds(day: Int): Int = ramp(day, 180, 300, 600)
+
+    /** 6000 → 7000 (day 14) → 8000 (day 28 on). */
+    fun stepsTarget(day: Int): Int {
+        val d = day.coerceAtLeast(1)
+        val v = when {
+            d <= 14 -> 6000 + 1000 * (d - 1) / 13.0
+            d <= 28 -> 7000 + 1000 * (d - 14) / 14.0
+            else -> 8000.0
+        }
+        return (v / 100).roundToInt() * 100
+    }
 
     fun scaled(total: Int, c: Condition): Int = (total * Progression.conditionMultiplier(c)).roundToInt()
 

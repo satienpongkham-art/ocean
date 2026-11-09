@@ -10,7 +10,7 @@ enum class Condition { OPTIMAL, NORMAL, FATIGUED }
 /** Ordered from lowest to highest; UNKNOWN = not measured yet. */
 enum class Rank { E, D, C, B, A, S, UNKNOWN }
 
-enum class QuestType { DAILY_MAIN, DAILY_SIDE, PENALTY, MAINTENANCE, CHAIN }
+enum class QuestType { DAILY_MAIN, DAILY_SIDE, PENALTY, MAINTENANCE, CHAIN, GATE, BOSS }
 
 /** How the System verifies completion. */
 enum class Verify { SENSOR, AUTO, NUMBER, PHOTO, SELF }
@@ -30,9 +30,12 @@ data class Quest(
     val unit: String,
     val exp: Int,
     val gold: Int,
+    /** Gate window in minutes of day; progress only counts inside it. Null = all day. */
+    val openMin: Int? = null,
+    val closeMin: Int? = null,
 ) {
     /** Quests that must be finished today or a penalty follows. */
-    val required: Boolean get() = type != QuestType.DAILY_SIDE
+    val required: Boolean get() = type != QuestType.DAILY_SIDE && type != QuestType.BOSS
 }
 
 data class Inventory(val hasSunscreen: Boolean, val hasTapeMeasure: Boolean, val hasArmband: Boolean)

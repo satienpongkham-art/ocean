@@ -8,14 +8,14 @@ sealed interface RepEvent {
     data class Invalid(val reason: String) : RepEvent
 }
 
-enum class Exercise { PUSHUP, SQUAT, ROPE }
+enum class Exercise { PUSHUP, SQUAT, SITUP, ROPE, WALK }
 
 enum class Availability { OK, UNSUPPORTED }
 
 object CounterFactory {
     fun availability(exercise: Exercise, hasProximity: Boolean, hasAccel: Boolean): Availability = when (exercise) {
         Exercise.PUSHUP -> if (hasProximity && hasAccel) Availability.OK else Availability.UNSUPPORTED
-        Exercise.SQUAT, Exercise.ROPE -> if (hasAccel) Availability.OK else Availability.UNSUPPORTED
+        Exercise.SQUAT, Exercise.SITUP, Exercise.ROPE, Exercise.WALK -> if (hasAccel) Availability.OK else Availability.UNSUPPORTED
     }
 }
 
@@ -142,5 +142,42 @@ class JumpCounter {
         const val FLOOR = 12f
         const val MIN_INTERVAL_MS = 250L
         const val MAX_INTERVAL_MS = 1000L
+    }
+}
+
+/**
+ * Phone flat on the chest; angle of the torso from the lying reference.
+ * Lying < 20°, a rep needs ≥ 60° then back below 20°; 40–60° then down = "ขึ้นไม่สุด"; ≥ 900 ms between reps.
+ */
+class SitupCounter {
+    var count = 0
+        private set
+    private var inRep = false
+    private var maxAngle = 0f
+    private var lastRep: Long? = null
+
+    fun onTorsoAngle(tMs: Long, deg: Float): RepEvent? {
+        if (!inRep) {
+            if (deg >= REST_DEG) { inRep = true; maxAngle = deg }
+            return null
+        }
+        maxAngle = maxOf(maxAngle, deg)
+        if (deg >= REST_DEG) return null
+        inRep = false
+        if (maxAngle >= UP_DEG) {
+            val prev = lastRep
+            if (prev != null && tMs - prev < MIN_INTERVAL_MS) return null
+            lastRep = tMs
+            count++
+            return RepEvent.Rep(count)
+        }
+        return if (maxAngle >= SHALLOW_DEG) RepEvent.Invalid("ขึ้นไม่สุด") else null
+    }
+
+    private companion object {
+        const val REST_DEG = 20f
+        const val UP_DEG = 60f
+        const val SHALLOW_DEG = 40f
+        const val MIN_INTERVAL_MS = 900L
     }
 }

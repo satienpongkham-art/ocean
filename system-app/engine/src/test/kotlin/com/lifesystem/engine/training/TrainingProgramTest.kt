@@ -8,31 +8,41 @@ import com.lifesystem.engine.training.TrainingProgram.readingPages
 import com.lifesystem.engine.training.TrainingProgram.ropeSeconds
 import com.lifesystem.engine.training.TrainingProgram.scaled
 import com.lifesystem.engine.training.TrainingProgram.sets
+import com.lifesystem.engine.training.TrainingProgram.situpTotal
 import com.lifesystem.engine.training.TrainingProgram.squatTotal
+import com.lifesystem.engine.training.TrainingProgram.stepsTarget
 import com.lifesystem.engine.training.TrainingProgram.zone2WeeklyMinutes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TrainingProgramTest {
-    @Test fun pushup_day1_is10_day30_is100() {
-        assertEquals(10, pushupTotal(1)); assertEquals(100, pushupTotal(30))
+    @Test fun pushup_ramps_50_100_200() {
+        assertEquals(50, pushupTotal(1)); assertEquals(100, pushupTotal(14)); assertEquals(200, pushupTotal(61))
+        assertEquals(96, pushupTotal(13))
     }
 
     @Test fun pushup_deloadEvery5thDay() {
         assertTrue(pushupTotal(5) < pushupTotal(4)); assertTrue(pushupTotal(6) > pushupTotal(4))
+        assertEquals(140, pushupTotal(60))
     }
 
-    @Test fun pushup_afterDay30_holds100() = assertEquals(100, pushupTotal(45))
+    @Test fun pushup_neverBelowDay1() = assertEquals(50, pushupTotal(0))
 
-    @Test fun pushup_neverBelowDay1() = assertEquals(10, pushupTotal(0))
-
-    @Test fun squat_isDoublePushupCapped150() {
-        assertEquals(20, squatTotal(1)); assertEquals(150, squatTotal(30))
+    @Test fun squat_ramps_100_150_200() {
+        assertEquals(100, squatTotal(1)); assertEquals(150, squatTotal(14)); assertEquals(200, squatTotal(61))
     }
 
-    @Test fun rope() {
-        assertEquals(90, ropeSeconds(1)); assertEquals(600, ropeSeconds(200))
+    @Test fun situp_ramps_50_100_200() {
+        assertEquals(50, situpTotal(1)); assertEquals(100, situpTotal(14)); assertEquals(200, situpTotal(61))
+    }
+
+    @Test fun rope_180_300_600_noDeload() {
+        assertEquals(180, ropeSeconds(1)); assertEquals(300, ropeSeconds(14)); assertEquals(600, ropeSeconds(60))
+    }
+
+    @Test fun steps_6000_7000_8000() {
+        assertEquals(6000, stepsTarget(1)); assertEquals(7000, stepsTarget(14)); assertEquals(8000, stepsTarget(28)); assertEquals(8000, stepsTarget(90))
     }
 
     @Test fun scaled_fatigued_rounded() {

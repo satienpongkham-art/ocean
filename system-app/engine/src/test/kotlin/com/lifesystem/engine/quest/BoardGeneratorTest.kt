@@ -21,14 +21,33 @@ class BoardGeneratorTest {
         assertTrue(ids.containsAll(listOf("wake", "weigh", "skincare", "no_soda", "read", "english", "pushup", "squat", "journal", "sleep")))
     }
 
-    @Test fun day1_pushupTarget10_squat20() {
+    @Test fun day1_heavyTargets() {
         val b = board()
-        assertEquals(10, b.first { it.id == "pushup" }.target)
-        assertEquals(20, b.first { it.id == "squat" }.target)
+        assertEquals(50, b.first { it.id == "pushup" }.target)
+        assertEquals(100, b.first { it.id == "squat" }.target)
+        assertEquals(50, b.first { it.id == "situp" }.target)
+        assertEquals(6000, b.first { it.id == "steps" }.target)
         assertEquals(Verify.SENSOR, b.first { it.id == "pushup" }.verify)
     }
 
-    @Test fun fatigued_scalesTraining() = assertEquals(7, board(cond = FATIGUED).first { it.id == "pushup" }.target)
+    @Test fun fatigued_scalesTraining() = assertEquals(35, board(cond = FATIGUED).first { it.id == "pushup" }.target)
+
+    @Test fun newChallenges() {
+        val b = board().associateBy { it.id }
+        assertEquals(Verify.SENSOR, b.getValue("situp").verify)
+        assertEquals(Verify.AUTO, b.getValue("steps").verify)
+        assertEquals(2, b.getValue("walk_meal").target)
+        assertEquals(QuestType.DAILY_SIDE, b.getValue("walk_meal").type)
+        assertEquals(Verify.SELF, b.getValue("posture").verify)
+        assertEquals(Verify.AUTO, b.getValue("screen_off").verify)
+    }
+
+    @Test fun bossDay_addsBossQuests_notRequired() {
+        val bosses = BoardGenerator.generate(7, NORMAL, inv(), emptyList(), false, bossDay = true).filter { it.type == QuestType.BOSS }
+        assertEquals(setOf("boss_pushup", "boss_plank"), bosses.map { it.id }.toSet())
+        assertTrue(bosses.none { it.required })
+        assertTrue(board().none { it.type == QuestType.BOSS })
+    }
 
     @Test fun noSunscreen_addsChainBuyQuest() {
         val b = board(sunscreen = false)
