@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
     /** The current day; refreshed on resume and at midnight so a long-lived activity never writes to yesterday. */
     private val today = mutableLongStateOf(SystemApp.today())
     private val route = mutableStateOf<String?>(null)
-    private val problems = mutableStateOf<List<String>>(emptyList())
+    private val problems = mutableStateOf<List<AlarmScheduler.Problem>>(emptyList())
 
     private val dateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) = refreshDay()

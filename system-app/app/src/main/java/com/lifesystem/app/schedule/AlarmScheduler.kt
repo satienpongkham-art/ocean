@@ -56,13 +56,20 @@ class AlarmScheduler(private val context: Context) {
         if (pi != null) { am.cancel(pi); pi.cancel() }
     }
 
+    /** A missing permission with the settings screen that fixes it. */
+    data class Problem(val text: String, val fix: Intent)
+
     /** Thai warnings for anything that would stop popups from appearing; empty = all good. */
-    fun problems(): List<String> {
+    fun problems(): List<Problem> {
         val nm = context.getSystemService(NotificationManager::class.java)
+        val pkg = android.net.Uri.parse("package:" + context.packageName)
         return buildList {
-            if (!nm.areNotificationsEnabled()) add("การแจ้งเตือนถูกปิด · ป๊อปอัปจะไม่เด้ง")
-            if (Build.VERSION.SDK_INT >= 34 && !nm.canUseFullScreenIntent()) add("ยังไม่อนุญาตแจ้งเตือนเต็มหน้าจอ · จะขึ้นเป็นแถบเล็กแทน")
-            if (mode() == ScheduleMode.INEXACT_FALLBACK) add("ยังไม่อนุญาตปลุกตรงเวลา · ป๊อปอัปอาจช้าไม่กี่นาที")
+            if (!nm.areNotificationsEnabled()) add(Problem("การแจ้งเตือนถูกปิด · ป๊อปอัปจะไม่เด้ง",
+                Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)))
+            if (Build.VERSION.SDK_INT >= 34 && !nm.canUseFullScreenIntent()) add(Problem("ยังไม่อนุญาตแจ้งเตือนเต็มหน้าจอ · แตะเพื่อเปิด",
+                Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, pkg)))
+            if (mode() == ScheduleMode.INEXACT_FALLBACK && Build.VERSION.SDK_INT >= 31) add(Problem("ยังไม่อนุญาตปลุกตรงเวลา · แตะเพื่อเปิด",
+                Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, pkg)))
         }
     }
 

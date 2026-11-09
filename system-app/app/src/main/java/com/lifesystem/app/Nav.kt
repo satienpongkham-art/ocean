@@ -95,7 +95,7 @@ fun routeFor(q: QuestEntity): String = when {
 private class ProfileLoad(val profile: ProfileEntity?)
 
 @Composable
-fun SystemNav(repo: Repository, today: Long, route: String?, problems: List<String>, onRouteHandled: () -> Unit) {
+fun SystemNav(repo: Repository, today: Long, route: String?, problems: List<com.lifesystem.app.schedule.AlarmScheduler.Problem>, onRouteHandled: () -> Unit) {
     val load by remember { repo.profileFlow().map { ProfileLoad(it) } }
         .collectAsStateWithLifecycle(initialValue = null, minActiveState = androidx.lifecycle.Lifecycle.State.CREATED)
     val profile = load?.profile
@@ -145,17 +145,22 @@ fun SystemNav(repo: Repository, today: Long, route: String?, problems: List<Stri
 }
 
 @Composable
-private fun ProblemBanner(problems: List<String>) {
+private fun ProblemBanner(problems: List<com.lifesystem.app.schedule.AlarmScheduler.Problem>) {
     val ctx = LocalContext.current
     Column(
         Modifier.fillMaxWidth().background(SysColors.Emergency.copy(alpha = 0.12f)).border(1.dp, SysColors.Emergency.copy(alpha = 0.6f))
-            .clickable(role = Role.Button) {
-                ctx.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName))
-            }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(start = 16.dp, end = 64.dp, top = 6.dp, bottom = 6.dp), // room for the SYSTEM button
     ) {
-        Text("[ WARNING ] แตะเพื่อแก้", style = Txt.sys.copy(color = SysColors.Emergency, fontSize = 11.sp))
-        problems.forEach { Text("· $it", style = Txt.sub.copy(color = SysColors.Text)) }
+        Text("[ WARNING ] แตะข้อที่ต้องการแก้", style = Txt.sys.copy(color = SysColors.Emergency, fontSize = 11.sp))
+        problems.forEach { p ->
+            Text("· ${p.text}", style = Txt.sub.copy(color = SysColors.Text),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).clickable(role = Role.Button) {
+                    runCatching { ctx.startActivity(p.fix.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.onFailure {
+                        // Some phones lack the direct screen: fall back to the app's info page.
+                        ctx.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + ctx.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                }.padding(vertical = 8.dp))
+        }
     }
 }
 
