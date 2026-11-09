@@ -17,6 +17,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,8 @@ import com.lifesystem.app.ui.quest.QuestLogScreen
 import com.lifesystem.app.ui.quest.QuestViewModel
 import com.lifesystem.app.ui.status.StatusScreen
 import com.lifesystem.app.ui.theme.SysColors
+import com.lifesystem.app.ui.system.SystemCallButton
+import com.lifesystem.app.ui.system.SystemCallDialog
 import com.lifesystem.engine.model.QuestType
 import com.lifesystem.engine.model.Verify
 import kotlinx.coroutines.flow.map
@@ -61,6 +65,7 @@ object Routes {
     const val SHOP = "shop"
     const val MENU = "menu"
     const val TITLES = "titles"
+    const val SYSTEM = "system"
 }
 
 private val tabs = listOf(Routes.STATUS to "STATUS", Routes.QUESTS to "QUEST", Routes.GATE to "GATE", Routes.SHOP to "SHOP", Routes.MENU to "MENU")
@@ -87,9 +92,11 @@ fun SystemNav(repo: Repository, today: Long, route: String?, problems: List<Stri
     val app = LocalContext.current.applicationContext as SystemApp
     // Keyed by day: a new day gets a fresh view model (and board) instead of the one created yesterday.
     val questVm: QuestViewModel = viewModel(key = "quests-$today", factory = remember(today) { viewModelFactory { initializer { QuestViewModel(repo, today, { app.daySync.sync(it) }, { !app.autoSleep() }) } } })
+    var systemOpen by remember { mutableStateOf(false) }
     LaunchedEffect(route, load != null) {
         if (route != null && profile != null) {
-            if (route != Routes.QUESTS) nav.navigate(route) { launchSingleTop = true }
+            if (route == Routes.SYSTEM) systemOpen = true
+            else if (route != Routes.QUESTS) nav.navigate(route) { launchSingleTop = true }
             else nav.navigate(Routes.QUESTS) { popUpTo(Routes.QUESTS) { inclusive = true } }
             onRouteHandled()
         }
@@ -112,6 +119,14 @@ fun SystemNav(repo: Repository, today: Long, route: String?, problems: List<Stri
             }
             if (profile != null) BottomBar(nav)
         }
+        if (profile != null) {
+            Box(Modifier.fillMaxSize().statusBarsPadding().padding(top = 4.dp, end = 10.dp), contentAlignment = Alignment.TopEnd) {
+                SystemCallButton({ systemOpen = true })
+            }
+        }
+        if (systemOpen) SystemCallDialog(repo, today, onDismiss = { systemOpen = false }, onRoute = { r ->
+            nav.navigate(r) { popUpTo(Routes.QUESTS) { saveState = true }; launchSingleTop = true; restoreState = true }
+        })
     }
 }
 

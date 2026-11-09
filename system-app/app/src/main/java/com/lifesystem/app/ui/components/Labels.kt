@@ -41,7 +41,8 @@ object Txt {
 /** Screen title row: glowing English header + optional right text. */
 @Composable
 fun ScreenHeader(title: String, right: String = "") {
-    Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+    // end padding leaves room for the floating SYSTEM button
+    Row(Modifier.fillMaxWidth().padding(bottom = 8.dp, end = 48.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
         Text(title, style = TextStyle(fontFamily = Oxanium, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, letterSpacing = 6.sp, color = SysColors.CyanHi))
         Text(right, style = Txt.code)
     }

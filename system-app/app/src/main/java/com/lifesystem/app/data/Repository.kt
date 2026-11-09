@@ -151,7 +151,12 @@ class Repository(internal val db: SystemDb, internal val nowMs: () -> Long = Sys
     suspend fun saveJournal(epochDay: Long, text: String, emotion: String) = dao.upsertJournal(JournalEntity(epochDay, text, emotion))
     suspend fun journal(epochDay: Long) = dao.journal(epochDay)
 
-    suspend fun logMeal(m: MealLogEntity) = dao.insertMeal(m)
+    /** Logs a meal and updates "protein every meal" (meals reaching the per-meal protein bar). */
+    suspend fun logMeal(m: MealLogEntity) {
+        dao.insertMeal(m)
+        val enough = dao.meals(m.epochDay).count { it.protein >= BoardGenerator.PROTEIN_PER_MEAL_G }
+        dao.setProgress(m.epochDay, "protein_meals", enough)
+    }
     fun meals(epochDay: Long) = dao.mealsFlow(epochDay)
 
     fun recentDays(n: Int) = dao.recentDays(n)

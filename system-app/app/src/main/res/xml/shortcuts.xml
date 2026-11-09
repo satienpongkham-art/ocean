@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the app icon: call SYSTEM, open QUEST or GATE -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="system" android:enabled="true" android:icon="@drawable/ic_system"
+        android:shortcutShortLabel="@string/sc_system">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.lifesystem.app" android:targetClass="com.lifesystem.app.MainActivity">
+            <extra android:name="route" android:value="system" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="quests" android:enabled="true" android:icon="@drawable/ic_system"
+        android:shortcutShortLabel="@string/sc_quest">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.lifesystem.app" android:targetClass="com.lifesystem.app.MainActivity">
+            <extra android:name="route" android:value="quests" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="gate" android:enabled="true" android:icon="@drawable/ic_system"
+        android:shortcutShortLabel="@string/sc_gate">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.lifesystem.app" android:targetClass="com.lifesystem.app.MainActivity">
+            <extra android:name="route" android:value="gate" />
+        </intent>
+    </shortcut>
+</shortcuts>

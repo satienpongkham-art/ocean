@@ -34,6 +34,7 @@ interface SystemDao {
     @Query("SELECT * FROM measurement WHERE type = :type ORDER BY tMs DESC LIMIT :n") fun recent(type: String, n: Int): Flow<List<MeasurementEntity>>
 
     @Insert suspend fun insertMeal(m: MealLogEntity)
+    @Query("SELECT * FROM meal_log WHERE epochDay = :day") suspend fun meals(day: Long): List<MealLogEntity>
     @Query("SELECT * FROM meal_log WHERE epochDay = :day") fun mealsFlow(day: Long): Flow<List<MealLogEntity>>
 
     @Upsert suspend fun upsertMaintenance(m: MaintenanceEntity)

@@ -14,6 +14,8 @@ import com.lifesystem.engine.training.TrainingProgram
 /** Builds the daily quest board (spec §5.2). Deterministic: same inputs → same board. */
 object BoardGenerator {
     const val MAX_MAINTENANCE_PER_DAY = 2
+    /** A meal counts for "protein every meal" at this much protein (≈ 0.25–0.4 g/kg per meal). */
+    const val PROTEIN_PER_MEAL_G = 20
     const val FULL_CLEAR_GOLD = 10
     private const val MAIN_GOLD = 4
 
@@ -38,6 +40,7 @@ object BoardGenerator {
 
         main("wake", "ตื่นตามเวลา", Stat.VIT, Group.MORNING, Verify.AUTO, 30)
         main("weigh", "ชั่งน้ำหนัก + วัดรอบเอว", Stat.VIT, Group.MORNING, Verify.NUMBER, 20)
+        main("sunlight", "รับแดดเช้า 10 นาที (ภายใน 1 ชม. หลังตื่น)", Stat.VIT, Group.MORNING, Verify.SELF, 20)
         if (inventory.hasSunscreen) {
             main("skincare", "แปรงฟัน · ล้างหน้า · ทากันแดด", Stat.CHA, Group.MORNING, Verify.SELF, 25)
         } else {
@@ -45,6 +48,7 @@ object BoardGenerator {
         }
 
         main("no_soda", "ไม่มีน้ำอัดลมหวาน", Stat.VIT, Group.DAY, Verify.SELF, 20)
+        main("protein_meals", "โปรตีน ≥ ${PROTEIN_PER_MEAL_G} ก. ทุกมื้อ (บันทึกใน MEAL)", Stat.VIT, Group.DAY, Verify.AUTO, 25, 3, "มื้อ")
         main("read", "อ่านหนังสือ", Stat.INT, Group.DAY, Verify.SELF, 25, TrainingProgram.readingPages(dayNumber), "หน้า")
         main("english", "ภาษาอังกฤษ", Stat.INT, Group.DAY, Verify.SELF, 25, TrainingProgram.englishMinutes(dayNumber), "นาที")
         side("water", "ดื่มน้ำ", Stat.VIT, Group.DAY, Verify.NUMBER, 15, 2, 2500, "มล.")

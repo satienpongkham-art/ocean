@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sc_system">เรียก SYSTEM</string>
+    <string name="sc_quest">QUEST</string>
+    <string name="sc_gate">GATE</string>
+</resources>

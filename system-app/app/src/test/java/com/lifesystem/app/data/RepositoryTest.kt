@@ -135,6 +135,15 @@ class RepositoryTest {
         assertFalse(q.done)
     }
 
+    @Test fun proteinMeals_countOnlyMealsWithEnoughProtein() = runTest {
+        repo.ensureBoard(day0)
+        fun meal(p: Int) = MealLogEntity(epochDay = day0, slot = "LUNCH", menuId = "m", kcal = 500, protein = p, price = 60)
+        repo.logMeal(meal(32)); repo.logMeal(meal(10)); repo.logMeal(meal(25))
+        assertEquals(2, db.dao().quest(day0, "protein_meals")!!.progress)
+        repo.logMeal(meal(40))
+        assertTrue(db.dao().quest(day0, "protein_meals")!!.done)
+    }
+
     @Test fun noProfile_noBoard() = runTest {
         val empty = Repository(Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), SystemDb::class.java).allowMainThreadQueries().build())
         assertTrue(empty.ensureBoard(day0).isEmpty())

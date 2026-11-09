@@ -83,4 +83,15 @@ class ScreenshotTest {
         }
         save("avatars")
     }
+
+    @Test fun systemCall() {
+        val state = com.lifesystem.app.ui.system.SystemState(
+            nowMin = 19 * 60, requiredLeft = 4, requiredTotal = 17, openGate = "GATE 2" to 25, bossDay = true,
+            condition = com.lifesystem.engine.model.Condition.OPTIMAL, sleepH = 7.8, expScrolls = 1, nextMealMin = 20 * 60, steps = 4200 to 6000,
+        )
+        val ui = com.lifesystem.app.ui.system.SystemCallUi("ผู้เล่น", 3, 640, 820, "ผู้ตื่นก่อนรุ่งอรุณ", AvatarLook(stage = 2, outfit = "outfit_hoodie", aura = "aura_cyan"),
+            com.lifesystem.app.ui.system.SystemMessages.build(state))
+        compose.setContent { SystemTheme { Column(Modifier.background(SysColors.Void).padding(16.dp)) { com.lifesystem.app.ui.system.SystemCallContent(ui, {}, {}) } } }
+        save("system_call")
+    }
 }

@@ -207,6 +207,7 @@ fun StatusScreen(repo: Repository, today: Long) {
                 LineChart("ชั่วโมงนอน", ui.sleeps, SysColors.Hidden, { "%.1f".format(it) })
             }
         }
+        ProgressPhotoPanel(today)
         Text("", modifier = Modifier.padding(bottom = 8.dp))
     }
 }

@@ -38,6 +38,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
             <!-- Health Connect (Android 13 and lower): show why we read sleep and steps -->
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
@@ -69,6 +70,17 @@
             android:name=".ui.training.RepService"
             android:exported="false"
             android:foregroundServiceType="health" />
+
+        <service
+            android:name=".system.SystemTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_system"
+            android:label="SYSTEM"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".schedule.AlarmReceiver"

@@ -40,6 +40,11 @@ class BoardGeneratorTest {
         assertEquals(QuestType.DAILY_SIDE, b.getValue("walk_meal").type)
         assertEquals(Verify.SELF, b.getValue("posture").verify)
         assertEquals(Verify.AUTO, b.getValue("screen_off").verify)
+        assertEquals(Verify.SELF, b.getValue("sunlight").verify)
+        assertEquals(com.lifesystem.engine.model.Group.MORNING, b.getValue("sunlight").group)
+        assertEquals(Verify.AUTO, b.getValue("protein_meals").verify)
+        assertEquals(3, b.getValue("protein_meals").target)
+        assertEquals(BoardGenerator.PROTEIN_PER_MEAL_G, 20)
     }
 
     @Test fun bossDay_addsBossQuests_notRequired() {
