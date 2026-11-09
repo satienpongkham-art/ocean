@@ -10,7 +10,7 @@ enum class Condition { OPTIMAL, NORMAL, FATIGUED }
 /** Ordered from lowest to highest; UNKNOWN = not measured yet. */
 enum class Rank { E, D, C, B, A, S, UNKNOWN }
 
-enum class QuestType { DAILY_MAIN, DAILY_SIDE, PENALTY, MAINTENANCE, CHAIN, GATE, BOSS }
+enum class QuestType { DAILY_MAIN, DAILY_SIDE, PENALTY, MAINTENANCE, CHAIN, GATE, BOSS, EMERGENCY }
 
 /** How the System verifies completion. */
 enum class Verify { SENSOR, AUTO, NUMBER, PHOTO, SELF }
@@ -36,6 +36,13 @@ data class Quest(
 ) {
     /** Quests that must be finished today or a penalty follows. */
     val required: Boolean get() = type != QuestType.DAILY_SIDE && type != QuestType.BOSS
+
+    /** Round 2 rule R2.1: only core quests cause a penalty when missed. */
+    val core: Boolean get() = id in CORE_IDS || type == QuestType.PENALTY || type == QuestType.GATE || type == QuestType.EMERGENCY
+
+    companion object {
+        val CORE_IDS = setOf("wake", "weigh", "pushup", "squat", "journal", "sleep")
+    }
 }
 
 data class Inventory(val hasSunscreen: Boolean, val hasTapeMeasure: Boolean, val hasArmband: Boolean)

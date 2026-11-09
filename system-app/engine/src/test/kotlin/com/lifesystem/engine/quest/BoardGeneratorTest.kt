@@ -19,13 +19,14 @@ class BoardGeneratorTest {
     @Test fun day1_containsSpecMainQuests() {
         val ids = board().filter { it.type == QuestType.DAILY_MAIN }.map { it.id }
         assertTrue(ids.containsAll(listOf("wake", "weigh", "skincare", "no_soda", "read", "english", "pushup", "squat", "journal", "sleep")))
+        assertTrue(board(day = 3).any { it.id == "situp" })
     }
 
     @Test fun day1_heavyTargets() {
         val b = board()
         assertEquals(50, b.first { it.id == "pushup" }.target)
         assertEquals(100, b.first { it.id == "squat" }.target)
-        assertEquals(50, b.first { it.id == "situp" }.target)
+        assertEquals(50, board(day = 3).first { it.id == "situp" }.target.let { TrainingProgram.situpTotal(1) })
         assertEquals(6000, b.first { it.id == "steps" }.target)
         assertEquals(Verify.SENSOR, b.first { it.id == "pushup" }.verify)
     }
@@ -34,7 +35,7 @@ class BoardGeneratorTest {
 
     @Test fun newChallenges() {
         val b = board().associateBy { it.id }
-        assertEquals(Verify.SENSOR, b.getValue("situp").verify)
+        assertEquals(Verify.SENSOR, board(day = 3).first { it.id == "situp" }.verify)
         assertEquals(Verify.AUTO, b.getValue("steps").verify)
         assertEquals(2, b.getValue("walk_meal").target)
         assertEquals(QuestType.DAILY_SIDE, b.getValue("walk_meal").type)
@@ -45,6 +46,30 @@ class BoardGeneratorTest {
         assertEquals(Verify.AUTO, b.getValue("protein_meals").verify)
         assertEquals(3, b.getValue("protein_meals").target)
         assertEquals(BoardGenerator.PROTEIN_PER_MEAL_G, 20)
+    }
+
+    @Test fun coreSet() {
+        val core = board().filter { it.core }.map { it.id }.toSet()
+        assertEquals(setOf("wake", "weigh", "pushup", "squat", "journal", "sleep"), core)
+    }
+
+    @Test fun restDay_noTrainingVolume_mobilityInstead() {
+        val b = BoardGenerator.generate(7, NORMAL, inv(), emptyList(), false, bossDay = true).map { it.id }
+        assertTrue(listOf("pushup", "squat", "situp", "plank", "rope").none { it in b })
+        assertTrue("mobility" in b)
+    }
+
+    @Test fun situpAlternatesWithPlank() {
+        val odd = board(day = 3).map { it.id }; val even = board(day = 4).map { it.id }
+        assertTrue("situp" in odd && "plank" !in odd)
+        assertTrue("plank" in even && "situp" !in even)
+        assertEquals(Verify.NUMBER, board(day = 4).first { it.id == "plank" }.verify)
+    }
+
+    @Test fun penaltyFund_addedWithAmount() {
+        val q = BoardGenerator.generate(3, NORMAL, inv(), emptyList(), true, penaltyFundBaht = 100).first { it.id == "penalty_fund" }
+        assertEquals(QuestType.PENALTY, q.type); assertEquals(Verify.NUMBER, q.verify); assertTrue(q.title.contains("100"))
+        assertTrue(BoardGenerator.generate(3, NORMAL, inv(), emptyList(), true).none { it.id == "penalty_fund" })
     }
 
     @Test fun bossDay_addsBossQuests_notRequired() {

@@ -10,6 +10,7 @@ data class DayResult(
     val penaltyTomorrow: Boolean,
     val goldEarned: Int,
     val expEarned: Int,
+    val coreMisses: Int = 0,
 )
 
 /**
@@ -21,6 +22,7 @@ object DayCloser {
         fun done(q: Quest) = (progress[q.id] ?: 0) >= q.target
         val required = quests.filter { it.required }
         val failed = required.filterNot(::done).map { it.id }
+        val coreMisses = quests.filter { it.core }.count { !done(it) }
         val completed = quests.filter(::done)
         val mains = quests.filter { it.type == QuestType.DAILY_MAIN }
         val fullClear = failed.isEmpty() && required.isNotEmpty()
@@ -28,9 +30,17 @@ object DayCloser {
             mainDone = mains.count(::done),
             mainTotal = mains.size,
             failed = failed,
-            penaltyTomorrow = failed.isNotEmpty() && !graceDay,
+            penaltyTomorrow = coreMisses > 0 && !graceDay,
             goldEarned = completed.sumOf { it.gold } + if (fullClear) BoardGenerator.FULL_CLEAR_GOLD else 0,
             expEarned = completed.sumOf { it.exp },
+            coreMisses = coreMisses,
         )
+    }
+
+    /** Round 2 rule R2.3: money moved to savings after a failed core day. */
+    fun penaltyFundBaht(coreMisses: Int): Int = when {
+        coreMisses <= 0 -> 0
+        coreMisses <= 2 -> 50
+        else -> 100
     }
 }

@@ -62,4 +62,12 @@ class TrainingProgramTest {
         assertEquals(5, readingPages(1)); assertEquals(20, readingPages(60))
         assertEquals(15, englishMinutes(1)); assertEquals(30, englishMinutes(60))
     }
+
+    @Test fun plank_60_90_180() {
+        assertEquals(60, TrainingProgram.plankSeconds(1)); assertEquals(90, TrainingProgram.plankSeconds(14)); assertEquals(180, TrainingProgram.plankSeconds(60))
+    }
+
+    @Test fun dumbbellReps_10_to_15_over_6_weeks() {
+        assertEquals(10, TrainingProgram.dumbbellReps(1)); assertEquals(15, TrainingProgram.dumbbellReps(42)); assertEquals(15, TrainingProgram.dumbbellReps(90))
+    }
 }

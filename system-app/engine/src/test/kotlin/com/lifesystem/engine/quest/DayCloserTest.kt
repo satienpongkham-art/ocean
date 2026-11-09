@@ -45,4 +45,20 @@ class DayCloserTest {
         assertFalse(r.penaltyTomorrow)
         assertTrue("journal" in r.failed)
     }
+
+    @Test fun nonCoreMiss_noPenalty_butNoFullClear() {
+        val r = DayCloser.close(quests, allDone() - "read")
+        assertFalse(r.penaltyTomorrow)
+        assertTrue("read" in r.failed)
+        assertEquals(0, r.coreMisses)
+    }
+
+    @Test fun coreMisses_counted() {
+        val r = DayCloser.close(quests, allDone() - "pushup" - "squat" - "journal")
+        assertTrue(r.penaltyTomorrow)
+        assertEquals(3, r.coreMisses)
+        assertEquals(100, DayCloser.penaltyFundBaht(r.coreMisses))
+        assertEquals(50, DayCloser.penaltyFundBaht(1))
+        assertEquals(0, DayCloser.penaltyFundBaht(0))
+    }
 }

@@ -39,6 +39,7 @@ object GateGenerator {
     fun volume(exercise: String, rank: Rank): Int = (base.getValue(exercise) * multiplier(rank)).roundToInt()
 
     fun generate(epochDay: Long, level: Int, wakeMin: Int, sleepMin: Int): List<Gate> {
+        if (java.time.LocalDate.ofEpochDay(epochDay).dayOfWeek == java.time.DayOfWeek.SUNDAY) return emptyList() // rest day
         val r = Random(mix(epochDay * 7919 + 17))
         val count = r.nextInt(100).let { if (it < 25) 0 else if (it < 70) 1 else 2 }
         val bed = if (sleepMin <= wakeMin) sleepMin + 1440 else sleepMin
@@ -69,6 +70,9 @@ object GateGenerator {
             t.target, unit.getValue(t.exercise), (15 * multiplier(g.rank)).roundToInt(), gold, g.openMin, g.closeMin,
         )
     }
+
+    /** SplitMix64 finalizer (shared with other per-day generators). */
+    internal fun mixSeed(x: Long): Long = mix(x)
 
     /** SplitMix64 finalizer: neighbouring days must not give correlated first random values. */
     private fun mix(x: Long): Long {

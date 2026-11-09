@@ -26,6 +26,8 @@ object BoardGenerator {
         maintenanceDue: List<String>,
         penaltyPending: Boolean,
         bossDay: Boolean = false,
+        penaltyFundBaht: Int = 0,
+        dumbbellDay: Boolean = false,
     ): List<Quest> = buildList {
         fun main(id: String, title: String, stat: Stat, group: Group, verify: Verify, exp: Int, target: Int = 1, unit: String = "") =
             add(Quest(id, title, stat, DAILY_MAIN, group, verify, target, unit, exp, MAIN_GOLD))
@@ -36,6 +38,9 @@ object BoardGenerator {
             val extra = TrainingProgram.pushupTotal(dayNumber) / 2
             add(Quest("penalty", "PENALTY · วิดพื้นเพิ่ม", Stat.STR, QuestType.PENALTY, Group.TRAINING, Verify.SENSOR, extra, "ครั้ง", 0, 0))
             add(Quest("penalty_squat", "PENALTY · สควอทเพิ่ม", Stat.STR, QuestType.PENALTY, Group.TRAINING, Verify.SENSOR, 20, "ครั้ง", 0, 0))
+            if (penaltyFundBaht > 0) {
+                add(Quest("penalty_fund", "PENALTY · โอน $penaltyFundBaht ฿ เข้าเงินเก็บ", Stat.GOLD, QuestType.PENALTY, Group.DAY, Verify.NUMBER, 1, "฿$penaltyFundBaht", 0, 0))
+            }
         }
 
         main("wake", "ตื่นตามเวลา", Stat.VIT, Group.MORNING, Verify.AUTO, 30)
@@ -58,14 +63,28 @@ object BoardGenerator {
         main("steps", "เดินให้ครบ", Stat.AGI, Group.DAY, Verify.AUTO, 30, TrainingProgram.stepsTarget(dayNumber), "ก้าว")
         side("walk_meal", "เดิน 10 นาทีหลังมื้อ", Stat.VIT, Group.DAY, Verify.SENSOR, 15, 2, 2, "รอบ")
 
-        val push = TrainingProgram.scaled(TrainingProgram.pushupTotal(dayNumber), condition)
-        val squat = TrainingProgram.scaled(TrainingProgram.squatTotal(dayNumber), condition)
-        val situp = TrainingProgram.scaled(TrainingProgram.situpTotal(dayNumber), condition)
-        val rope = TrainingProgram.scaled(TrainingProgram.ropeSeconds(dayNumber), condition)
-        main("pushup", "วิดพื้น", Stat.STR, Group.TRAINING, Verify.SENSOR, 40, push, "ครั้ง")
-        main("squat", "สควอท", Stat.STR, Group.TRAINING, Verify.SENSOR, 35, squat, "ครั้ง")
-        main("situp", "ซิทอัพ", Stat.STR, Group.TRAINING, Verify.SENSOR, 35, situp, "ครั้ง")
-        side("rope", "เชือกกระโดด", Stat.AGI, Group.TRAINING, Verify.SENSOR, 20, 2, rope, "วินาที")
+        if (bossDay) {
+            // Rest day (rule R2.2): recovery only, the boss measurements are the training.
+            main("mobility", "ยืดเหยียด 10 นาที · วันพักฟื้นร่างกาย", Stat.AGI, Group.TRAINING, Verify.SELF, 20)
+        } else {
+            val push = TrainingProgram.scaled(TrainingProgram.pushupTotal(dayNumber), condition)
+            val squat = TrainingProgram.scaled(TrainingProgram.squatTotal(dayNumber), condition)
+            val rope = TrainingProgram.scaled(TrainingProgram.ropeSeconds(dayNumber), condition)
+            main("pushup", "วิดพื้น", Stat.STR, Group.TRAINING, Verify.SENSOR, 40, push, "ครั้ง")
+            main("squat", "สควอท", Stat.STR, Group.TRAINING, Verify.SENSOR, 35, squat, "ครั้ง")
+            if (dayNumber % 2 == 0) {
+                main("plank", "แพลงก์ (จับเวลา)", Stat.STR, Group.TRAINING, Verify.NUMBER, 35, TrainingProgram.scaled(TrainingProgram.plankSeconds(dayNumber), condition), "วินาที")
+            } else {
+                main("situp", "ซิทอัพ", Stat.STR, Group.TRAINING, Verify.SENSOR, 35, TrainingProgram.scaled(TrainingProgram.situpTotal(dayNumber), condition), "ครั้ง")
+            }
+            side("rope", "เชือกกระโดด", Stat.AGI, Group.TRAINING, Verify.SENSOR, 20, 2, rope, "วินาที")
+            if (dumbbellDay) {
+                val reps = TrainingProgram.dumbbellReps(dayNumber)
+                listOf("db_curl" to "ดัมเบล · เคิร์ล", "db_row" to "ดัมเบล · โรว์", "db_press" to "ดัมเบล · เพรส").forEach { (id, t) ->
+                    side(id, "$t 3×$reps", Stat.STR, Group.TRAINING, Verify.NUMBER, 15, 1, 3, "เซ็ต")
+                }
+            }
+        }
 
         if (bossDay) {
             add(Quest("boss_pushup", "BOSS · วิดพื้นรวดเดียวให้มากที่สุด", Stat.STR, QuestType.BOSS, Group.TRAINING, Verify.SENSOR, 1, "เซ็ต", 0, 0))

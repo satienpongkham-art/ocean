@@ -32,6 +32,12 @@ object TrainingProgram {
 
     fun ropeSeconds(day: Int): Int = ramp(day, 180, 300, 600)
 
+    /** Plank on even days instead of sit-ups (lower-back friendly): 60 → 90 → 180 s. */
+    fun plankSeconds(day: Int): Int = ramp(day, 60, 90, 180)
+
+    /** Dumbbell reps per set: 10 → 15 over six weeks (5 kg pair). */
+    fun dumbbellReps(day: Int): Int = (10 + 5 * (day.coerceAtLeast(1) - 1) / 41.0).roundToInt().coerceAtMost(15)
+
     /** 6000 → 7000 (day 14) → 8000 (day 28 on). */
     fun stepsTarget(day: Int): Int {
         val d = day.coerceAtLeast(1)
