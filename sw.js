@@ -1,6 +1,6 @@
 // Service worker: ใช้งานออฟไลน์ (เก็บไฟล์แอปไว้ในเครื่อง)
 // เปลี่ยนเลข VERSION ทุกครั้งที่แก้ไฟล์ข้อมูล/โค้ด เพื่อให้เครื่องโหลดของใหม่
-const VERSION = 'advdesk-2026-11-15-2';
+const VERSION = 'advdesk-2026-11-15-3';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css', 'css/ui2.css', 'assets/icon.svg',
   'js/app.js', 'js/ui.js', 'js/store.js', 'js/charts.js',
@@ -22,7 +22,7 @@ self.addEventListener('fetch', (e) => {
   if (url.hostname.endsWith('script.google.com') || url.hostname.endsWith('googleusercontent.com')) return; // ซิงก์: ไม่แคช
   if (url.origin === location.origin) {
     // network-first สำหรับไฟล์ของแอป (ได้ข้อมูลแผนล่าสุดเมื่อออนไลน์) และ fallback แคชเมื่อออฟไลน์
-    e.respondWith(fetch(e.request).then((r) => { const cp = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, cp)); return r; }).catch(() => caches.match(e.request).then((r) => r || caches.match('index.html'))));
+    e.respondWith(fetch(e.request, { cache: 'no-cache' }).then((r) => { const cp = r.clone(); caches.open(VERSION).then((c) => c.put(e.request, cp)); return r; }).catch(() => caches.match(e.request).then((r) => r || caches.match('index.html'))));
   } else if (url.hostname.includes('fonts.g')) {
     e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request).then((res) => { const cp = res.clone(); caches.open(VERSION).then((c) => c.put(e.request, cp)); return res; })));
   }
