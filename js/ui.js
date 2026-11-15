@@ -82,6 +82,13 @@ const P = {
   'cat-senior': '<circle cx="10" cy="5" r="2"/><path d="M10 8v6l-2 6M10 14l3 6M10 10l4 2"/><path d="M16 12v8"/>',
   note: '<path d="M5 4h14v12l-4 4H5z"/><path d="M15 20v-4h4M8.5 9h7M8.5 13h5"/>',
   minus: '<path d="M5 12h14"/>',
+  more: '<circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/>',
+  pause: '<path d="M9 5v14M15 5v14"/>',
+  play: '<path d="M7 5l12 7-12 7z"/>',
+  share: '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/>',
+  key: '<rect x="3" y="7" width="18" height="11" rx="2"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 14.5h10"/>',
+  layers: '<path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/>',
+  info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.01"/>',
 };
 export function icon(name, cls = '') {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -135,9 +142,18 @@ export const initials = (s = '') => ((s.trim().replace(/^(น้อง|พี่
 
 // ── Toast ──────────────────────────────────────────────────
 let tt;
+/** ข้อความแจ้งสั้น ๆ: แสดงนานตามความยาวข้อความ (อย่างน้อย 3 วินาที) · แตะเพื่อปิด · ชี้ค้างไว้ = หยุดนับเวลา */
 export function toast(msg) {
   const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show');
-  clearTimeout(tt); tt = setTimeout(() => el.classList.remove('show'), 2200);
+  const ms = Math.min(7000, Math.max(3000, String(msg).length * 70));
+  const hide = () => el.classList.remove('show');
+  clearTimeout(tt); tt = setTimeout(hide, ms);
+  if (!el.dataset.wired) {
+    el.dataset.wired = '1'; el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer';
+    el.addEventListener('click', () => { clearTimeout(tt); hide(); });
+    el.addEventListener('mouseenter', () => clearTimeout(tt));
+    el.addEventListener('mouseleave', () => { tt = setTimeout(hide, 1500); });
+  }
 }
 export async function copyText(text) {
   try { await navigator.clipboard.writeText(text); toast('คัดลอกแล้ว'); }
@@ -161,10 +177,21 @@ export function sheet({ title, sub, body, actions, onClose, cls = '' }) {
   document.body.append(scrim, panel);
   document.body.style.overflow = 'hidden';
   requestAnimationFrame(() => { scrim.classList.add('show'); panel.classList.add('show'); });
-  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const opener = document.activeElement;
+  const onKey = (e) => {
+    if (e.key === 'Escape') { close(); return; }
+    if (e.key === 'Tab') { // วนโฟกัสอยู่ในหน้าต่าง
+      const f = [...panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => x.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  };
   document.addEventListener('keydown', onKey);
-  openSheet = { scrim, panel, onClose, onKey };
+  openSheet = { scrim, panel, onClose, onKey, opener };
   swipeToClose(panel, close);
+  setTimeout(() => { if (!panel.contains(document.activeElement)) (panel.querySelector('.sheet-body input, .sheet-body select, .sheet-body textarea') && !matchMedia('(pointer: coarse)').matches ? panel.querySelector('.sheet-body input, .sheet-body select, .sheet-body textarea') : panel.querySelector('.sheet-head .icon-btn'))?.focus({ preventScroll: true }); }, 60);
   return panel;
 }
 
@@ -193,8 +220,9 @@ function swipeToClose(panel, close) {
 }
 export function closeSheet(silent = false) {
   if (!openSheet) return;
-  const { scrim, panel, onClose, onKey } = openSheet; openSheet = null;
+  const { scrim, panel, onClose, onKey, opener } = openSheet; openSheet = null;
   document.removeEventListener('keydown', onKey);
+  if (opener && opener.isConnected && typeof opener.focus === 'function') setTimeout(() => opener.focus({ preventScroll: true }), 0);
   scrim.classList.remove('show'); panel.classList.remove('show');
   document.body.style.overflow = '';
   setTimeout(() => { scrim.remove(); panel.remove(); }, silent ? 0 : 240);
@@ -205,6 +233,35 @@ export const isSheetOpen = () => !!openSheet;
 // ── Form helpers ───────────────────────────────────────────
 export function field(label, input, hint) {
   return h('label.f', h('span', label), input, hint ? h('small', hint) : null);
+}
+
+// ── ข้อความแจ้งข้อผิดพลาดใต้ช่อง (ไม่ใช้แค่สีแดง) ──────────
+const ERR_TEXT = (el) => {
+  const v = el.validity;
+  if (v.valueMissing) return 'กรุณากรอกช่องนี้';
+  if (v.typeMismatch) return el.type === 'email' ? 'รูปแบบอีเมลไม่ถูกต้อง' : 'รูปแบบไม่ถูกต้อง';
+  if (v.rangeUnderflow) return `ต้องไม่น้อยกว่า ${el.min}`;
+  if (v.rangeOverflow) return `ต้องไม่เกิน ${el.max}`;
+  if (v.badInput) return 'กรอกเป็นตัวเลข';
+  if (v.patternMismatch) return el.title || 'รูปแบบไม่ถูกต้อง';
+  return el.validationMessage;
+};
+export function showFieldError(el, msg) {
+  let err = el.parentElement.querySelector(':scope > .err');
+  if (!msg) { el.removeAttribute('aria-invalid'); err?.remove(); return; }
+  if (!err) { err = h('div.err', { id: 'err-' + Math.random().toString(36).slice(2, 8), role: 'alert' }); el.insertAdjacentElement('afterend', err); }
+  err.replaceChildren(h('b', '! '), msg);
+  el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', err.id);
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('invalid', (e) => { const el = e.target; if (!el.matches?.('input, select, textarea')) return; e.preventDefault(); showFieldError(el, ERR_TEXT(el));
+    const first = el.form && el.form.querySelector(':invalid'); if (first === el) el.focus(); }, true);
+  document.addEventListener('input', (e) => { const el = e.target; if (el.getAttribute?.('aria-invalid') && el.checkValidity()) showFieldError(el, null); }, true);
+}
+
+/** ส่วนที่ซ่อนไว้ก่อน กด "ดูเพิ่ม" เพื่อเปิด (แสดงทีละชั้น) */
+export function more(label, ...children) {
+  return h('details.more', h('summary', h('span', label), icon('next')), h('div.more-in', children));
 }
 export function inputEl(name, value, attrs = {}) {
   return h('input.input', { name, value: value ?? '', ...attrs });
@@ -227,8 +284,8 @@ export function seg(options, value, onChange) {
   for (const [v, l] of options) wrap.append(h('button', { class: v === value ? 'on' : '', role: 'tab', 'aria-selected': String(v === value), onclick: () => onChange(v) }, l));
   return wrap;
 }
-export function empty(text, ic = 'doc', action) {
-  return h('div.empty', icon(ic), h('div', text), action ? h('div', { style: { marginTop: '12px' } }, action) : null);
+export function empty(text, ic = 'doc', action, hint) {
+  return h('div.empty', h('span.empty-ic', icon(ic)), h('b.empty-t', text), hint ? h('p.empty-h', hint) : null, action ? h('div.empty-a', action) : null);
 }
 
 // ── v2 components ──────────────────────────────────────────
@@ -310,17 +367,30 @@ export function wizard(steps, data, { onDone, doneLabel = 'เสร็จ', onC
         i > 0 ? h('button.btn', { type: 'button', onclick: () => { collect(); i--; draw(); window.scrollTo({ top: 0 }); } }, icon('back'), 'ย้อนกลับ')
           : (onCancel ? h('button.btn', { type: 'button', onclick: onCancel }, 'ยกเลิก') : null),
         i < steps.length - 1
-          ? h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (s.valid && !s.valid(data)) return; i++; draw(); window.scrollTo({ top: 0 }); } }, 'ถัดไป', icon('next'))
-          : h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (s.valid && !s.valid(data)) return; onDone && onDone(data); } }, icon('check'), doneLabel)));
+          ? h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (!ok()) return; i++; draw(); window.scrollTo({ top: 0 }); } }, 'ถัดไป', icon('next'))
+          : h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (!ok()) return; onDone && onDone(data); } }, icon('check'), doneLabel)));
+    function ok() {
+      if (!s.valid || s.valid(data)) return true;
+      let e = root.querySelector('.wiz-err');
+      if (!e) { e = h('div.wiz-err', { role: 'alert' }); root.querySelector('.wiz-nav').before(e); }
+      e.replaceChildren(h('b', '! '), s.error || 'กรอกข้อมูลที่จำเป็นในขั้นนี้ก่อน');
+      body.querySelector('input:invalid, input:not([value]), select, input')?.focus();
+      return false;
+    }
   };
   draw();
   return root;
 }
 
 /** รายการจุดเด่น/ข้อควรรู้ แบบอ่านง่าย + "ดูเพิ่ม" */
+// คำศัพท์ที่มีคำอธิบาย: app.js ตั้งตัวแปลงข้อความ (ครอบคำด้วยปุ่มอธิบาย)
+let textHook = null;
+export function setTextHook(fn) { textHook = fn; }
+export const T = (s) => (typeof s === 'string' && textHook ? textHook(s) : s);
+
 export function points(items = [], { kind = 'good', limit = 0 } = {}) {
   const ic = kind === 'warn' ? '!' : null;
-  const make = (list) => h('ul.pts.' + kind, list.map((t) => h('li', h('span.mk', ic ? h('b', { style: { fontSize: '13px' } }, '!') : icon('check')), h('span', t))));
+  const make = (list) => h('ul.pts.' + kind, list.map((t) => h('li', h('span.mk', { 'aria-hidden': 'true' }, ic ? h('b', { style: { fontSize: '13px' } }, '!') : icon('check')), h('span', T(t)))));
   if (!limit || items.length <= limit) return make(items);
   const wrap = h('div');
   const btn = h('button.more-btn', { onclick: () => { wrap.replaceChildren(make(items)); } }, `ดูเพิ่มอีก ${items.length - limit} ข้อ`);
@@ -329,7 +399,7 @@ export function points(items = [], { kind = 'good', limit = 0 } = {}) {
 }
 
 /** รายการ หัวข้อ–ค่า */
-export function kvlist(rows) { return h('div.kvlist', rows.map(([k, v]) => h('div', h('span', k), h('b', v)))); }
+export function kvlist(rows) { return h('div.kvlist', rows.map(([k, v]) => h('div', h('span', k), h('b', T(v))))); }
 
 /** ตัวอ่านค่าจาก choices / numStepper / input ภายในโหนด */
 export function readControls(node) {

@@ -1,7 +1,7 @@
 // ─── ปฏิทินรายเดือน: นัด · วันเกิด · อายุประกันขึ้น · ครบชำระเบี้ย · วันติดตาม ───
-import { h, icon, todayISO, isoDate, dateTH } from '../ui.js';
+import { h, icon, todayISO, isoDate, dateTH, empty } from '../ui.js';
 import * as store from '../store.js';
-import { anniversariesIn } from '../engine/work.js';
+import { anniversariesIn, milestones } from '../engine/work.js';
 import { apptSheet, apptResultSheet, policyName } from './common.js';
 
 const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
@@ -12,6 +12,7 @@ export const KINDS = {
   ageup: { name: 'อายุประกันขึ้น', color: 'var(--accent)', icon: 'clock' },
   bday: { name: 'วันเกิด', color: 'var(--warn)', icon: 'cake' },
   due: { name: 'ครบชำระเบี้ย', color: 'var(--c-saving)', icon: 'doc' },
+  care: { name: 'ดูแลหลังขาย', color: 'var(--good)', icon: 'heart' },
 };
 
 let view = null; // { y, m, sel }
@@ -36,6 +37,7 @@ export function monthEvents(y, m) {
     if (c.stage !== 'paused' && rule !== 'last') for (const d of anniversariesIn(c.birthday, y, m, 6)) add(d, { kind: 'ageup', title: `${c.nick} อายุประกันขึ้น`, sub: 'ทำก่อนวันนี้ได้เบี้ยของอายุเดิม', go: '#/client/' + c.id });
   }
   for (const p of store.all('policies')) {
+    for (const m of milestones(p)) if (!m.done && m.date.startsWith(ym)) { const c = cById[p.clientId]; add(m.date, { kind: 'care', title: `${c ? c.nick + ' · ' : ''}${m.name.split(' — ')[0]}`, sub: policyName(p), go: c ? '#/client/' + c.id : '#/work/sales' }); }
     if (p.status !== 'issued' || !p.nextDue?.startsWith(ym)) continue;
     const c = cById[p.clientId];
     add(p.nextDue, { kind: 'due', title: `${c ? c.nick + ' · ' : ''}${policyName(p)}`, sub: 'ครบกำหนดชำระเบี้ย', go: c ? '#/client/' + c.id : '#/work/sales' });
@@ -90,7 +92,7 @@ export function renderCalendar() {
       h('div.cal-grid', DOW.map((d) => h('div.cal-dow', d)), cells),
       h('div.cal-legend', Object.entries(KINDS).map(([k, v]) => h('span', h('i', { style: { background: v.color } }), `${v.name} ${counts[k]}`)))),
     h('div.section', h('h2', dateTH(view.sel, true) + (view.sel === today ? ' · วันนี้' : '')),
-      h('div.card', { style: { paddingTop: '4px', paddingBottom: '4px' } }, selList.length ? selList.map(evRow) : h('p.small.muted', { style: { padding: '12px 0' } }, 'ไม่มีรายการ'))));
+      h('div.card', { style: { paddingTop: '4px', paddingBottom: '4px' } }, selList.length ? selList.map(evRow) : empty('วันนี้ว่าง', 'cal', view.sel >= today ? h('button.btn.primary', { onclick: () => apptSheet({ appt: { date: view.sel, time: '' } }) }, icon('plus'), 'ลงนัดวันนี้') : null))));
 }
 
 // ใช้แถบเมนูเดียวกับหน้างานขาย

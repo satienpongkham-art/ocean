@@ -21,7 +21,7 @@ export function render() {
   const settings = store.getSettings();
   const closingPlans = PLANS.map((p) => ({ plan: p, ...closingInfo(p) })).filter((x) => x.days != null && !x.closed);
   const today = todayISO();
-  const items = coach({ clients, appts, activities, settings, closingPlans: [] }); // แผนใกล้ปิดแสดงเป็นแถบแยกแล้ว
+  const items = coach({ clients, appts, activities, settings, closingPlans: [], policies: store.all('policies') }); // แผนใกล้ปิดแสดงเป็นแถบแยกแล้ว
   for (const pol of duePolicies(14)) { const c = clients.find((x) => x.id === pol.clientId); const d = Math.round((new Date(pol.nextDue) - new Date(today)) / 864e5); items.push({ pri: d <= 3 ? 88 : 62, kind: d <= 3 ? 'hot' : '', icon: 'doc', title: `${c?.nick || 'ลูกค้า'}: ${policyName(pol)} ครบชำระ${d < 0 ? 'เลยมา ' + -d + ' วัน' : d === 0 ? 'วันนี้' : 'อีก ' + d + ' วัน'}`, why: 'แจ้งลูกค้าล่วงหน้า กันกรมธรรม์ขาดอายุ', go: c ? '#/client/' + c.id : '#/work/sales' }); }
   items.sort((a, b) => b.pri - a.pri);
   const target = +settings.dailyPoints || 20;

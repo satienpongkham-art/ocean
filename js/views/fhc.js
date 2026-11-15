@@ -218,6 +218,7 @@ export function resultView(p, { client, prev, onSave, onRedo } = {}) {
       client ? [
         h('a.btn.primary', { href: '#/present/' + client.id }, icon('compass'), 'นำเสนอเต็มจอ'),
         h('button.btn.line-btn', { onclick: async () => { const m = await import('./present.js'); m.shareImage(p, r, r.tier); } }, icon('upload'), 'ส่งภาพทาง LINE'),
+        h('button.btn', { onclick: async () => { const m = await import('./present.js'); const { copyText } = await import('../ui.js'); copyText(`ผลตรวจสุขภาพการเงิน: ${hc.overall ?? '—'}/100\n` + gapsOf(hc).slice(0, 3).map((g) => '• ' + g.label + ' — ' + (FRIENDLY[g.key] || g.text)).join('\n') + '\n\n' + m.shareText(p, r, r.tier)); } }, icon('copy'), 'คัดลอกข้อความสรุป'),
         h('a.btn', { href: `#/client/${client.id}/fhc/detail` }, icon('pen'), 'ใส่ตัวเลขละเอียด'),
         h('a.btn', { href: '#/client/' + client.id }, icon('user'), 'ไปหน้าลูกค้า'),
       ] : h('button.btn.primary', { onclick: onSave }, icon('check'), 'บันทึกเป็นลูกค้า'),

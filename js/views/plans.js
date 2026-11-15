@@ -4,6 +4,9 @@ import { PLANS, PLAN, CATEGORIES, CAT, TAX_LABEL, closingInfo, quickFacts, DATA_
 import { PACKAGES, TIER_LABEL } from '../../data/packages.js';
 import { timelineChart, lineChart, legend } from '../charts.js';
 import { compareBar, toggleCompare, getCompare } from './compare.js';
+import { premiumCalc } from './plantools.js';
+import { attachInfo, COPAY, WAITING } from '../../data/rules.js';
+const AT = attachInfo(PLANS, PLAN);
 
 const state = { q: '', age: '', kind: 'all' };
 const TAX_SHORT = { life: 'หมวดชีวิต', health: 'หมวดสุขภาพ', annuity: 'หมวดบำนาญ', none: 'ไม่ได้', check: 'ตามเงื่อนไข' };
@@ -107,7 +110,7 @@ export function renderCatalog(q = {}, openId) {
 }
 
 export function tabsPlans(active) {
-  const t = [['catalog', 'คลังแผน', '#/plans'], ['packages', 'แพ็กเกจ', '#/plans/packages'], ['advisor', 'แนะนำลูกค้า', '#/plans/advisor'], ['cases', 'ตัวอย่างเคส', '#/plans/cases']];
+  const t = [['catalog', 'คลังแผน', '#/plans'], ['tools', 'เครื่องมือแผน', '#/plans/tools'], ['packages', 'แพ็กเกจ', '#/plans/packages'], ['advisor', 'แนะนำลูกค้า', '#/plans/advisor'], ['cases', 'ตัวอย่างเคส', '#/plans/cases']];
   return h('div.seg', t.map(([id, l, href]) => h('button', { class: id === active ? 'on' : '', onclick: () => { location.hash = href; } }, l)));
 }
 const thDate = (iso) => { const d = new Date(iso + 'T00:00:00'); return d.getDate() + ' ' + ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'][d.getMonth()] + ' ' + (d.getFullYear() + 543); };
@@ -123,7 +126,21 @@ function tabSummary(p) {
     sub('เหมาะกับ'), h('div.fit', (p.bestFor || []).slice(0, 3).map((x) => h('span', x))),
     sub('จุดเด่น'), points(p.highlights || [], { kind: 'plain', limit: 3 }),
     p.pros?.length ? [sub('ทำไมแผนนี้ดี'), points(p.pros, { kind: 'good', limit: 3 })] : null,
+    attachBlock(p),
     p.pairs?.length ? [sub('ขายคู่กับ'), h('div.row.wrap', { style: { gap: '6px' } }, p.pairs.filter((x) => PLAN[x]).map((x) => h('button.chip', { onclick: () => { location.hash = '#/plan/' + x; } }, h('span.dot', { style: { background: `var(--c-${PLAN[x].cat})` } }), PLAN[x].short)))] : null);
+}
+
+function attachBlock(p) {
+  if (p.cat === 'accident') return null;
+  if (p.kind === 'rider') {
+    const mains = AT.recMain(p);
+    return h('div.attach-box', h('div.ab-h', icon('layers'), h('b', 'สัญญาเพิ่มเติม — ต้องแนบกับสัญญาหลัก')), h('p.small', AT.mustText(p)),
+      mains.length ? h('div.small.muted', 'นิยมแนบกับ: ' + mains.map((m) => m.short).join(', ')) : null,
+      h('a.btn.sm', { href: '#/plans/attach', onclick: () => sessionStorage.setItem('attRider', p.id) }, 'ดูแผนที่การแนบ', icon('next')));
+  }
+  const rs = AT.recRiders(p);
+  return rs.length ? h('div.attach-box', h('div.ab-h', icon('layers'), h('b', `สัญญาหลัก — แนบสัญญาเพิ่มเติมได้`)), h('div.small.muted', 'แนะนำ: ' + rs.map((r) => r.short).join(', ')),
+    h('a.btn.sm', { href: '#/plans/attach', onclick: () => sessionStorage.setItem('attMain', p.id) }, 'จัดชุดความคุ้มครอง', icon('next'))) : null;
 }
 
 function tabCover(p) {
@@ -150,6 +167,7 @@ function tabCover(p) {
 
 function tabPremium(p) {
   const wrap = h('div');
+  wrap.append(premiumCalc(p.id), h('div', { style: { height: '12px' } }));
   if (p.premiumByAge) {
     const pb = p.premiumByAge; let band = 0, cls = 'class1';
     const big = h('div.big-num');
@@ -175,6 +193,8 @@ function tabPremium(p) {
 function tabWatch(p) {
   return h('div',
     p.watch?.length ? points(p.watch, { kind: 'warn' }) : h('p.muted', 'ไม่มีข้อควรระวังเพิ่มเติม'),
+    p.cat === 'health' ? h('a.attach-box', { href: '#/plans/copay', style: { display: 'block', marginTop: '14px', color: 'inherit', textDecoration: 'none' } }, h('div.ab-h', icon('info'), h('b', 'Copayment ปีต่ออายุ')), h('p.small', `กรมธรรม์ที่เริ่มคุ้มครองตั้งแต่ ${COPAY.startTH} ถ้าปีก่อนเคลมโรคเล็กน้อยหรือโรคทั่วไปเกินเกณฑ์ ปีถัดไปร่วมจ่าย 30–50%`), h('span.small', 'ดู 3 กรณี + ตัวคำนวณ →')) : null,
+    ['health', 'ci', 'hb'].includes(p.cat) ? h('div.attach-box', { style: { marginTop: '10px' } }, h('div.ab-h', icon('clock'), h('b', 'ระยะเวลารอคอย')), h('p.small', p.cat === 'ci' ? WAITING.ci : `${WAITING.accident.text} · ${WAITING.general.text} · ${WAITING.special.text}`), h('a.small', { href: '#/plans/waiting' }, 'ค้นหาตามชื่อโรค →')) : null,
     sub('เงื่อนไขการรับประกัน'), kvlist(p.specs || []),
     sub('ลดหย่อนภาษี'), h('p.small', TAX_LABEL[p.tax]),
     h('p.source', { style: { marginTop: '14px' } }, 'ข้อมูลเบื้องต้นเพื่อประกอบการนำเสนอ ความคุ้มครองและเงื่อนไขเป็นไปตามกรมธรรม์'));
@@ -201,6 +221,7 @@ export function openPlan(id) {
   panel.append(h('div.sheet-actions',
     h('a.btn.primary', { href: p.url, target: '_blank', rel: 'noopener' }, icon('ext'), 'AIA'),
     p.brochure ? h('a.btn', { href: p.brochure, target: '_blank', rel: 'noopener' }, icon('doc'), 'โบรชัวร์') : null,
+    h('a.btn', { href: `#/sheet/${p.id}` }, icon('doc'), 'สรุป 1 หน้า'),
     h('a.btn', { href: `#/tools/captions?plan=${p.id}` }, icon('pen'), 'โพสต์'),
     h('button.btn', { onclick: (e) => { const on = toggleCompare(p.id); e.currentTarget.lastChild.textContent = getCompare().includes(p.id) ? 'เทียบแล้ว' : 'เทียบ'; } }, icon('plus'), getCompare().includes(p.id) ? 'เทียบแล้ว' : 'เทียบ')));
 }
