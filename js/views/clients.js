@@ -4,7 +4,7 @@ import * as store from '../store.js';
 import { STAGES, STAGE, SOURCES, ACTIVITIES, grade } from '../engine/work.js';
 import { HEALTH_LEVELS, healthCheck, fmtM } from '../engine/needs.js';
 import { resultView, needSteps } from './advisor.js';
-import { apptSheet, apptResultSheet, setStage, gcalLink, logActivity } from './common.js';
+import { apptSheet, apptResultSheet, setStage, gcalLink, logActivity, policySheet, policyRow } from './common.js';
 import { mandalaGrid } from './fhc.js';
 
 export const clientAge = (c) => ageFrom(c.birthday) ?? (c.age != null && c.age !== '' ? +c.age : null);
@@ -146,11 +146,16 @@ export function renderDetail(id) {
       h('div.section', h('h2', 'ประวัติ'), logs.length ? h('div.card', h('ul.list', logs.slice(0, 50).map((l) => h('li.small', h('span.muted.xs', dateTH(l.date) + ' · '), l.text)))) : h('p.small.muted', 'ยังไม่มีประวัติ')));
   };
 
-  const t = tabs([['ov', 'ภาพรวม'], ['md', 'แมนฮาร่า'], ['rec', 'แผนที่แนะนำ'], ['ap', 'นัด & ประวัติ']], detailTab[id] || 'ov',
-    (k) => ({ ov: overview, md: mandala, rec: () => resultView(p), ap: appts })[k](), { onChange: (k) => { detailTab[id] = k; } });
+  const pols = () => {
+    const list = store.all('policies').filter((x) => x.clientId === id).sort((a, b) => (b.submitDate || '').localeCompare(a.submitDate || ''));
+    return h('div', h('button.btn.primary.block', { onclick: () => policySheet({ clientId: id }) }, icon('plus'), 'เพิ่มกรมธรรม์ / ยอดขาย'),
+      list.length ? h('div.plist', { style: { marginTop: '12px' } }, list.map((x) => policyRow(x))) : h('p.small.muted', { style: { marginTop: '12px' } }, 'บันทึกแผนที่เสนอ/ขายได้ แอปจะนับยอดขายและเตือนก่อนครบชำระเบี้ย'));
+  };
+  const t = tabs([['ov', 'ภาพรวม'], ['md', 'แมนฮาร่า'], ['rec', 'แผนที่แนะนำ'], ['pol', 'กรมธรรม์'], ['ap', 'นัด & ประวัติ']], detailTab[id] || 'ov',
+    (k) => ({ ov: overview, md: mandala, rec: () => resultView(p), pol: pols, ap: appts })[k](), { onChange: (k) => { detailTab[id] = k; } });
 
   return h('div', { 'data-title': c.nick },
-    h('div.back-row', { style: { marginBottom: '6px' } }, h('a.icon-btn', { href: '#/clients', 'aria-label': 'กลับ' }, icon('back')), h('span.small.muted', 'ลูกค้า')),
+    h('div.back-row', { style: { marginBottom: '6px' } }, h('a.icon-btn', { href: '#/clients', 'aria-label': 'กลับ' }, icon('back')), h('span.small.muted', { style: { flex: 1 } }, 'ลูกค้า'), h('a.btn.sm', { href: '#/present/' + id }, icon('compass'), 'นำเสนอลูกค้า')),
     h('div.client-head', h('div.avatar.lg', initials(c.nick)), h('div', h('h1', c.nick, g ? h('span.grade.' + g, { style: { marginLeft: '8px', verticalAlign: 'middle' } }, g) : null), h('div.meta', [age != null ? age + ' ปี' : null, c.occupation, STAGE[c.stage || 'lead']?.name].filter(Boolean).join(' · ')))),
     h('div.icon-actions',
       h('a', { href: c.phone ? 'tel:' + c.phone.replace(/[^\d+]/g, '') : '#', class: c.phone ? '' : 'off', onclick: () => c.phone && logActivity('call', id) }, h('span.ii', icon('phone')), 'โทร'),

@@ -3,6 +3,7 @@ import { h, icon, sheet, closeSheet, tabs, choices, points, kvlist, fmt } from '
 import { PLANS, PLAN, CATEGORIES, CAT, TAX_LABEL, closingInfo, quickFacts, DATA_CHECKED } from '../../data/plans.js';
 import { PACKAGES, TIER_LABEL } from '../../data/packages.js';
 import { timelineChart, lineChart, legend } from '../charts.js';
+import { compareBar, toggleCompare, getCompare } from './compare.js';
 
 const state = { q: '', age: '', kind: 'all' };
 const TAX_SHORT = { life: 'หมวดชีวิต', health: 'หมวดสุขภาพ', annuity: 'หมวดบำนาญ', none: 'ไม่ได้', check: 'ตามเงื่อนไข' };
@@ -96,10 +97,10 @@ export function renderCatalog(q = {}, openId) {
   root.append(...[
     cat
       ? h('div.back-row.cat-' + cat, h('a.icon-btn', { href: '#/plans', 'aria-label': 'กลับ' }, icon('back')), h('span.ci', catIcon(cat)), h('div', h('h1.serif', { style: { fontSize: '22px' } }, CAT[cat].name), h('div.small.muted', CAT[cat].desc)))
-      : h('div.topbar', h('div', h('h1', 'แผนประกัน'), h('div.sub', `AIA ช่องทางตัวแทน · ${PLANS.length} แผน`))),
+      : h('div.topbar', h('div', h('h1', 'แผนประกัน'), h('div.sub', `AIA ช่องทางตัวแทน · ${PLANS.length} แผน`)), h('a.icon-btn', { href: '#/plans/compare', 'aria-label': 'เทียบแผน', title: 'เทียบแผน' }, icon('grid'))),
     cat ? null : tabsPlans('catalog'),
     h('div', { style: { marginTop: '14px' } }, search),
-    results].filter(Boolean));
+    results, compareBar()].filter(Boolean));
   draw();
   if (openId && PLAN[openId]) setTimeout(() => openPlan(openId), 0);
   return root;
@@ -198,7 +199,8 @@ export function openPlan(id) {
     onClose: () => { if (location.hash.startsWith('#/plan/')) history.length > 1 ? history.back() : (location.hash = '#/plans'); },
   });
   panel.append(h('div.sheet-actions',
-    h('a.btn.primary', { href: p.url, target: '_blank', rel: 'noopener' }, icon('ext'), 'หน้า AIA'),
+    h('a.btn.primary', { href: p.url, target: '_blank', rel: 'noopener' }, icon('ext'), 'AIA'),
     p.brochure ? h('a.btn', { href: p.brochure, target: '_blank', rel: 'noopener' }, icon('doc'), 'โบรชัวร์') : null,
-    h('a.btn', { href: `#/tools/captions?plan=${p.id}` }, icon('pen'), 'ทำโพสต์')));
+    h('a.btn', { href: `#/tools/captions?plan=${p.id}` }, icon('pen'), 'โพสต์'),
+    h('button.btn', { onclick: (e) => { const on = toggleCompare(p.id); e.currentTarget.lastChild.textContent = getCompare().includes(p.id) ? 'เทียบแล้ว' : 'เทียบ'; } }, icon('plus'), getCompare().includes(p.id) ? 'เทียบแล้ว' : 'เทียบ')));
 }

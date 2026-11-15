@@ -7,7 +7,7 @@ import { lineChart, legend } from '../charts.js';
 import { profile } from '../app.js';
 
 function tabsWork(active) {
-  const t = [['pipe', 'ท่อการขาย', '#/work'], ['call', 'โทรนัด', '#/work/call'], ['goals', 'เป้าหมาย', '#/work/goals'], ['review', 'ทบทวนสัปดาห์', '#/work/review'], ['mandala', 'แมนฮาร่า', '#/work/mandala']];
+  const t = [['pipe', 'ท่อการขาย', '#/work'], ['call', 'โทรนัด', '#/work/call'], ['goals', 'เป้าหมาย', '#/work/goals'], ['sales', 'ยอดขาย', '#/work/sales'], ['review', 'ทบทวนสัปดาห์', '#/work/review'], ['mandala', 'แมนฮาร่า', '#/work/mandala']];
   return h('div.seg', t.map(([id, l, href]) => h('button', { class: id === active ? 'on' : '', onclick: () => { location.hash = href; } }, l)));
 }
 

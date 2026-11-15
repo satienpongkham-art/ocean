@@ -4,6 +4,8 @@ import * as store from '../store.js';
 import { OBJECTIONS } from '../../data/objections.js';
 import { DEFAULT_PROFILE } from '../../data/profile.js';
 import { profile } from '../app.js';
+import { choices } from '../ui.js';
+import { canInstall, install, isStandalone, isIOS, iosGuide, getTheme, setTheme, getTextSize, setTextSize, getHaptic, setHaptic } from '../pwa.js';
 
 export function renderTools() {
   const p = profile();
@@ -13,6 +15,9 @@ export function renderTools() {
     ['#/tools/captions', 'pen', 'แคปชั่นโพสต์', 'Facebook · IG · TikTok'],
     ['#/plans/advisor', 'compass', 'ระบบแนะนำ', 'แพ็กเกจ + เหตุผล'],
     ['#/tools/profile', 'user', 'โปรไฟล์ตัวแทน', 'ชื่อ รหัส ใบอนุญาต'],
+    ['#/tools/display', 'today', 'การแสดงผล & ติดตั้งแอป', 'ตัวอักษร โหมดมืด ไอคอนแอป'],
+    ['#/work/sales', 'line', 'ยอดขาย & กรมธรรม์', 'สรุปเบี้ย ค่าคอม ครบชำระ'],
+    ['#/search', 'search', 'ค้นหา', 'ลูกค้า แผน เคส เมนู'],
     ['#/tools/sync', 'sync', 'ซิงก์ & สำรองข้อมูล', 'Google Sheets · ไฟล์สำรอง'],
   ];
   return h('div', { 'data-title': 'เครื่องมือ' },
@@ -126,4 +131,21 @@ export function renderSync() {
         } }, icon('download'), 'ดาวน์โหลดไฟล์สำรอง'),
         h('button.btn', { onclick: () => fileIn.click() }, icon('upload'), 'นำเข้าจากไฟล์'), fileIn),
       h('p.xs.muted', { style: { marginTop: '10px' } }, `ในเครื่องนี้: ลูกค้า ${store.all('clients').length} · นัด ${store.all('appts').length} · กิจกรรม ${store.all('activities').length}`)));
+}
+
+export function renderDisplay() {
+  const installRow = isStandalone()
+    ? h('div.set-row', h('div', h('b', 'ติดตั้งเป็นแอปแล้ว'), h('small', 'เปิดจากไอคอนบนหน้าจอได้เลย')), h('span.tag.good', 'เรียบร้อย'))
+    : h('div.set-row', h('div', h('b', 'ติดตั้งเป็นแอปบนมือถือ'), h('small', isIOS() ? 'iPhone: ทำผ่าน Safari ตามขั้นตอน' : 'มีไอคอนบนหน้าจอ เปิดเต็มจอ ใช้ออฟไลน์ได้')),
+      h('button.btn.primary.sm', { onclick: () => (canInstall() ? install() : iosGuide()) }, 'ติดตั้ง'));
+  return h('div', { 'data-title': 'การแสดงผล' },
+    h('div.back-row', h('a.icon-btn', { href: '#/tools', 'aria-label': 'กลับ' }, icon('back')), h('h1.serif', { style: { fontSize: '22px' } }, 'การแสดงผล & ติดตั้งแอป')),
+    h('div.card', installRow,
+      h('div.set-row', h('div', h('b', 'ตัวเลขบนไอคอน'), h('small', 'แสดงจำนวนงานสำคัญวันนี้บนไอคอนแอป (Android / iPhone iOS 16.4+ ที่ติดตั้งแล้ว)')), h('span.tag', 'อัตโนมัติ')),
+      h('div.set-row', h('div', h('b', 'กดค้างที่ไอคอน'), h('small', 'เมนูลัด: เพิ่มลูกค้า · โทรนัด · คลังแผน · ค้นหา (Android)')), h('span.tag', 'พร้อมใช้'))),
+    h('div.section', h('h2', 'ขนาดตัวอักษร'), h('div.card', choices('ts', getTextSize(), [['m', 'ปกติ'], ['l', 'ใหญ่'], ['xl', 'ใหญ่มาก']], { onChange: setTextSize }),
+      h('p.small.muted', { style: { marginTop: '10px' } }, 'ใช้ "ใหญ่" ตอนเปิดให้ลูกค้าดู จะอ่านง่ายขึ้น'))),
+    h('div.section', h('h2', 'ธีม'), h('div.card', choices('th', getTheme(), [['auto', 'ตามมือถือ'], ['light', 'สว่าง'], ['dark', 'มืด']], { onChange: setTheme }))),
+    h('div.section', h('h2', 'การสั่น'), h('div.card', h('div.set-row', h('div', h('b', 'สั่นเบา ๆ เมื่อบันทึก'), h('small', 'เฉพาะ Android')),
+      h('input', { type: 'checkbox', checked: getHaptic(), onchange: (e) => setHaptic(e.target.checked), style: { width: '22px', height: '22px' } })))));
 }

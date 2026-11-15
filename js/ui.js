@@ -164,7 +164,32 @@ export function sheet({ title, sub, body, actions, onClose, cls = '' }) {
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   document.addEventListener('keydown', onKey);
   openSheet = { scrim, panel, onClose, onKey };
+  swipeToClose(panel, close);
   return panel;
+}
+
+/** ปัดลงเพื่อปิดการ์ด (มือถือ) */
+function swipeToClose(panel, close) {
+  if (!window.matchMedia('(max-width: 759px)').matches) return;
+  let y0 = null, dy = 0, ok = false;
+  const scroller = () => panel.querySelector('.sheet.plan .sheet-body') || panel;
+  panel.addEventListener('touchstart', (e) => {
+    const inHead = e.target.closest('.sheet-head, .sheet-grip');
+    ok = inHead || scroller().scrollTop <= 0;
+    if (e.target.closest('input[type=range], .table-wrap, .hscroll, .chips, textarea')) ok = !!inHead;
+    y0 = e.touches[0].clientY; dy = 0;
+  }, { passive: true });
+  panel.addEventListener('touchmove', (e) => {
+    if (y0 == null || !ok) return;
+    dy = e.touches[0].clientY - y0;
+    if (dy > 0) { panel.classList.add('dragging'); panel.style.transform = `translateY(${dy}px)`; }
+  }, { passive: true });
+  panel.addEventListener('touchend', () => {
+    if (y0 == null) return;
+    panel.classList.remove('dragging');
+    if (ok && dy > 110) close(); else panel.style.transform = '';
+    y0 = null; dy = 0;
+  });
 }
 export function closeSheet(silent = false) {
   if (!openSheet) return;
@@ -218,8 +243,18 @@ export function tabs(list, active, render, { sticky = false, onChange } = {}) {
     panel.replaceChildren(render(id)); panel.style.animation = 'none'; void panel.offsetWidth; panel.style.animation = '';
     if (onChange) onChange(id);
   };
-  for (const [id, label] of list) bar.append(h('button', { 'data-id': id, role: 'tab', onclick: () => go(id) }, label));
+  for (const [id, label] of list) bar.append(h('button', { 'data-id': id, role: 'tab', onclick: () => { go(id); bar.querySelector('.on')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } }, label));
   go(active || list[0][0]);
+  // ปัดซ้าย-ขวาเพื่อเปลี่ยนแท็บ
+  let x0 = null, y0 = 0;
+  panel.addEventListener('touchstart', (e) => { if (e.target.closest('input[type=range], .table-wrap, .hscroll, .chips, .choices, .stage-line, .board')) { x0 = null; return; } x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  panel.addEventListener('touchend', (e) => {
+    if (x0 == null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    const i = list.findIndex(([id]) => id === active) + (dx < 0 ? 1 : -1);
+    if (i >= 0 && i < list.length) { go(list[i][0]); bar.querySelector('.on')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }
+  }, { passive: true });
   return { bar, panel, go };
 }
 
