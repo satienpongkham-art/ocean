@@ -4,6 +4,7 @@ import * as store from '../store.js';
 import { STAGES, STAGE, ACTIVITIES, ACT, grade, ratios, reverseGoal, countBy, weekRange, pointsOn, ageUp, callQueue } from '../engine/work.js';
 import { haptic } from '../pwa.js';
 import { snap, restore } from '../undo.js';
+import { avatarEl } from '../avatars.js';
 import { rerender } from '../app.js';
 import { apptSheet, logActivity, setStage } from './common.js';
 import { lineChart, legend } from '../charts.js';
@@ -228,7 +229,7 @@ function phRunning() {
     ph.pausedAt ? h('div.callout.warn', { style: { marginTop: '8px' }, role: 'status' }, 'หยุดเวลาไว้ชั่วคราว — กด ▶ เพื่อเล่นต่อ') : null,
     h('div.ph-chips', ['noans', 'callback', 'appt', 'no'].map((k) => h('span', h('i', { style: { background: RESULT[k][1] } }), RESULT[k][0] + ' ' + count(k)))),
     h('div.card.ph-card',
-      h('div.row', { style: { gap: '14px' } }, h('div.avatar.lg', initials(c.nick)),
+      h('div.row', { style: { gap: '14px' } }, avatarEl(c, 56, 'lg'),
         h('div', { style: { flex: 1, minWidth: 0 } }, h('h2.ph-name', c.nick, grade(c) ? h('span.grade.' + grade(c), { style: { marginLeft: '8px', verticalAlign: 'middle' } }, grade(c)) : null),
           h('div.small.muted', [STAGE[c.stage || 'lead']?.name, c.occupation, c.phone].filter(Boolean).join(' · ') || 'ไม่มีเบอร์'))),
       h('div.row.wrap', { style: { gap: '6px', marginTop: '10px' } },

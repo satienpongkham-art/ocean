@@ -238,7 +238,7 @@ export function renderCheck(id) {
   const start = () => {
     shown = null;
     area.replaceChildren(wizard(quickSteps(!client), { ...base, haveKeys: client ? haveFrom(client) : [] }, {
-      doneLabel: 'ดูผลตรวจ',
+      doneLabel: 'ดูผลตรวจ', autosave: 'fhc-' + key,
       onCancel: () => history.back(),
       onDone: (d) => {
         const merged = applyQuick(client || {}, d);

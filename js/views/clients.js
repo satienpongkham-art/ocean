@@ -7,6 +7,7 @@ import { resultView, needSteps } from './advisor.js';
 import { apptSheet, apptResultSheet, setStage, gcalLink, logActivity, policySheet, policyRow, nextStepSheet, nextStepPicker, applyNext } from './common.js';
 import { mandalaGrid, historyView } from './fhc.js';
 import { removeWithUndo } from '../undo.js';
+import { AVATARS, avatarEl } from '../avatars.js';
 
 export const clientAge = (c) => ageFrom(c.birthday) ?? (c.age != null && c.age !== '' ? +c.age : null);
 const SRC = Object.fromEntries(SOURCES);
@@ -18,7 +19,7 @@ function row(c) {
   const g = grade(c); const age = clientAge(c); const nb = nextBirthday(c.birthday);
   const sub = [STAGE[c.stage || 'lead']?.name, age != null ? age + ' ปี' : null, c.nextDate ? 'ติดตาม ' + dateTH(c.nextDate) : null, nb && nb.days <= 14 ? `วันเกิดอีก ${nb.days} วัน` : null].filter(Boolean).join(' · ');
   return h('button.prow', { onclick: () => { location.hash = '#/client/' + c.id; } },
-    h('span.avatar', initials(c.nick)),
+    avatarEl(c),
     h('span.pt', h('b', c.nick || '(ไม่มีชื่อ)', g ? h('span.grade.' + g, { style: { marginLeft: '6px' } }, g) : null), h('span', sub)),
     h('span.pr', icon('next')));
 }
@@ -69,6 +70,7 @@ export function renderForm(id) {
   const others = store.all('clients').filter((x) => x.id !== id).sort((a, b) => (a.nick || '').localeCompare(b.nick || '', 'th'));
   const save = (d) => {
     if (!d.nick) { toast('ใส่ชื่อเล่นก่อนนะครับ'); return; }
+    try { localStorage.removeItem('advdesk.v1.draft.client-' + (id || 'new')); } catch {}
     const saved = store.put('clients', { ...c, ...d, stageAt: d.stage !== c.stage ? new Date().toISOString() : c.stageAt });
     toast('บันทึกแล้ว'); location.hash = '#/client/' + saved.id;
   };
@@ -78,6 +80,7 @@ export function renderForm(id) {
     error: 'ใส่ชื่อเล่นก่อน (ช่องที่มีเครื่องหมาย *)',
     render: (d) => {
       const body = h('div',
+        q('รูปอวตาร', avatarPicker(d)),
         q('ชื่อเล่น *', h('input.input', { name: 'nick', value: d.nick || '', autocomplete: 'off', placeholder: 'เช่น พี่บี', required: true, 'aria-required': 'true' })),
         q('เบอร์โทร', h('input.input', { name: 'phone', type: 'tel', inputmode: 'tel', value: d.phone || '' })),
         q('LINE ID', h('input.input', { name: 'line', value: d.line || '' })),
@@ -107,7 +110,16 @@ export function renderForm(id) {
   const s3 = needSteps[2];
   return h('div', { 'data-title': id ? 'แก้ไข ' + c.nick : 'เพิ่มรายชื่อ' },
     h('div.back-row', h('a.icon-btn', { href: id ? '#/client/' + id : '#/clients', 'aria-label': 'กลับ' }, icon('back')), h('h1.serif', { style: { fontSize: '22px' } }, id ? 'แก้ไข ' + c.nick : 'เพิ่มรายชื่อ')),
-    wizard([s1, s2, s3, s4], data, { onDone: save, doneLabel: 'บันทึก' }));
+    wizard([s1, s2, s3, s4], data, { onDone: save, doneLabel: 'บันทึก', autosave: 'client-' + (id || 'new') }));
+}
+
+function avatarPicker(d, onPick) {
+  const wrap = h('div.av-pick', { role: 'radiogroup', 'aria-label': 'เลือกรูปอวตาร' });
+  const draw = () => wrap.replaceChildren(
+    h('button.av-opt', { type: 'button', role: 'radio', 'aria-checked': String(!d.avatar), 'aria-label': 'ใช้ตัวอักษรย่อ', class: !d.avatar ? 'on' : '', onclick: () => { d.avatar = ''; draw(); onPick && onPick(''); } }, avatarEl({ nick: d.nick || 'ก' }, 44)),
+    ...Object.entries(AVATARS).map(([k, a]) => h('button.av-opt', { type: 'button', role: 'radio', 'aria-checked': String(d.avatar === k), 'aria-label': a.name, class: d.avatar === k ? 'on' : '', onclick: () => { d.avatar = k; draw(); onPick && onPick(k); } }, avatarEl({ avatar: k }, 44))));
+  draw();
+  return wrap;
 }
 
 // ── โปรไฟล์ลูกค้าแบบแท็บ ──────────────────────────────────
@@ -205,7 +217,7 @@ export function renderDetail(id) {
 
   const detail = h('div', { 'data-title': c.nick },
     h('div.back-row', { style: { marginBottom: '6px' } }, h('a.icon-btn', { href: '#/clients', 'aria-label': 'กลับ' }, icon('back')), h('span.small.muted', { style: { flex: 1 } }, 'ลูกค้า'), h('a.btn.sm', { href: '#/present/' + id }, icon('compass'), 'นำเสนอลูกค้า')),
-    h('div.client-head', h('div.avatar.lg', initials(c.nick)), h('div', h('h1', c.nick, g ? h('span.grade.' + g, { style: { marginLeft: '8px', verticalAlign: 'middle' } }, g) : null), h('div.meta', [age != null ? age + ' ปี' : null, c.occupation, STAGE[c.stage || 'lead']?.name].filter(Boolean).join(' · ')))),
+    h('div.client-head', h('button.av-btn', { 'aria-label': 'เปลี่ยนรูปอวตาร', onclick: () => sheet({ title: 'เลือกรูปอวตาร', sub: c.nick, body: avatarPicker({ ...c }, (k) => { store.put('clients', { ...store.get('clients', c.id), avatar: k }); closeSheet(true); }) }) }, avatarEl(c, 56, 'lg')), h('div', h('h1', c.nick, g ? h('span.grade.' + g, { style: { marginLeft: '8px', verticalAlign: 'middle' } }, g) : null), h('div.meta', [age != null ? age + ' ปี' : null, c.occupation, STAGE[c.stage || 'lead']?.name].filter(Boolean).join(' · ')))),
     h('div.icon-actions',
       h('a', { href: c.phone ? 'tel:' + c.phone.replace(/[^\d+]/g, '') : '#', class: c.phone ? '' : 'off', onclick: () => c.phone && logActivity('call', id) }, h('span.ii', icon('phone')), 'โทร'),
       h('a', { href: c.line ? 'https://line.me/R/ti/p/~' + encodeURIComponent(c.line) : '#', target: '_blank', rel: 'noopener', class: c.line ? '' : 'off' }, h('span.ii', icon('chat')), 'LINE'),
@@ -226,7 +238,7 @@ function listPane(activeId) {
       .sort((a, b) => (a.nextDate || '9999').localeCompare(b.nextDate || '9999') || (a.nick || '').localeCompare(b.nick || '', 'th'));
     listEl.replaceChildren(...items.map((x) => { const g = grade(x);
       return h('a.pane-row', { href: '#/client/' + x.id, role: 'listitem', class: x.id === activeId ? 'on' : '', 'aria-current': x.id === activeId ? 'page' : null },
-        h('span.avatar', initials(x.nick)), h('span.pt', h('b', x.nick, g ? h('span.grade.' + g, { style: { marginLeft: '6px' } }, g) : null), h('span', [STAGE[x.stage || 'lead']?.name, x.nextDate ? 'ติดตาม ' + dateTH(x.nextDate) : null].filter(Boolean).join(' · ')))); }));
+        avatarEl(x, 34), h('span.pt', h('b', x.nick, g ? h('span.grade.' + g, { style: { marginLeft: '6px' } }, g) : null), h('span', [STAGE[x.stage || 'lead']?.name, x.nextDate ? 'ติดตาม ' + dateTH(x.nextDate) : null].filter(Boolean).join(' · ')))); }));
   };
   draw();
   return h('aside.split-side', { 'aria-label': 'รายชื่อลูกค้า' },

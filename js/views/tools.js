@@ -13,6 +13,8 @@ export function renderTools() {
   const tiles = [
     ['#/tools/tax', 'tax', 'คำนวณภาษี', 'ภาษีที่ลดได้จากเบี้ยประกัน'],
     ['#/tools/objections', 'chat', 'รับมือข้อโต้แย้ง', `${OBJECTIONS.length} สถานการณ์ที่เจอบ่อย`],
+    ['#/tools/content', 'cal', 'ปฏิทินคอนเทนต์', 'แผนโพสต์ทั้งเดือน + แคปชั่น'],
+    ['#/tools/tipcard', 'pen', 'ภาพทิปการเงิน', 'ภาพพร้อมโพสต์ ใส่ชื่อคุณ'],
     ['#/tools/train', 'bulb', 'ฝึกตัวเอง', 'ฝึกจำแผน · ซ้อมข้อโต้แย้ง'],
     ['#/plans/tools', 'layers', 'เครื่องมือแผน', 'แนบสัญญา · Copayment · รอคอย · ตารางเบี้ย'],
     ['#/tools/captions', 'pen', 'แคปชั่นโพสต์', 'Facebook · IG · TikTok'],
@@ -54,6 +56,7 @@ export function renderProfile() {
     onsubmit: (e) => { e.preventDefault(); store.saveSettings({ profile: readForm(f) }); toast('บันทึกโปรไฟล์แล้ว'); location.hash = '#/tools'; },
   },
     field('ชื่อ-นามสกุล', inputEl('name', p.name)),
+    field('ชื่อเล่น', inputEl('nick', p.nick, { placeholder: 'เช่น คุณออม' }), 'แสดงในสตอรี่ ภาพทิป และแคปชั่น'),
     field('ตำแหน่ง', inputEl('title', p.title)),
     field('บริษัท', inputEl('company', p.company)),
     field('รหัสตัวแทน', inputEl('agentCode', p.agentCode, { inputmode: 'numeric' })),
@@ -70,7 +73,8 @@ export function renderProfile() {
   return h('div', { 'data-title': 'โปรไฟล์ตัวแทน' },
     h('div.topbar', h('div', h('a.crumb', { href: '#/tools' }, icon('back'), 'เครื่องมือ'), h('h1', 'โปรไฟล์ตัวแทน'))),
     exp != null && exp <= 90 ? h('div.callout.red', { style: { marginBottom: '12px' } }, h('b', `ใบอนุญาตหมดอายุในอีก ${exp} วัน`), ' — เตรียมต่ออายุและชั่วโมงอบรม') : null,
-    h('div.card', f));
+    h('div.card', f),
+    h('div.section', h('h2', 'นามบัตรดิจิทัล'), h('div.card', (() => { const box = h('div'); const draw = () => import('../card.js').then((m) => box.replaceChildren(m.cardManager(draw))); draw(); return box; })())));
 }
 
 export function renderSync() {

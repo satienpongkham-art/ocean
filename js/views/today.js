@@ -1,5 +1,6 @@
 // ─── หน้า "วันนี้" v2: นับถอยหลัง · วงคะแนน · งานสำคัญ 3 อย่าง · นัดวันนี้ · ทางลัด ───
-import { h, icon, dateTH, todayISO, fmt } from '../ui.js';
+import { h, icon, dateTH, todayISO, fmt, sheet, closeSheet, copyText } from '../ui.js';
+import { todayContent } from './content.js';
 import * as store from '../store.js';
 import { PLANS, closingInfo } from '../../data/plans.js';
 import { coach, pointsOn, countBy, weekRange, level, totalPoints, callQueue } from '../engine/work.js';
@@ -58,21 +59,47 @@ export function render() {
       a.date <= today ? h('button.btn.sm', { onclick: () => apptResultSheet(a) }, 'บันทึกผล') : null);
   };
 
-  const hero = h('div.hero',
-    h('div.hero-top', h('div', h('div.hero-sub', dateTH(today, true)), h('h1', `${hello} คุณ${(p.name || '').split(' ')[0]}`)),
-      h('a.hero-btn', { href: '#/search', 'aria-label': 'ค้นหา' }, icon('search'))),
-    h('a.hero-goal', { href: '#/work/sales' },
-      h('div.row.between', h('span', `เป้าเบี้ยเดือน${MONTHS[+today.slice(5, 7) - 1]}`), h('b', `${fmt(monthPrem)} / ${fmt(monthTarget)}`)),
-      bar(monthPrem / monthTarget),
-      h('small', monthPrem >= monthTarget ? `ถึงเป้าแล้ว! ปิดได้ ${sold.length} เคส` : `อีก ${fmt(monthTarget - monthPrem)} บาท · ปิดแล้ว ${sold.length} เคส`)),
-    h('div.hero-stats',
-      h('a', { href: '#/work/goals' }, h('span', 'คะแนนวันนี้'), h('b', pts, h('small', '/' + target)), bar(pts / target)),
-      h('a', { href: '#/work/goals' }, h('span', 'เลเวล'), h('b', 'Lv.' + lv.lv), bar(lv.pct)),
-      h('a', { href: '#/work/review' }, h('span', 'สัปดาห์นี้'), h('b', wk.appt, h('small', ' นัด')), h('small.hs-sub', `ปิด ${wk.close} · เสนอ ${wk.present}`))),
-    h('div.hero-acts',
-      h('a.hero-cta', { href: '#/work/call' }, icon('flame'), queue ? `โทรรวด · ${queue} คน` : 'โทรรวด'),
-      h('a.hero-chip', { href: '#/work/calendar' }, icon('cal'), 'ปฏิทิน'),
-      h('button.hero-chip', { onclick: () => apptSheet() }, icon('plus'), 'นัด')));
+  // ── หน้าแรกแบบช่องเรียง (Bento): จัดลำดับ/ซ่อนช่องได้ ──
+  const tc = todayContent();
+  const T = {
+    goal: ['w2 hero-tile', () => h('div.hero',
+      h('div.hero-top', h('div', h('div.hero-sub', dateTH(today, true)), h('h1', `${hello} คุณ${p.nick ? p.nick.replace(/^คุณ/, '') : (p.name || '').split(' ')[0]}`)),
+        h('a.hero-btn', { href: '#/search', 'aria-label': 'ค้นหา' }, icon('search'))),
+      h('a.hero-goal', { href: '#/work/sales' },
+        h('div.row.between', h('span', `เป้าเบี้ยเดือน${MONTHS[+today.slice(5, 7) - 1]}`), h('b', `${fmt(monthPrem)} / ${fmt(monthTarget)}`)),
+        bar(monthPrem / monthTarget),
+        h('small', monthPrem >= monthTarget ? `ถึงเป้าแล้ว! ปิดได้ ${sold.length} เคส` : `อีก ${fmt(monthTarget - monthPrem)} บาท · ปิดแล้ว ${sold.length} เคส`)))],
+    pts: ['', () => h('a.bt', { href: '#/work/goals' }, h('span.bt-l', icon('target'), 'คะแนนวันนี้'), h('b.bt-n', pts, h('small', '/' + target)), bar(pts / target))],
+    level: ['', () => h('a.bt', { href: '#/work/goals' }, h('span.bt-l', icon('star'), 'เลเวล'), h('b.bt-n', 'Lv.' + lv.lv), bar(lv.pct))],
+    week: ['', () => h('a.bt', { href: '#/work/review' }, h('span.bt-l', icon('line'), 'สัปดาห์นี้'), h('b.bt-n', wk.appt, h('small', ' นัด')), h('small.bt-s', `ปิด ${wk.close} · เสนอ ${wk.present}`))],
+    call: ['accent', () => h('a.bt', { href: '#/work/call' }, h('span.bt-l', icon('flame'), 'โทรรวด'), h('b.bt-n', queue, h('small', ' คน')), h('small.bt-s', 'แตะเพื่อเริ่ม'))],
+    tasks: ['w2 tall', () => h('div.bt', h('div.row.between', h('span.bt-l', icon('check'), 'งานสำคัญวันนี้'), h('span.small.muted', items.length + ' งาน')), tasks)],
+    appts: ['w2', () => h('div.bt', h('div.row.between', h('span.bt-l', icon('cal'), 'นัดวันนี้'), h('button.btn.sm', { onclick: () => apptSheet() }, icon('plus'), 'นัด')),
+      todays.length ? todays.map(apptEl) : h('p.small.muted', { style: { padding: '6px 0' } }, next ? 'วันนี้ว่าง · นัดถัดไป:' : 'วันนี้ยังไม่มีนัด'), !todays.length && next ? apptEl(next) : null)],
+    content: ['w2', () => h('div.bt.bt-content', h('div.row.between', h('span.bt-l', icon('pen'), 'คอนเทนต์วันนี้'), h('a.small', { href: '#/tools/content' }, 'ปฏิทิน →')),
+      tc ? [h('b.bt-hook', tc.hook), h('div.row', { style: { gap: '6px', marginTop: '8px' } }, h('button.btn.sm', { onclick: () => import('./content.js').then((m) => copyText(m.caption(tc))) }, icon('copy'), 'คัดลอกแคปชั่น'), h('a.btn.sm', { href: '#/tools/tipcard?t=' + encodeURIComponent(tc.hook) + '&b=' + encodeURIComponent(tc.points.join(' · ')) }, icon('pen'), 'ทำภาพ'))]
+        : h('p.small.muted', 'วันนี้ไม่มีโพสต์ในแผน · ', h('a', { href: '#/tools/tipcard' }, 'ทำภาพทิป')))],
+    card: ['', () => h('button.bt', { onclick: () => import('../card.js').then((m) => m.shareCard()) }, h('span.bt-l', icon('share'), 'นามบัตร'), h('b.bt-n.sm', 'แชร์'), h('small.bt-s', 'ส่งให้ลูกค้าใหม่'))],
+    plans: ['', () => h('a.bt', { href: '#/plans/build' }, h('span.bt-l', icon('layers'), 'ต่อชุดแผน'), h('b.bt-n.sm', 'เปิด'), h('small.bt-s', 'จัดตามงบได้'))],
+    quick: ['w2', () => h('div.bt', h('span.bt-l', icon('grid'), 'ทางลัด'), h('div.quick',
+      h('a', { href: '#/work/calendar' }, icon('cal'), 'ปฏิทิน'), h('a', { href: '#/check' }, icon('grid'), 'ตรวจการเงิน'), h('a', { href: '#/plans/body' }, icon('heart'), 'แผนที่ร่างกาย'),
+      h('a', { href: '#/plans/path' }, icon('compass'), 'เส้นทางชีวิต'), h('a', { href: '#/clients/lists' }, icon('filter'), 'รายชื่ออัจฉริยะ'), h('a', { href: '#/tools/train' }, icon('bulb'), 'ฝึกจำแผน')))],
+  };
+  const NAMES = { goal: 'เป้าเดือนนี้', pts: 'คะแนนวันนี้', level: 'เลเวล', week: 'สัปดาห์นี้', call: 'โทรรวด', tasks: 'งานสำคัญ', appts: 'นัดวันนี้', content: 'คอนเทนต์วันนี้', card: 'นามบัตร', plans: 'ต่อชุดแผน', quick: 'ทางลัด' };
+  const order = (settings.bento || []).filter((x) => T[x.id]);
+  for (const id of Object.keys(T)) if (!order.some((x) => x.id === id)) order.push({ id, on: true });
+  const editBento = () => {
+    const st = order.map((x) => ({ ...x }));
+    const list = h('div.bento-edit');
+    const draw = () => list.replaceChildren(...st.map((x, i) => h('div.be-row', h('label.row', { style: { flex: 1 } }, h('input', { type: 'checkbox', checked: x.on, onchange: (e) => { x.on = e.target.checked; } }), NAMES[x.id]),
+      h('button.icon-btn', { disabled: i === 0, 'aria-label': 'เลื่อนขึ้น ' + NAMES[x.id], onclick: () => { [st[i - 1], st[i]] = [st[i], st[i - 1]]; draw(); } }, icon('back')),
+      h('button.icon-btn', { disabled: i === st.length - 1, 'aria-label': 'เลื่อนลง ' + NAMES[x.id], onclick: () => { [st[i + 1], st[i]] = [st[i], st[i + 1]]; draw(); } }, icon('next')))));
+    draw();
+    sheet({ title: 'จัดหน้าแรก', body: h('div.stack', h('p.small.muted', 'ติ๊กช่องที่อยากเห็น และเลื่อนลำดับขึ้น/ลง'), list,
+      h('button.btn.primary.block', { onclick: () => { closeSheet(true); store.saveSettings({ bento: st }); } }, icon('check'), 'บันทึก'),
+      h('button.btn.ghost.block', { onclick: () => { closeSheet(true); store.saveSettings({ bento: [] }); } }, 'คืนค่าเริ่มต้น')) });
+  };
+  const bento = h('div.bento', order.filter((x) => x.on).map((x) => h('div.bx', { class: T[x.id][0] }, T[x.id][1]())));
 
   // เช็กลิสต์ตั้งค่าครั้งแรก
   const steps = [
@@ -92,25 +119,10 @@ export function render() {
 
   return h('div', { 'data-title': 'วันนี้' },
     installCard(),
-    hero,
     setup,
-
-    ...closingPlans.map((x) => h('a.countdown', { href: '#/plan/' + x.plan.id, style: { textDecoration: 'none', color: 'inherit', marginTop: '12px' } },
+    ...closingPlans.map((x) => h('a.countdown', { href: '#/plan/' + x.plan.id, style: { textDecoration: 'none', color: 'inherit', marginBottom: '12px' } },
       h('div.big', x.days), h('div', { style: { flex: 1 } }, h('b', `วัน ${x.plan.short} ปิดรับ`), h('div.small.muted', noHealth ? `ลูกค้า ${noHealth} คนยังไม่มีประกันสุขภาพของตัวเอง` : 'แตะเพื่อดูแผน')), icon('next'))),
-
-    h('div.section', h('h2', 'งานสำคัญวันนี้'), h('div.card', { style: { paddingTop: '6px', paddingBottom: '6px' } }, tasks)),
-
-    h('div.section', h('h2', 'นัดวันนี้'), h('div.card', { style: { paddingTop: '6px', paddingBottom: '6px' } },
-      todays.length ? todays.map(apptEl) : h('p.small.muted', { style: { padding: '10px 0' } }, next ? 'วันนี้ว่าง · นัดถัดไป:' : 'วันนี้ยังไม่มีนัด'),
-      !todays.length && next ? apptEl(next) : null)),
-
-    h('div.section', h('h2', 'ทางลัด'), h('div.quick',
-      h('a', { href: '#/work/calendar' }, icon('cal'), 'ปฏิทิน'),
-      h('a', { href: '#/tools/train' }, icon('bulb'), 'ฝึกจำแผน'),
-      h('a', { href: '#/check' }, icon('grid'), 'ตรวจการเงิน'),
-      h('a', { href: '#/plans/advisor' }, icon('compass'), 'แนะนำแผน'),
-      h('a', { href: '#/plans' }, icon('plans'), 'ดูแผน'),
-      h('a', { href: '#/clients/lists' }, icon('filter'), 'รายชื่ออัจฉริยะ'))),
-
-    !store.sync.config.url ? h('a.callout.warn', { href: '#/tools/sync', style: { display: 'block', marginTop: '16px', color: 'inherit', textDecoration: 'none' } }, 'ข้อมูลยังอยู่แค่เครื่องนี้ — แตะเพื่อตั้งค่าซิงก์กับคอม') : null);
+    bento,
+    h('div.row', { style: { justifyContent: 'center', marginTop: '12px' } }, h('button.btn.ghost.sm', { onclick: editBento }, icon('grid'), 'จัดหน้าแรก')),
+    !store.sync.config.url ? h('a.callout.warn', { href: '#/tools/sync', style: { display: 'block', marginTop: '12px', color: 'inherit', textDecoration: 'none' } }, 'ข้อมูลยังอยู่แค่เครื่องนี้ — แตะเพื่อตั้งค่าซิงก์กับคอม') : null);
 }
