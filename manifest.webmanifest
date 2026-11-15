@@ -1,0 +1,23 @@
+{
+  "name": "Advisor Desk — ที่ปรึกษาการเงิน",
+  "short_name": "Advisor Desk",
+  "description": "คลังแผน แพ็กเกจ ระบบแนะนำ ลูกค้า และงานขาย สำหรับที่ปรึกษาการเงิน",
+  "lang": "th",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f2ec",
+  "theme_color": "#f5f2ec",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "คลังแผน", "url": "./#/plans" },
+    { "name": "ลูกค้า", "url": "./#/clients" },
+    { "name": "โทรนัด", "url": "./#/work/call" }
+  ]
+}
