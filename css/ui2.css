@@ -1,0 +1,188 @@
+/* ─────────────────────────────────────────────────────────────
+   Advisor Desk v2 — ปรับให้อ่านง่าย เป็นสัดส่วน กดง่ายขึ้น
+   (ไฟล์นี้โหลดหลัง app.css และทับค่าเดิม)
+   ───────────────────────────────────────────────────────────── */
+body { font-size: 16px; line-height: 1.55; }
+.topbar { margin: 2px 0 16px; align-items: flex-start; }
+.topbar h1 { font-size: 25px; }
+.topbar .sub { font-size: 14px; }
+.card { border: 0; border-radius: 18px; padding: 16px; box-shadow: 0 1px 2px rgba(29,36,34,.05), 0 8px 24px -16px rgba(29,36,34,.25); }
+.section { margin-top: 20px; }
+.section > h2 { font-size: 14px; letter-spacing: .02em; text-transform: none; color: var(--ink-2); margin-bottom: 8px; }
+.btn { min-height: 44px; border-radius: 12px; padding: 0 16px; }
+.btn.sm { min-height: 36px; border-radius: 10px; }
+.input, select.input { min-height: 48px; border-radius: 12px; font-size: 16px; }
+
+/* แถบเมนูล่าง: ตัวชี้เป็นแคปซูล */
+.tabbar a { gap: 2px; font-size: 11.5px; }
+.tabbar a .pill { width: 56px; height: 30px; border-radius: 15px; display: grid; place-items: center; transition: background .15s ease; }
+.tabbar a.on .pill { background: var(--accent-soft); }
+.tabbar a.on svg { color: var(--accent); }
+
+/* ── แท็บ (ใช้ในการ์ดแผน / หน้าลูกค้า) ─────────────────── */
+.tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line-2); }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: none; border: 0; background: none; padding: 12px 12px 11px; font-size: 15px; color: var(--ink-3); cursor: pointer; position: relative; white-space: nowrap; font-weight: 500; }
+.tabs button.on { color: var(--ink); font-weight: 600; }
+.tabs button.on::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--accent); }
+.tabs.sticky { position: sticky; top: 0; z-index: 3; background: var(--paper); }
+.tabpanel { padding-top: 14px; animation: fadeUp .18s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ── ปุ่มเลือก (แทน select) ────────────────────────────── */
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink-2); font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.choice.on { border-color: var(--primary); background: var(--primary-soft); color: var(--ink); font-weight: 600; }
+.choice.on::before { content: ''; width: 8px; height: 5px; border-left: 2px solid var(--primary); border-bottom: 2px solid var(--primary); transform: rotate(-45deg) translateY(-2px); }
+.stepper-num { display: flex; align-items: center; gap: 0; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); width: max-content; }
+.stepper-num button { width: 44px; height: 44px; border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--ink-2); }
+.stepper-num b { min-width: 34px; text-align: center; font-size: 17px; }
+.q { margin-bottom: 18px; }
+.q > .ql { font-size: 15px; font-weight: 600; margin-bottom: 8px; display: block; }
+.q > .qh { font-size: 13px; color: var(--ink-3); margin-top: -4px; margin-bottom: 8px; display: block; }
+
+/* ── ตัวช่วยกรอกทีละขั้น ───────────────────────────────── */
+.wiz-top { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.wiz-dots { display: flex; gap: 6px; flex: 1; }
+.wiz-dots i { flex: 1; height: 5px; border-radius: 5px; background: var(--line-2); }
+.wiz-dots i.on { background: var(--primary); }
+.wiz-step { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+.wiz-title { font-family: var(--serif); font-size: 21px; margin-bottom: 14px; }
+.wiz-nav { display: flex; gap: 8px; margin-top: 8px; position: sticky; bottom: calc(var(--nav-h) + 8px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--card) 30%); padding-top: 14px; }
+.wiz-nav .btn { flex: 1; min-height: 50px; font-size: 16px; }
+@media (min-width: 900px) { .wiz-nav { bottom: 0; } }
+.money-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.money-row button { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 5px 11px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+
+/* ── คลังแผน: ปุ่มหมวด + แถวรายการ ─────────────────────── */
+.cat-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 760px) { .cat-tiles { grid-template-columns: repeat(4, 1fr); } }
+.cat-tile { border: 0; cursor: pointer; text-align: left; border-radius: 18px; padding: 14px; min-height: 104px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
+  background: color-mix(in srgb, var(--cc) 9%, var(--card)); color: var(--ink); transition: transform .12s ease; }
+.cat-tile:active { transform: scale(.98); }
+.cat-tile .ci { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--cc); color: #fff; }
+.cat-tile .ci svg { width: 22px; height: 22px; }
+.cat-tile b { font-size: 16px; display: block; line-height: 1.25; }
+.cat-tile span { font-size: 12.5px; color: var(--ink-3); }
+:root[data-theme="dark"] .cat-tile .ci, :root:not([data-theme="light"]) .cat-tile .ci { color: var(--paper); }
+
+.prow { display: flex; gap: 12px; align-items: center; width: 100%; text-align: left; border: 0; background: var(--card); cursor: pointer; padding: 12px 14px; min-height: 68px; color: var(--ink); }
+.plist { border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(29,36,34,.05), 0 8px 24px -16px rgba(29,36,34,.25); }
+.plist .prow + .prow { border-top: 1px solid var(--line-2); }
+.prow:active { background: var(--paper-2); }
+.prow .pi { width: 42px; height: 42px; border-radius: 12px; flex: none; display: grid; place-items: center; background: color-mix(in srgb, var(--cc) 14%, var(--card)); color: var(--cc); }
+.prow .pi svg { width: 22px; height: 22px; }
+.prow .pt { flex: 1; min-width: 0; }
+.prow .pt b { display: block; font-size: 16px; line-height: 1.3; }
+.prow .pt span { display: block; font-size: 13.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prow .pr { display: flex; align-items: center; gap: 6px; color: var(--ink-3); flex: none; }
+.prow .pr svg { width: 18px; height: 18px; }
+.hscroll { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px 6px; scroll-snap-type: x mandatory; }
+.hscroll::-webkit-scrollbar { display: none; }
+.mini-plan { flex: none; width: 210px; scroll-snap-align: start; border: 0; cursor: pointer; text-align: left; border-radius: 18px; padding: 14px; background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(29,36,34,.05), 0 8px 24px -16px rgba(29,36,34,.25); display: flex; flex-direction: column; gap: 6px; border-top: 4px solid var(--cc); }
+.mini-plan b { font-size: 16px; }
+.mini-plan span { font-size: 13px; color: var(--ink-2); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mini-plan small { font-size: 12px; color: var(--cc); font-weight: 600; }
+.searchbar { display: flex; gap: 8px; align-items: center; }
+.searchbar .search { flex: 1; }
+.searchbar .input { min-height: 48px; }
+.filter-btn { position: relative; }
+.filter-btn .badge { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.back-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.back-row .ci { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; background: var(--cc); color: #fff; }
+.back-row .ci svg { width: 24px; height: 24px; }
+
+/* ── การ์ดแผน (ป๊อปอัป) แบบแท็บ ────────────────────────── */
+.sheet.plan { display: flex; flex-direction: column; overflow: hidden; }
+@media (max-width: 759px) { .sheet.plan { height: 94dvh; max-height: 94dvh; } }
+@media (min-width: 760px) { .sheet.plan { height: min(820px, 90dvh); } }
+.sheet.plan .sheet-head { border-bottom: 0; padding-bottom: 4px; }
+.sheet.plan .sheet-body { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 0 18px 20px; }
+.plan-head { display: flex; gap: 12px; align-items: flex-start; }
+.plan-head .ci { width: 46px; height: 46px; border-radius: 14px; flex: none; display: grid; place-items: center; background: var(--cc); color: #fff; }
+.plan-head .ci svg { width: 24px; height: 24px; }
+.plan-head h2 { font-family: var(--serif); font-size: 22px; line-height: 1.2; }
+.plan-head .tl { font-size: 14px; color: var(--ink-2); margin-top: 3px; line-height: 1.45; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0 6px; }
+.fact { background: var(--card); border-radius: 14px; padding: 10px; text-align: center; }
+.fact span { display: block; font-size: 11.5px; color: var(--ink-3); }
+.fact b { display: block; font-size: 14px; line-height: 1.3; margin-top: 2px; }
+.lead { font-size: 16.5px; line-height: 1.6; }
+.pts { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.pts li { display: flex; gap: 10px; align-items: flex-start; background: var(--card); border-radius: 14px; padding: 11px 12px; font-size: 15px; line-height: 1.5; }
+.pts li .mk { flex: none; width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center; margin-top: 1px; }
+.pts li .mk svg { width: 15px; height: 15px; }
+.pts.good .mk { background: var(--good-soft); color: var(--good); }
+.pts.warn .mk { background: var(--warn-soft); color: var(--warn); }
+.pts.plain .mk { background: color-mix(in srgb, var(--cc, var(--ink-3)) 14%, var(--card)); color: var(--cc, var(--ink-2)); }
+.more-btn { border: 0; background: none; color: var(--primary); font-weight: 600; font-size: 14.5px; padding: 10px 2px; cursor: pointer; }
+.fit { display: flex; gap: 8px; flex-wrap: wrap; }
+.fit span { background: var(--card); border-radius: 12px; padding: 8px 12px; font-size: 14px; }
+.kvlist { background: var(--card); border-radius: 16px; overflow: hidden; }
+.kvlist > div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 14px; border-top: 1px solid var(--line-2); font-size: 14.5px; }
+.kvlist > div:first-child { border-top: 0; }
+.kvlist span { color: var(--ink-3); flex: 0 0 42%; }
+.kvlist b { font-weight: 500; text-align: right; }
+.big-num { font-family: var(--serif); font-size: 34px; font-weight: 700; line-height: 1.15; color: var(--ink); }
+.sheet-actions { display: flex; gap: 8px; padding: 10px 18px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line-2); background: var(--paper); }
+.sheet-actions .btn { flex: 1; min-height: 48px; padding: 0 8px; font-size: 14.5px; }
+.close-banner { display: flex; align-items: center; gap: 8px; background: var(--accent-soft); color: var(--accent); border-radius: 12px; padding: 9px 12px; font-size: 14px; font-weight: 600; margin-top: 12px; }
+.close-banner svg { width: 18px; height: 18px; }
+
+/* ── หน้าลูกค้า ────────────────────────────────────────── */
+.icon-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.icon-actions a, .icon-actions button { border: 0; background: var(--card); border-radius: 16px; padding: 12px 4px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); cursor: pointer; text-decoration: none !important; box-shadow: 0 1px 2px rgba(29,36,34,.05), 0 8px 24px -16px rgba(29,36,34,.25); }
+.icon-actions .ii { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+.icon-actions .ii svg { width: 20px; height: 20px; }
+.icon-actions .off { opacity: .4; pointer-events: none; }
+.stage-line { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.stage-line::-webkit-scrollbar { display: none; }
+.stage-line button { flex: none; border: 0; border-radius: 999px; padding: 8px 12px; font-size: 13.5px; background: var(--paper-2); color: var(--ink-3); cursor: pointer; }
+.stage-line button.done { background: var(--primary-soft); color: var(--primary); }
+.stage-line button.on { background: var(--primary); color: var(--primary-ink); font-weight: 600; }
+.act-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.act-grid button { border: 1.5px solid var(--line-2); background: var(--card); border-radius: 14px; padding: 10px 4px; cursor: pointer; font-size: 12.5px; color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.act-grid button b { font-size: 13.5px; color: var(--ink); font-weight: 600; }
+.act-grid button:active { background: var(--primary-soft); border-color: var(--primary); }
+.client-head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+.client-head h1 { font-family: var(--serif); font-size: 26px; line-height: 1.2; }
+.client-head .meta { font-size: 14px; color: var(--ink-3); }
+.next-card { display: flex; gap: 12px; align-items: center; background: var(--warn-soft); border-radius: 16px; padding: 12px 14px; }
+.next-card .t { flex: 1; font-size: 14.5px; }
+
+/* ── หน้าวันนี้ ─────────────────────────────────────────── */
+.today-strip { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.ring { width: 76px; height: 76px; position: relative; }
+.ring svg { width: 76px; height: 76px; transform: rotate(-90deg); }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 19px; font-weight: 700; line-height: 1; }
+.ring b small { display: block; font-size: 11px; color: var(--ink-3); font-weight: 500; margin-top: 2px; }
+.mini-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.mini-stats div { text-align: center; }
+.mini-stats b { display: block; font-size: 22px; font-weight: 700; line-height: 1.2; }
+.mini-stats span { font-size: 12px; color: var(--ink-3); }
+.task { display: flex; gap: 12px; align-items: center; padding: 12px 2px; text-decoration: none !important; color: inherit; border-top: 1px solid var(--line-2); }
+.task:first-child { border-top: 0; }
+.task .ic { width: 38px; height: 38px; border-radius: 12px; flex: none; display: grid; place-items: center; background: var(--paper-2); color: var(--ink-2); }
+.task .ic svg { width: 19px; height: 19px; }
+.task.hot .ic { background: var(--accent-soft); color: var(--accent); }
+.task.good .ic { background: var(--good-soft); color: var(--good); }
+.task .tt { flex: 1; min-width: 0; }
+.task .tt b { display: block; font-size: 15px; font-weight: 600; line-height: 1.35; }
+.task .tt span { display: block; font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task > svg { width: 18px; height: 18px; color: var(--ink-3); flex: none; }
+.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.quick a { background: var(--card); border-radius: 16px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); text-decoration: none !important; box-shadow: 0 1px 2px rgba(29,36,34,.05), 0 8px 24px -16px rgba(29,36,34,.25); }
+.quick a svg { width: 22px; height: 22px; color: var(--primary); }
+
+/* ── แพ็กเกจ ───────────────────────────────────────────── */
+.pkg-head { border-radius: 18px; padding: 16px; background: var(--ink); color: var(--paper); }
+.pkg-head h2 { font-family: var(--serif); font-size: 22px; }
+.pkg-head p { color: color-mix(in srgb, var(--paper) 75%, transparent); font-size: 14.5px; margin-top: 4px; }
+.pkg-head .goal { margin-top: 12px; background: color-mix(in srgb, var(--paper) 12%, transparent); border-radius: 12px; padding: 10px 12px; font-size: 14.5px; }
+@media (max-width: 759px) { .tiers.one > .tier:not(.show) { display: none; } }
+@media (min-width: 760px) { .tier-switch { display: none; } }
+.tier { border: 0; border-radius: 18px; box-shadow: 0 1px 2px rgba(29,36,34,.05), 0 8px 24px -16px rgba(29,36,34,.25); }
+.tier.pick { box-shadow: 0 0 0 2px var(--primary) inset; }
+.tier-item { padding: 10px 0; }
+.tier-item .nm { font-size: 15.5px; }
+.tier-item > svg, .countdown > svg { flex: none; align-self: center; color: var(--ink-3); width: 18px; height: 18px; }

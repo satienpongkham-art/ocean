@@ -20,7 +20,7 @@ export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings()
 
 function renderNav(active, path) {
   const tb = $('#tabbar'); tb.replaceChildren();
-  for (const n of NAV) tb.append(h('a', { href: n.href, class: n.id === active ? 'on' : '', 'aria-current': n.id === active ? 'page' : null }, icon(n.icon), n.label));
+  for (const n of NAV) tb.append(h('a', { href: n.href, class: n.id === active ? 'on' : '', 'aria-current': n.id === active ? 'page' : null }, h('span.pill', icon(n.icon)), n.label));
   const sb = $('#sidebar'); const p = profile();
   const syncDot = h('span.sync-dot', { class: store.sync.state === 'ok' ? 'ok' : store.sync.state === 'busy' ? 'busy' : store.sync.state === 'err' ? 'err' : '' });
   sb.replaceChildren(
