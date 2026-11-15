@@ -1,7 +1,7 @@
 // ─── ลูกค้า v2: รายชื่อ · ฟอร์มทีละขั้น · โปรไฟล์แบบแท็บ ───
 import { h, icon, toast, empty, dateTH, todayISO, ageFrom, nextBirthday, initials, fmt, sheet, closeSheet, wizard, q, choices, readControls, tabs, kvlist } from '../ui.js';
 import * as store from '../store.js';
-import { STAGES, STAGE, SOURCES, ACTIVITIES, grade } from '../engine/work.js';
+import { STAGES, STAGE, SOURCES, ACTIVITIES, grade, ageUp } from '../engine/work.js';
 import { HEALTH_LEVELS, healthCheck, fmtM } from '../engine/needs.js';
 import { resultView, needSteps } from './advisor.js';
 import { apptSheet, apptResultSheet, setStage, gcalLink, logActivity, policySheet, policyRow } from './common.js';
@@ -112,12 +112,13 @@ function noteSheet(id) {
 export function renderDetail(id) {
   const c = store.get('clients', id);
   if (!c) { location.hash = '#/clients'; return null; }
-  const age = clientAge(c); const g = grade(c); const nb = nextBirthday(c.birthday);
+  const age = clientAge(c); const g = grade(c); const nb = nextBirthday(c.birthday); const au = ageUp(c.birthday, store.getSettings().ageRule);
   const p = { ...c, age };
   const stageIdx = STAGES.findIndex((s) => s.id === (c.stage || 'lead'));
 
   const overview = () => h('div',
     h('div.section', { style: { marginTop: 0 } }, h('h2', 'ขั้นตอน'), h('div.stage-line', STAGES.filter((s) => s.id !== 'paused').map((s, i) => h('button', { class: i === stageIdx ? 'on' : i < stageIdx ? 'done' : '', onclick: () => setStage(c, s.id) }, s.name)))),
+    au && au.days <= 45 && !['paused'].includes(c.stage) ? h('div.callout.red', { style: { marginTop: '12px' } }, h('b', `อายุประกันขึ้นอีก ${au.days} วัน`), ` — ทำก่อน ${dateTH(au.date)} ได้เบี้ยของอายุ ${au.now} ซึ่งถูกกว่า`) : null,
     c.nextDate ? h('div.next-card', { style: { marginTop: '12px' } }, icon('clock'), h('div.t', h('b', dateTH(c.nextDate, true)), ' · ', c.nextText || 'ติดตาม'), h('button.btn.sm', { onclick: () => store.put('clients', { ...c, nextDate: '', nextText: '' }) }, 'เสร็จ')) : null,
     h('div.section', h('h2', 'บันทึกกิจกรรม (แตะ = +คะแนน)'), h('div.act-grid', ACTIVITIES.filter((a) => a.id !== 'appt').map((a) => h('button', { onclick: () => logActivity(a.id, id) }, h('b', a.name), '+' + a.pts)))),
     c.stage === 'delivered' ? h('label.row.small', { style: { marginTop: '10px' } }, h('input', { type: 'checkbox', checked: !!c.askedReferral, onchange: (e) => store.put('clients', { ...c, askedReferral: e.target.checked }) }), 'ขอรายชื่อแนะนำแล้ว') : null,
@@ -125,7 +126,8 @@ export function renderDetail(id) {
       ['อายุ', age != null ? age + ' ปี' : '—'], ['อาชีพ', c.occupation || '—'], ['รายได้/เดือน', c.incomeMonthly ? fmt(c.incomeMonthly) : '—'],
       ['ครอบครัว', [c.marital === 'married' ? 'มีคู่' : 'โสด', c.kids ? `ลูก ${c.kids}` : null, c.parents ? `ดูแลพ่อแม่ ${c.parents}` : null].filter(Boolean).join(' · ')],
       ['ประกันสุขภาพ', HL[c.healthLevel || 'none']], ['ทุนชีวิต / โรคร้าย', `${fmtM(c.lifeCover)} / ${fmtM(c.ciCover)}`],
-      ['วันเกิด', nb ? `${dateTH(c.birthday)} (อีก ${nb.days} วัน)` : '—'], ['ที่มา', SRC[c.source] || '—'],
+      ['วันเกิด', nb ? `${dateTH(c.birthday)} (อีก ${nb.days} วัน)` : '—'],
+      ['อายุประกัน', au ? `${au.now} ปี → ${au.to} ปี วันที่ ${dateTH(au.date)} (อีก ${au.days} วัน)` : 'ใส่วันเกิดเพื่อคำนวณ'], ['ที่มา', SRC[c.source] || '—'],
     ])),
     c.notes || c.policies ? h('div.section', h('h2', 'บันทึก'), h('div.card', h('p.small', { style: { whiteSpace: 'pre-wrap' } }, [c.policies, c.notes].filter(Boolean).join('\n\n')))) : null,
     referrals(c),

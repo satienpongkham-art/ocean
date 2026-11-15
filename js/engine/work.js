@@ -2,7 +2,49 @@
 // งานขาย: ขั้นตอนท่อการขาย · คะแนนกิจกรรม · คำนวณย้อนจากเป้า · เกรดรายชื่อ · โค้ชวันนี้
 // แนวคิดจาก Al Granum (One Card System, อัตราส่วน 10:3:1) และแนวปฏิบัติของสมาชิก MDRT
 // ─────────────────────────────────────────────────────────────
-import { todayISO, daysBetween, nextBirthday, ageFrom } from '../ui.js';
+import { todayISO, daysBetween, nextBirthday, ageFrom, isoDate } from '../ui.js';
+
+/**
+ * อายุประกัน — บริษัทประกันชีวิตไทยส่วนใหญ่นับ "เศษอายุเกิน 6 เดือน เป็น 1 ปี" (rule = 'nearest')
+ * ตั้งเป็น 'last' ได้ถ้าแบบประกันนับอายุตามวันเกิดครั้งล่าสุด
+ * คืนค่า: อายุประกันตอนนี้ วันที่อายุประกันจะขึ้นครั้งถัดไป และจำนวนวันที่เหลือ
+ */
+export function ageUp(birthday, rule = 'nearest', from = new Date()) {
+  if (!birthday) return null;
+  const b = new Date(birthday + 'T00:00:00'); if (isNaN(b)) return null;
+  const t = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const shift = rule === 'last' ? 0 : 6;
+  let y = t.getFullYear() - 1, n;
+  do { n = new Date(y, b.getMonth() + shift, b.getDate()); y++; } while (n <= t);
+  const to = (y - 1) - b.getFullYear() + (shift ? 1 : 0); // ปีของวันเกิดอ้างอิง − ปีเกิด (+1 เมื่อเกิน 6 เดือน)
+  return { date: isoDate(n), days: Math.round((n - t) / 864e5), now: to - 1, to };
+}
+/** วันที่อายุประกันขึ้น (และวันเกิด) ที่ตกอยู่ในเดือนที่กำหนด — ใช้ในปฏิทิน */
+export function anniversariesIn(birthday, year, month, shift = 0) {
+  if (!birthday) return [];
+  const b = new Date(birthday + 'T00:00:00'); if (isNaN(b)) return [];
+  const out = [];
+  for (const y of [year - 1, year, year + 1]) {
+    const d = new Date(y, b.getMonth() + shift, b.getDate());
+    if (d.getFullYear() === year && d.getMonth() === month && d >= b) out.push(isoDate(d));
+  }
+  return out;
+}
+
+/** เลเวลตัวแทนจากคะแนนกิจกรรมสะสม: Lv.2 = 25 · Lv.3 = 100 · Lv.4 = 225 … */
+export function level(totalPts) {
+  const lv = Math.floor(Math.sqrt(Math.max(0, totalPts) / 25)) + 1;
+  const base = 25 * (lv - 1) ** 2, next = 25 * lv ** 2;
+  return { lv, pts: totalPts, base, next, pct: (totalPts - base) / (next - base) };
+}
+export function totalPoints(activities) { return activities.reduce((s, a) => s + (ACT[a.type]?.pts || 0) * (a.count || 1), 0); }
+
+/** คิวโหมดโทรรวด: ติดตามที่ถึงกำหนด → เกรด A/B/C → ติดต่อนานสุดก่อน */
+export function callQueue(clients, today = todayISO()) {
+  const due = (c) => !!(c.nextDate && c.nextDate <= today);
+  return clients.filter((c) => !['paused', 'closed', 'delivered'].includes(c.stage) && (['lead', 'contacted', undefined, ''].includes(c.stage) || due(c)))
+    .sort((a, b) => (due(b) - due(a)) || (grade(a) || 'Z').localeCompare(grade(b) || 'Z') || (a.lastContact || '').localeCompare(b.lastContact || ''));
+}
 
 export const STAGES = [
   { id: 'lead', name: 'รายชื่อ', hint: 'ยังไม่ได้ติดต่อ' },
@@ -98,6 +140,11 @@ export function coach({ clients, appts, activities, settings, closingPlans = [] 
     }
     const nb = nextBirthday(c.birthday);
     if (nb && nb.days <= 7) items.push({ pri: nb.days === 0 ? 90 : 60, kind: nb.days === 0 ? 'good' : '', icon: 'cake', title: nb.days === 0 ? `วันนี้วันเกิด ${c.nick} (${nb.turning} ปี)` : `อีก ${nb.days} วัน วันเกิด ${c.nick}`, why: 'ส่งคำอวยพร = จังหวะคุยเรื่องเบี้ยที่จะขึ้นตามอายุใหม่', go: `#/client/${c.id}` });
+    const au = c.stage !== 'paused' ? ageUp(c.birthday, settings.ageRule) : null;
+    if (au && au.days <= 21) {
+      const hot = ['met', 'proposed'].includes(c.stage);
+      items.push({ pri: hot ? (au.days <= 7 ? 82 : 72) : 56, kind: hot ? 'hot' : '', icon: 'clock', title: `${c.nick} อายุประกันขึ้นอีก ${au.days} วัน (${au.now} → ${au.to})`, why: `ทำก่อนวันที่ ${au.date.slice(8)}/${au.date.slice(5, 7)} ได้เบี้ยของอายุ ${au.now} ซึ่งถูกกว่า`, go: `#/client/${c.id}` });
+    }
     if (c.stage === 'proposed') {
       const last = (c.stageAt || c.updatedAt || '').slice(0, 10);
       const d = last ? daysBetween(last, today) : 0;

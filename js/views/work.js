@@ -1,34 +1,96 @@
 // ─── งานขาย: ท่อการขาย · ชั่วโมงโทรนัด · เป้าหมาย & ตัวเลข · ทบทวนสัปดาห์ ───
-import { h, icon, dateTH, todayISO, initials, empty, field, inputEl, readForm, toast, fmt, seg } from '../ui.js';
+import { h, icon, dateTH, todayISO, isoDate, initials, empty, field, inputEl, readForm, toast, fmt, seg, nextBirthday } from '../ui.js';
 import * as store from '../store.js';
-import { STAGES, STAGE, ACTIVITIES, ACT, grade, ratios, reverseGoal, countBy, weekRange, pointsOn } from '../engine/work.js';
+import { STAGES, STAGE, ACTIVITIES, ACT, grade, ratios, reverseGoal, countBy, weekRange, pointsOn, ageUp, callQueue } from '../engine/work.js';
+import { haptic } from '../pwa.js';
+import { rerender } from '../app.js';
 import { apptSheet, logActivity, setStage } from './common.js';
 import { lineChart, legend } from '../charts.js';
 import { profile } from '../app.js';
 
 function tabsWork(active) {
-  const t = [['pipe', 'ท่อการขาย', '#/work'], ['call', 'โทรนัด', '#/work/call'], ['goals', 'เป้าหมาย', '#/work/goals'], ['sales', 'ยอดขาย', '#/work/sales'], ['review', 'ทบทวนสัปดาห์', '#/work/review'], ['mandala', 'แมนฮาร่า', '#/work/mandala']];
+  const t = [['pipe', 'ท่อการขาย', '#/work'], ['call', 'โทรรวด', '#/work/call'], ['cal', 'ปฏิทิน', '#/work/calendar'], ['goals', 'เป้าหมาย', '#/work/goals'], ['sales', 'ยอดขาย', '#/work/sales'], ['review', 'ทบทวนสัปดาห์', '#/work/review'], ['mandala', 'แมนฮาร่า', '#/work/mandala']];
   return h('div.seg', t.map(([id, l, href]) => h('button', { class: id === active ? 'on' : '', onclick: () => { location.hash = href; } }, l)));
 }
 
 export function renderPipeline() {
   const clients = store.all('clients');
   const cols = STAGES.map((s) => ({ s, items: clients.filter((c) => (c.stage || 'lead') === s.id).sort((a, b) => (a.nextDate || '9999').localeCompare(b.nextDate || '9999')) }));
+  const board = h('div.board', { style: { marginTop: '14px' } }, cols.map(({ s, items }) => h('div.col', { 'data-stage': s.id },
+    h('div.col-h', h('span', s.name), h('span.muted', items.length)),
+    items.map((c) => {
+      const g = grade(c);
+      const i = STAGES.findIndex((x) => x.id === (c.stage || 'lead'));
+      const next = STAGES[i + 1] && STAGES[i + 1].id !== 'paused' ? STAGES[i + 1] : null;
+      return h('div.pcard', { 'data-id': c.id, onclick: (e) => { if (e.target.closest('button') || board.dataset.justDragged) return; location.hash = '#/client/' + c.id; } },
+        h('div.row.between', h('span.nm', c.nick), g ? h('span.grade.' + g, g) : null),
+        h('div.nx', c.nextDate ? `ติดตาม ${dateTH(c.nextDate)}${c.nextText ? ' · ' + c.nextText : ''}` : (c.occupation || s.hint)),
+        next ? h('button.btn.sm.ghost', { style: { marginTop: '6px', paddingLeft: 0 }, onclick: () => setStage(c, next.id) }, '→ ' + next.name) : null);
+    }),
+    !items.length ? h('div.xs.muted.col-empty', s.hint) : null)));
+  if (clients.length) enableDrag(board);
   return h('div', { 'data-title': 'ท่อการขาย' },
-    h('div.topbar', h('div', h('h1', 'ท่อการขาย'), h('div.sub', 'รายชื่อ → ติดต่อ → นัด → พบ → เสนอ → ปิด → ส่งมอบ')), h('a.btn.primary', { href: '#/client/new' }, icon('plus'), 'รายชื่อ')),
+    h('div.topbar', h('div', h('h1', 'ท่อการขาย'), h('div.sub', 'ลากการ์ดข้ามขั้นได้ (มือถือ: กดค้างแล้วลาก) · รายชื่อ → ติดต่อ → นัด → พบ → เสนอ → ปิด → ส่งมอบ')), h('a.btn.primary', { href: '#/client/new' }, icon('plus'), 'รายชื่อ')),
     tabsWork('pipe'),
-    clients.length ? h('div.board', { style: { marginTop: '14px' } }, cols.map(({ s, items }) => h('div.col',
-      h('div.col-h', h('span', s.name), h('span.muted', items.length)),
-      items.map((c) => {
-        const g = grade(c);
-        const i = STAGES.findIndex((x) => x.id === (c.stage || 'lead'));
-        const next = STAGES[i + 1] && STAGES[i + 1].id !== 'paused' ? STAGES[i + 1] : null;
-        return h('div.pcard', { onclick: (e) => { if (e.target.closest('button')) return; location.hash = '#/client/' + c.id; } },
-          h('div.row.between', h('span.nm', c.nick), g ? h('span.grade.' + g, g) : null),
-          h('div.nx', c.nextDate ? `ติดตาม ${dateTH(c.nextDate)}${c.nextText ? ' · ' + c.nextText : ''}` : (c.occupation || s.hint)),
-          next ? h('button.btn.sm.ghost', { style: { marginTop: '6px', paddingLeft: 0 }, onclick: () => setStage(c, next.id) }, '→ ' + next.name) : null);
-      }),
-      !items.length ? h('div.xs.muted', { style: { padding: '4px' } }, s.hint) : null))) : empty('ยังไม่มีรายชื่อในท่อการขาย', 'work', h('a.btn.primary', { href: '#/client/new' }, icon('plus'), 'เพิ่มรายชื่อ')));
+    clients.length ? board : empty('ยังไม่มีรายชื่อในท่อการขาย', 'work', h('a.btn.primary', { href: '#/client/new' }, icon('plus'), 'เพิ่มรายชื่อ')));
+}
+
+/** ลากการ์ดข้ามคอลัมน์: เมาส์ลากได้ทันที · นิ้วต้องกดค้าง 0.35 วินาทีก่อน (ไม่ให้ชนกับการเลื่อนจอ) */
+let dragCleanup = null;
+function enableDrag(board) {
+  if (dragCleanup) dragCleanup();
+  let st = null;
+  const colAt = (x, y) => document.elementsFromPoint(x, y).find((el) => el.classList?.contains('col') && board.contains(el));
+  const begin = (e) => {
+    const r = st.card.getBoundingClientRect();
+    st.dx = st.x0 - r.left; st.dy = st.y0 - r.top;
+    st.ghost = st.card.cloneNode(true); st.ghost.classList.add('drag-ghost');
+    Object.assign(st.ghost.style, { width: r.width + 'px', left: r.left + 'px', top: r.top + 'px' });
+    document.body.append(st.ghost);
+    st.card.classList.add('drag-src'); board.classList.add('dragging');
+    st.on = true; haptic(25);
+    move(e);
+  };
+  const move = (e) => {
+    if (!st) return;
+    const x = e.clientX, y = e.clientY;
+    if (!st.on) {
+      const far = Math.hypot(x - st.x0, y - st.y0) > 8;
+      if (st.touch) { if (far) cancel(); return; } // นิ้วขยับก่อนครบเวลา = เลื่อนจอ
+      if (far) begin(e); else return;
+    }
+    st.ghost.style.left = x - st.dx + 'px'; st.ghost.style.top = y - st.dy + 'px';
+    const col = colAt(x, y);
+    board.querySelectorAll('.col.drop').forEach((c) => c !== col && c.classList.remove('drop'));
+    if (col && col !== st.from) col.classList.add('drop');
+    const br = board.getBoundingClientRect(); // เลื่อนบอร์ดอัตโนมัติเมื่อลากใกล้ขอบ
+    if (x > br.right - 40) board.scrollLeft += 14; else if (x < br.left + 40) board.scrollLeft -= 14;
+  };
+  const cancel = () => { if (!st) return; clearTimeout(st.timer); st.ghost?.remove(); st.card.classList.remove('drag-src'); board.classList.remove('dragging'); board.querySelectorAll('.col.drop').forEach((c) => c.classList.remove('drop')); st = null; };
+  const end = (e) => {
+    if (!st) return;
+    if (st.on) {
+      const col = colAt(e.clientX, e.clientY);
+      const id = st.card.dataset.id;
+      board.dataset.justDragged = '1'; setTimeout(() => delete board.dataset.justDragged, 50);
+      cancel();
+      if (col && col.dataset.stage) { const c = store.get('clients', id); if (c && (c.stage || 'lead') !== col.dataset.stage) { setStage(c, col.dataset.stage); toast(`${c.nick} → ${STAGE[col.dataset.stage].name}`); } }
+    } else cancel();
+  };
+  board.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest('.pcard');
+    if (!card || e.target.closest('button') || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    st = { card, from: card.closest('.col'), x0: e.clientX, y0: e.clientY, touch: e.pointerType !== 'mouse', on: false };
+    if (st.touch) st.timer = setTimeout(() => { if (st && !st.on) begin({ clientX: st.x0, clientY: st.y0 }); }, 350);
+  });
+  const onCancel = (e) => { if (st && st.on) end(e); else cancel(); };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', onCancel);
+  dragCleanup = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', end); window.removeEventListener('pointercancel', onCancel); };
+  // ระหว่างลากด้วยนิ้ว ห้ามจอเลื่อน
+  board.addEventListener('touchmove', (e) => { if (st && st.on) e.preventDefault(); }, { passive: false });
+  board.addEventListener('contextmenu', (e) => { if (st) e.preventDefault(); });
 }
 
 const SCRIPTS = {
@@ -53,43 +115,144 @@ function fillScript(t, c, me) {
   return t.replace(/{nick}/g, c.nick || '…').replace(/{me}/g, me).replace(/{ref}/g, ref || '…').replace('{day1}', dateTH(d1.toISOString().slice(0, 10), true)).replace('{day2}', dateTH(d2.toISOString().slice(0, 10), true));
 }
 
-let callSession = { idx: 0, made: 0, talks: 0, appts: 0, script: 'warm' };
+// ── โหมดโทรรวด (Power Hour): จับเวลา · ทีละคน · แตะผลปุ่มเดียว · สรุปท้ายรอบ ──
+const PH_KEY = 'advdesk.v1.powerhour';
+const loadPH = () => { try { return JSON.parse(sessionStorage.getItem(PH_KEY)) || null; } catch { return null; } };
+let ph = loadPH() || { running: false, script: 'warm', minutes: 60 };
+const savePH = () => { try { sessionStorage.setItem(PH_KEY, JSON.stringify(ph)); } catch {} };
+const RESULT = { noans: ['ไม่รับสาย', 'var(--na)'], callback: ['ขอโทรกลับ', 'var(--warn)'], appt: ['ได้นัด', 'var(--good)'], no: ['ไม่สนใจ', 'var(--bad)'], skip: ['ข้าม', 'var(--line)'] };
+let phTimer = null;
+
+function lastNote(id) {
+  const l = store.all('logs').filter((x) => x.clientId === id && !['stage'].includes(x.type)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0];
+  return l ? `${dateTH(l.date)} · ${l.text}` : null;
+}
+function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return isoDate(d); }
+function tick() {
+  const el = document.getElementById('ph-time');
+  if (!el || !ph.running) { clearInterval(phTimer); phTimer = null; return; }
+  const left = Math.round((ph.start + ph.minutes * 60000 - Date.now()) / 1000);
+  const a = Math.abs(left);
+  el.textContent = (left < 0 ? '+' : '') + String(Math.floor(a / 60)).padStart(2, '0') + ':' + String(a % 60).padStart(2, '0');
+  el.parentElement.classList.toggle('over', left < 0);
+  if (left === 0) { haptic(200); toast('ครบเวลาแล้ว — จะจบรอบหรือโทรต่อก็ได้'); }
+  const bar = document.getElementById('ph-bar'); if (bar) bar.style.width = Math.min(100, (1 - left / (ph.minutes * 60)) * 100) + '%';
+}
+
 export function renderCall() {
-  const queue = store.all('clients').filter((c) => ['lead', 'contacted', undefined, ''].includes(c.stage))
-    .sort((a, b) => ((grade(a) || 'Z').localeCompare(grade(b) || 'Z')) || (a.lastContact || '').localeCompare(b.lastContact || ''));
-  const root = h('div', { 'data-title': 'ชั่วโมงโทรนัด' });
-  const card = h('div');
-  const me = (profile().name || '').split(' ')[0];
-  const draw = () => {
-    const c = queue[callSession.idx % Math.max(1, queue.length)];
-    if (!queue.length) { card.replaceChildren(empty('ไม่มีรายชื่อที่รอโทร — เพิ่มรายชื่อใหม่ก่อน', 'phone', h('a.btn.primary', { href: '#/client/new' }, icon('plus'), 'เพิ่มรายชื่อ'))); return; }
-    const sc = c.referredBy ? 'referral' : callSession.script;
-    const next = () => { callSession.idx++; draw(); };
-    card.replaceChildren(
-      h('div.card',
-        h('div.row.between', h('span.xs.muted', `รายชื่อที่ ${callSession.idx % queue.length + 1}/${queue.length}`), grade(c) ? h('span.grade.' + grade(c), grade(c)) : null),
-        h('div.row', { style: { gap: '12px', marginTop: '8px' } }, h('div.avatar.lg', initials(c.nick)), h('div', h('h2.serif', { style: { fontSize: '24px' } }, c.nick), h('div.small.muted', [c.occupation, c.phone].filter(Boolean).join(' · ') || 'ไม่มีเบอร์'))),
-        c.notes ? h('p.small', { style: { marginTop: '8px' } }, c.notes) : null,
-        h('div.row.wrap', { style: { gap: '8px', marginTop: '12px' } },
-          c.phone ? h('a.btn.primary', { href: 'tel:' + c.phone.replace(/[^\d+]/g, ''), onclick: () => { logActivity('call', c.id); callSession.made++; } }, icon('phone'), 'โทร') : null,
-          h('button.btn', { onclick: () => { if (!c.phone) { logActivity('call', c.id); callSession.made++; } next(); } }, 'ไม่รับ / ทักไว้'),
-          h('button.btn', { onclick: () => { logActivity('talk', c.id); callSession.talks++; setStage(c, 'contacted'); next(); } }, 'ได้คุย'),
-          h('button.btn', { onclick: () => { callSession.appts++; apptSheet({ clientId: c.id }); } }, icon('cal'), 'ได้นัด'),
-          h('button.btn.ghost', { onclick: () => { setStage(c, 'paused'); next(); } }, 'ไม่สนใจ'),
-          h('button.btn.ghost', { onclick: next }, 'ข้าม', icon('next')))),
-      h('div.card',
-        h('div.card-h', h('h3', 'สคริปต์'), seg(Object.entries(SCRIPTS).map(([k, v]) => [k, v.name]), sc, (v) => { callSession.script = v; draw(); })),
-        h('p', { style: { whiteSpace: 'pre-wrap', fontSize: '15px' } }, fillScript(SCRIPTS[sc].text, c, me))));
-  };
-  draw();
-  root.append(
-    h('div.topbar', h('div', h('h1', 'ชั่วโมงโทรนัด'), h('div.sub', 'กันเวลาวันละ 1 ชั่วโมง โทรทีละคน บันทึกผลทันที (แนวปฏิบัติ MDRT)'))),
-    tabsWork('call'),
-    h('div.stats', { style: { marginTop: '14px' } },
-      h('div.stat', h('span', 'โทรรอบนี้'), h('b', callSession.made)), h('div.stat', h('span', 'ได้คุย'), h('b', callSession.talks)),
-      h('div.stat', h('span', 'ได้นัด'), h('b', callSession.appts)), h('div.stat', h('span', 'คิวรอโทร'), h('b', queue.length))),
-    h('div', { style: { marginTop: '12px' } }, card));
+  const root = h('div', { 'data-title': 'โหมดโทรรวด' },
+    h('div.topbar', h('div', h('h1', 'โหมดโทรรวด'), h('div.sub', 'กันเวลาโทรรวดเดียว ทีละคน แตะผลปุ่มเดียว แล้วไปคนถัดไป (แนวปฏิบัติ MDRT)'))),
+    tabsWork('call'));
+  if (ph.running) root.append(phRunning());
+  else if (ph.summary) root.append(phSummary());
+  else root.append(phIntro());
   return root;
+}
+
+function phIntro() {
+  const queue = callQueue(store.all('clients'));
+  const hist = store.all('goals').filter((g) => g.type === 'powerhour').sort((a, b) => (b.start || 0) - (a.start || 0)).slice(0, 5);
+  const start = () => {
+    if (!queue.length) return;
+    ph = { running: true, start: Date.now(), minutes: ph.minutes || 60, script: ph.script || 'warm', ids: queue.map((c) => c.id), idx: 0, results: [], called: {} };
+    savePH(); haptic(20); rerender();
+  };
+  return h('div', { style: { marginTop: '14px' } },
+    h('div.ph-hero',
+      h('div.ph-ic', icon('phone')),
+      h('h2', `พร้อมโทร ${queue.length} คน`),
+      h('p', queue.length ? 'เรียงให้แล้ว: คนที่ถึงวันติดตาม → เกรด A → B → C → คนที่ไม่ได้คุยนานที่สุด' : 'ยังไม่มีรายชื่อที่รอโทร เพิ่มรายชื่อใหม่ก่อน'),
+      h('div.ph-dur', [30, 45, 60].map((m) => h('button', { class: (ph.minutes || 60) === m ? 'on' : '', onclick: () => { ph.minutes = m; savePH(); rerender(); } }, m + ' นาที'))),
+      queue.length ? h('button.btn.ph-go', { onclick: start }, icon('flame'), 'เริ่มเลย') : h('a.btn.ph-go', { href: '#/client/new' }, icon('plus'), 'เพิ่มรายชื่อ')),
+    queue.length ? h('div.section', h('h2', 'คิวรอบนี้'), h('div.card', { style: { paddingTop: '4px', paddingBottom: '4px' } },
+      queue.slice(0, 6).map((c, i) => h('div.task', h('span.ic', i + 1), h('span.tt', h('b', c.nick, grade(c) ? h('span.grade.' + grade(c), { style: { marginLeft: '8px' } }, grade(c)) : null), h('span', c.nextDate && c.nextDate <= todayISO() ? `ถึงวันติดตาม · ${c.nextText || ''}` : (STAGE[c.stage || 'lead']?.name + (c.occupation ? ' · ' + c.occupation : '')))))),
+      queue.length > 6 ? h('p.small.muted', { style: { padding: '8px 2px' } }, `และอีก ${queue.length - 6} คน`) : null)) : null,
+    hist.length ? h('div.section', h('h2', 'รอบที่ผ่านมา'), h('div.card', { style: { paddingTop: '4px', paddingBottom: '4px' } }, hist.map((x) =>
+      h('div.task', h('span.ic', icon('clock')), h('span.tt', h('b', `${dateTH(x.date, true)} · ${x.mins} นาที`), h('span', `โทร ${x.calls} · ได้คุย ${x.talks} · ได้นัด ${x.appts}`)))))) : null);
+}
+
+function phRunning() {
+  const ids = ph.ids.filter((id) => store.get('clients', id));
+  if (ph.idx >= ids.length) { finishPH(); return phSummary(); }
+  const c = store.get('clients', ids[ph.idx]);
+  const me = (profile().name || '').split(' ')[0];
+  const sc = c.referredBy ? 'referral' : (c.stage === 'proposed' ? 'followup' : ph.script);
+  const note = lastNote(c.id);
+  const au = ageUp(c.birthday, store.getSettings().ageRule);
+  const nb = nextBirthday(c.birthday);
+  const count = (k) => ph.results.filter((r) => r.r === k).length;
+  const ensureCall = () => { if (!ph.called[c.id]) { logActivity('call', c.id); ph.called[c.id] = 1; } };
+  const result = (r, extra) => {
+    if (r !== 'skip') ensureCall();
+    if (['callback', 'appt', 'no'].includes(r)) store.put('activities', { type: 'talk', clientId: c.id, date: todayISO(), count: 1 });
+    const cur = store.get('clients', c.id);
+    if (r === 'noans') store.put('clients', { ...cur, nextDate: addDays(2), nextText: 'โทรอีกครั้ง (ไม่รับสาย)' });
+    if (r === 'callback') { store.put('clients', { ...cur, nextDate: addDays(extra), nextText: 'โทรกลับตามที่ขอ', stage: ['lead', '', undefined].includes(cur.stage) ? 'contacted' : cur.stage }); }
+    if (r === 'no') setStage(cur, 'paused');
+    ph.results.push({ id: c.id, nick: c.nick, r });
+    ph.idx++; ph.pending = null; savePH(); haptic(15);
+    if (r === 'appt') { rerender(); apptSheet({ clientId: c.id }); return; }
+    rerender();
+  };
+  const scriptBox = h('details.ph-script', { open: ph.showScript !== false, ontoggle: (e) => { ph.showScript = e.target.open; savePH(); } },
+    h('summary', 'สคริปต์ · ' + SCRIPTS[sc].name),
+    seg(Object.entries(SCRIPTS).map(([k, v]) => [k, v.name]), sc, (v) => { ph.script = v; savePH(); rerender(); }),
+    h('p', fillScript(SCRIPTS[sc].text, c, me)));
+
+  const node = h('div', { style: { marginTop: '14px' } },
+    h('div.ph-bar-wrap',
+      h('div.ph-clock', icon('clock'), h('b#ph-time', '--:--')),
+      h('div.ph-prog', h('span', `${ph.idx + 1} / ${ids.length}`), h('div.ph-track', h('i#ph-bar'))),
+      h('button.btn.sm', { onclick: () => { finishPH(); rerender(); } }, 'จบรอบ')),
+    h('div.ph-chips', ['noans', 'callback', 'appt', 'no'].map((k) => h('span', h('i', { style: { background: RESULT[k][1] } }), RESULT[k][0] + ' ' + count(k)))),
+    h('div.card.ph-card',
+      h('div.row', { style: { gap: '14px' } }, h('div.avatar.lg', initials(c.nick)),
+        h('div', { style: { flex: 1, minWidth: 0 } }, h('h2.ph-name', c.nick, grade(c) ? h('span.grade.' + grade(c), { style: { marginLeft: '8px', verticalAlign: 'middle' } }, grade(c)) : null),
+          h('div.small.muted', [STAGE[c.stage || 'lead']?.name, c.occupation, c.phone].filter(Boolean).join(' · ') || 'ไม่มีเบอร์'))),
+      h('div.row.wrap', { style: { gap: '6px', marginTop: '10px' } },
+        c.nextDate && c.nextDate <= todayISO() ? h('span.tag.warn', 'ถึงวันติดตาม' + (c.nextText ? ': ' + c.nextText : '')) : null,
+        au && au.days <= 45 ? h('span.tag.red', `อายุประกันขึ้นอีก ${au.days} วัน`) : null,
+        nb && nb.days <= 14 ? h('span.tag.good', nb.days ? `วันเกิดอีก ${nb.days} วัน` : 'วันนี้วันเกิด') : null),
+      note ? h('div.ph-note', icon('note'), h('span', note)) : null,
+      c.phone ? h('a.btn.primary.block.ph-call', { href: 'tel:' + c.phone.replace(/[^\d+]/g, ''), onclick: ensureCall }, icon('phone'), 'โทร ' + c.phone)
+        : h('div.small.muted', { style: { marginTop: '12px' } }, 'ไม่มีเบอร์ในระบบ — ทักทาง LINE/แชต แล้วแตะผลด้านล่าง')),
+    ph.pending === 'callback'
+      ? h('div.card', h('b', 'โทรกลับเมื่อไหร่?'), h('div.ph-results', { style: { marginTop: '10px' } },
+        [[1, 'พรุ่งนี้'], [3, 'อีก 3 วัน'], [7, 'สัปดาห์หน้า'], [30, 'เดือนหน้า']].map(([d, l]) => h('button', { onclick: () => result('callback', d) }, l))),
+        h('button.btn.ghost.sm', { style: { marginTop: '8px' }, onclick: () => { ph.pending = null; savePH(); rerender(); } }, 'ยกเลิก'))
+      : h('div.ph-results',
+        h('button', { style: { '--rc': RESULT.noans[1] }, onclick: () => result('noans') }, h('b', 'ไม่รับสาย'), h('span', 'โทรอีกครั้งใน 2 วัน')),
+        h('button', { style: { '--rc': RESULT.callback[1] }, onclick: () => { ph.pending = 'callback'; savePH(); rerender(); } }, h('b', 'ขอโทรกลับ'), h('span', 'เลือกวัน')),
+        h('button', { style: { '--rc': RESULT.appt[1] }, onclick: () => result('appt') }, h('b', 'ได้นัด'), h('span', 'ลงนัดทันที')),
+        h('button', { style: { '--rc': RESULT.no[1] }, onclick: () => result('no') }, h('b', 'ไม่สนใจ'), h('span', 'พักรายชื่อไว้'))),
+    h('button.btn.ghost.block', { style: { marginTop: '6px' }, onclick: () => result('skip') }, 'ข้ามคนนี้', icon('next')),
+    h('div.card', { style: { marginTop: '10px' } }, scriptBox));
+  if (!phTimer) phTimer = setInterval(tick, 1000);
+  setTimeout(tick, 0);
+  return node;
+}
+
+function finishPH() {
+  if (!ph.running) return;
+  const r = ph.results; const n = (k) => r.filter((x) => x.r === k).length;
+  const mins = Math.max(1, Math.round((Date.now() - ph.start) / 60000));
+  const sum = { calls: r.filter((x) => x.r !== 'skip').length, talks: n('callback') + n('appt') + n('no'), appts: n('appt'), callbacks: n('callback'), noans: n('noans'), no: n('no'), mins };
+  store.put('goals', { id: 'ph-' + ph.start, type: 'powerhour', date: todayISO(), start: ph.start, ...sum });
+  ph = { running: false, script: ph.script, minutes: ph.minutes, summary: { ...sum, results: r } };
+  savePH();
+}
+
+function phSummary() {
+  const s = ph.summary;
+  const pts = s.calls * 1 + s.talks * 1 + s.appts * 2;
+  return h('div', { style: { marginTop: '14px' } },
+    h('div.ph-hero', h('div.ph-ic', icon('check')), h('h2', 'จบรอบแล้ว เก่งมาก!'), h('p', `ใช้เวลา ${s.mins} นาที · ได้ประมาณ ${pts} คะแนนกิจกรรม`),
+      h('div.ph-sum', [['โทร', s.calls], ['ได้คุย', s.talks], ['ได้นัด', s.appts], ['โทรกลับ', s.callbacks]].map(([l, v]) => h('div', h('b', v), h('span', l))))),
+    s.results.length ? h('div.section', h('h2', 'ผลรายคน'), h('div.card', { style: { paddingTop: '4px', paddingBottom: '4px' } }, s.results.map((x) =>
+      h('a.task', { href: '#/client/' + x.id }, h('span.ic', h('i.status-dot', { style: { background: RESULT[x.r][1], margin: 0 } })), h('span.tt', h('b', x.nick), h('span', RESULT[x.r][0])), icon('next'))))) : null,
+    h('div.row', { style: { gap: '8px', marginTop: '16px' } },
+      h('button.btn.primary', { style: { flex: 1 }, onclick: () => { ph.summary = null; savePH(); rerender(); } }, icon('phone'), 'เริ่มรอบใหม่'),
+      h('a.btn', { style: { flex: 1 }, href: '#/' }, 'กลับหน้าวันนี้')));
 }
 
 export function renderGoals() {
