@@ -32,6 +32,7 @@ const COMMANDS = [
   ['ต่อชุดแผน / จัดตามงบ', 'ต่อชุด เลโก้ งบ จัดแผน budget', 'layers', '#/plans/build'],
   ['แผนที่ร่างกาย', 'ร่างกาย หัวใจ มะเร็ง ไส้ติ่ง body', 'heart', '#/plans/body'],
   ['เส้นทางชีวิต', 'เส้นทาง ช่วงชีวิต แต่งงาน ลูก เกษียณ', 'compass', '#/plans/path'],
+  ['ย้อนเวลาข้อมูล', 'ย้อน กู้คืน ลบพลาด ประวัติ ถังขยะ undo restore', 'clock', '#/tools/timemachine'],
   ['เครื่องคิดเกษียณ', 'เกษียณ เงินเฟ้อ เครื่องคิด retire', 'cat-annuity', '#/tools/calc/retire'],
   ['ทุนการศึกษาลูก', 'การศึกษา ลูก ทุน education', 'cat-saving', '#/tools/calc/edu'],
   ['เงินสำรองฉุกเฉิน', 'เงินสำรอง ฉุกเฉิน เป้าออม emergency', 'shield', '#/tools/calc/emergency'],

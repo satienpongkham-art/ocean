@@ -263,6 +263,7 @@ function finishPH() {
   const mins = Math.max(1, Math.round(((ph.pausedAt || Date.now()) - ph.start) / 60000));
   const sum = { calls: r.filter((x) => x.r !== 'skip').length, talks: n('callback') + n('appt') + n('no'), appts: n('appt'), callbacks: n('callback'), noans: n('noans'), no: n('no'), mins };
   store.put('goals', { id: 'ph-' + ph.start, type: 'powerhour', date: todayISO(), start: ph.start, ...sum });
+  if (sum.appts > 0) import('../fx.js').then((f) => f.celebrate({ count: 60 })).catch(() => {});
   ph = { running: false, script: ph.script, minutes: ph.minutes, summary: { ...sum, results: r } };
   savePH();
 }

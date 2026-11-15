@@ -34,12 +34,25 @@
       var c = localStorage.getItem('advdesk.v1.palette'); if (c && c !== 'ink') document.documentElement.dataset.palette = c;
       var ld = localStorage.getItem('advdesk.v1.leading'); if (ld) document.documentElement.dataset.leading = ld;
       var hc = localStorage.getItem('advdesk.v1.contrast'); if (hc && hc !== 'normal') document.documentElement.dataset.contrast = hc;
-      var rm = localStorage.getItem('advdesk.v1.motion'); if (rm) document.documentElement.dataset.motion = rm; } catch (e) {}
+      var rm = localStorage.getItem('advdesk.v1.motion'); if (rm) document.documentElement.dataset.motion = rm;
+      var bc = localStorage.getItem('advdesk.v1.brandCss'); if (bc && c === 'custom') document.write('<style id="brand-css">' + bc.replace(/</g, '') + '</style>');
+      var fo = localStorage.getItem('advdesk.v1.font'); var FU = { plex: 'IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600', noto: 'Noto+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700' };
+      if (fo && FU[fo]) { document.documentElement.dataset.font = fo; document.write('<link rel="stylesheet" id="font-' + fo + '" href="https://fonts.googleapis.com/css2?family=' + FU[fo] + '&display=swap">'); }
+      var sh = localStorage.getItem('advdesk.v1.shape'); if (sh) document.documentElement.dataset.shape = sh;
+      var dn = localStorage.getItem('advdesk.v1.density'); if (dn) document.documentElement.dataset.density = dn;
+      var du = localStorage.getItem('advdesk.v1.duo'); if (du) document.documentElement.dataset.duo = du; } catch (e) {}
   </script>
 </head>
 <body>
   <a class="skip-link" href="#view" onclick="event.preventDefault();var v=document.querySelector('#view h1')||document.getElementById('view');v.setAttribute('tabindex','-1');v.focus();">ข้ามไปเนื้อหา</a>
-  <div id="splash" aria-hidden="true"><img src="assets/icon-192.png" alt="" width="88" height="88"><div>Advisor Desk</div></div>
+  <div id="splash" aria-hidden="true"><div class="sp-mark"><img src="assets/icon-192.png" alt="" width="84" height="84"><span id="sp-ini"></span></div><b id="sp-name">Advisor Desk</b><small id="sp-tag">ที่ปรึกษาการเงินส่วนตัว</small><i class="sp-bar"></i></div>
+  <script>
+    // หน้าเปิดแอปแบบมีชื่อแบรนด์ (อ่านจากโปรไฟล์ในเครื่อง)
+    try { var st = JSON.parse(localStorage.getItem('advdesk.v1.settings') || '{}'); var pf = (st.main && st.main.profile) || {};
+      if (location.hash.indexOf('#/p/') === 0) { document.getElementById('splash').remove(); }
+      else if (pf.name) { document.getElementById('sp-name').textContent = pf.nick ? pf.nick : pf.name; document.getElementById('sp-tag').textContent = pf.tagline || ((pf.title || '') + (pf.company ? ' · ' + pf.company : ''));
+        var n0 = pf.name.trim(), ch = n0.charAt(0); if ('เแโใไ'.indexOf(ch) >= 0) ch = n0.charAt(1); document.getElementById('sp-ini').textContent = ch; document.getElementById('splash').classList.add('named'); } } catch (e) {}
+  </script>
   <div class="app">
     <aside class="sidebar" id="sidebar"></aside>
     <main class="main" id="main"><div class="page" id="view" aria-live="polite"></div></main>

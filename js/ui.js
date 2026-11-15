@@ -92,12 +92,20 @@ const P = {
   layers: '<path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/>',
   info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.01"/>',
 };
+// ไอคอนสองโทน: เติมสีจาง ๆ ให้รูปทรงปิดชิ้นแรกของไอคอน
+const DUO = {};
+function duo(name) {
+  if (DUO[name]) return DUO[name];
+  const src = P[name] || P.doc;
+  const m = src.match(/<(rect|circle|ellipse)\b|<path d="[^"]*[zZ]"/);
+  return (DUO[name] = m ? src.slice(0, m.index) + src.slice(m.index).replace(/^<(\w+)/, '<$1 class="d1"') : src);
+}
 export function icon(name, cls = '') {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none'); s.setAttribute('stroke', 'currentColor');
   s.setAttribute('stroke-width', '1.75'); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round');
   s.setAttribute('aria-hidden', 'true'); s.setAttribute('width', '20'); s.setAttribute('height', '20'); if (cls) s.setAttribute('class', cls);
-  s.innerHTML = P[name] || P.doc;
+  s.innerHTML = duo(name);
   return s;
 }
 

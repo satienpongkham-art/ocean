@@ -1,4 +1,5 @@
 // ─── เครื่องมือ: เมนู · รับมือข้อโต้แย้ง · โปรไฟล์ · ซิงก์ & สำรองข้อมูล ───
+import { paletteFrom, getBrandColor, setBrandColor, FONTS, getFont, setFont, loadFont, getShape, setShape, getDensity, setDensity, getDuo, setDuo } from '../theme.js';
 import { h, icon, field, inputEl, readForm, toast, copyText, dateTH, initials } from '../ui.js';
 import * as store from '../store.js';
 import { OBJECTIONS } from '../../data/objections.js';
@@ -124,6 +125,7 @@ export function renderSync() {
   ];
   return h('div', { 'data-title': 'ซิงก์ & สำรองข้อมูล' },
     h('div.topbar', h('div', h('a.crumb', { href: '#/tools' }, icon('back'), 'เครื่องมือ'), h('h1', 'ซิงก์ & สำรองข้อมูล'), h('div.sub', 'ข้อมูลลูกค้าอยู่ในเครื่องนี้ + Google Sheets ของคุณเท่านั้น ไม่ขึ้น GitHub'))),
+    h('a.card.tm-entry', { href: '#/tools/timemachine' }, h('span.tm-ic', icon('clock')), h('span', h('b', 'ย้อนเวลาข้อมูล'), h('small', 'กู้รายการที่ลบพลาด · ดูประวัติการแก้ไข · ย้อนทั้งหมดไปเมื่อวาน')), icon('next')),
     h('div.grid.g2', { style: { alignItems: 'start' } },
       h('div.card', h('div.card-h', h('h3', 'ซิงก์มือถือ ↔ คอม (Google Sheets)')), f, status),
       h('div.card', h('div.card-h', h('h3', 'ตั้งค่าครั้งแรก (~10 นาที)')),
@@ -164,7 +166,12 @@ export function renderDisplay() {
       h('div.q', h('span.ql', 'ภาพเคลื่อนไหว'), choices('mo', getMotion(), [['auto', 'ตามมือถือ'], ['reduce', 'ลดให้น้อยที่สุด']], { onChange: setMotion })),
       h('a.btn.sm', { href: '#/tools/glossary' }, icon('book'), 'คำศัพท์ภาษาง่าย'), ' ',
       h('button.btn.sm', { onclick: () => import('../app.js').then((m) => m.showShortcuts()) }, icon('key'), 'ปุ่มลัดคีย์บอร์ด'))),
-    h('div.section', h('h2', 'สีธีม'), h('div.card', palettePicker())),
+    h('div.section', h('h2', 'สีแบรนด์'), h('div.card', palettePicker())),
+    h('div.section', h('h2', 'คู่ฟอนต์'), h('div.card', fontPicker())),
+    h('div.section', h('h2', 'ความโค้ง & ระยะห่าง'), h('div.card',
+      h('div.q', h('span.ql', 'มุมการ์ดและปุ่ม'), choices('shape', getShape(), [['crisp', 'เหลี่ยม'], ['soft', 'โค้งพอดี'], ['round', 'มน']], { onChange: setShape })),
+      h('div.q', h('span.ql', 'ระยะห่าง'), choices('dens', getDensity(), [['comfy', 'สบายตา'], ['compact', 'แน่น เห็นข้อมูลมากขึ้น']], { onChange: setDensity })),
+      h('div.q', h('span.ql', 'ไอคอน'), choices('duo', getDuo(), [['on', 'สองโทน'], ['off', 'เส้นอย่างเดียว']], { onChange: setDuo })))),
     h('div.section', h('h2', 'โหมดสว่าง / มืด'), h('div.card', choices('th', getTheme(), [['auto', 'ตามมือถือ'], ['light', 'สว่าง'], ['dark', 'มืด']], { onChange: setTheme }))),
     h('div.section', h('h2', 'การนับอายุประกัน'), h('div.card', choices('ar', store.getSettings().ageRule || 'nearest', [['nearest', 'เศษเกิน 6 เดือน นับเป็น 1 ปี'], ['last', 'นับตามวันเกิดล่าสุด']], { onChange: (v) => store.saveSettings({ ageRule: v }) }),
       h('p.small.muted', { style: { marginTop: '10px' } }, 'ใช้คำนวณวัน "อายุประกันขึ้น" ที่แจ้งเตือนในหน้าวันนี้ ปฏิทิน และหน้าลูกค้า · บริษัทประกันชีวิตไทยส่วนใหญ่ใช้แบบแรก ยืนยันกับระบบตัวแทนอีกครั้ง'))),
@@ -174,9 +181,26 @@ export function renderDisplay() {
 
 const PALETTES = [['ink', 'เขียวหมึก', '#1f4e46', '#f5f2ec'], ['red', 'แดง AIA', '#b3121f', '#f5f2ec'], ['navy', 'กรมท่า-ทอง', '#1e3354', '#b08a3e'], ['plum', 'ม่วงพลัม', '#5b2a59', '#f5f2ec']];
 function palettePicker() {
-  const wrap = h('div.swatches');
-  const draw = () => wrap.replaceChildren(...PALETTES.map(([id, name, a, b]) => h('button.swatch', { class: getPalette() === id ? 'on' : '', 'aria-pressed': getPalette() === id, onclick: () => { setPalette(id); draw(); } },
-    h('span.sw', { style: { background: `linear-gradient(135deg, ${a} 0 60%, ${b} 60%)` } }), h('b', name))));
+  const wrap = h('div');
+  const draw = () => {
+    const cur = getPalette(); const bc = getBrandColor();
+    const prev = cur === 'custom' && bc ? paletteFrom(bc) : null;
+    wrap.replaceChildren(h('div.th-swatches',
+      ...PALETTES.map(([id, name, a, b]) => h('button.th-sw', { class: cur === id ? 'on' : '', 'aria-pressed': String(cur === id), 'aria-label': name, title: name, style: { background: `linear-gradient(135deg, ${a} 0 60%, ${b} 60%)` }, onclick: () => { setPalette(id); draw(); } })),
+      h('label.th-pick', { title: 'เลือกสีเอง', class: cur === 'custom' ? 'on' : '' }, h('input', { type: 'color', value: bc || '#c8102e', 'aria-label': 'เลือกสีแบรนด์เอง', oninput: (e) => { setBrandColor(e.target.value); }, onchange: () => draw() })),
+      h('span.small.muted', cur === 'custom' ? 'สีของคุณ ' + bc : PALETTES.find((p) => p[0] === cur)?.[1] || '')),
+      h('p.small.muted', { style: { margin: '10px 0 0' } }, 'เลือกสีเดียว แอปสร้างชุดสีให้ทั้งโหมดสว่างและมืด และปรับให้ตัวอักษรบนปุ่มอ่านออกเสมอ'),
+      prev ? h('div.th-prev', h('div.lt', 'โหมดสว่าง', h('i', { style: { background: prev.light['--primary'], color: prev.light['--primary-ink'] } }, 'ปุ่มหลัก'), h('i', { style: { background: prev.light['--primary-soft'], color: prev.light['--primary'] } }, 'พื้นอ่อน')),
+        h('div.dk', 'โหมดมืด', h('i', { style: { background: prev.dark['--primary'], color: prev.dark['--primary-ink'] } }, 'ปุ่มหลัก'), h('i', { style: { background: prev.dark['--primary-soft'], color: prev.dark['--primary'] } }, 'พื้นอ่อน'))) : '');
+  };
   draw();
   return wrap;
+}
+function fontPicker() {
+  FONTS.forEach(([id]) => loadFont(id));
+  const wrap = h('div.th-fonts');
+  const fam = { kanit: ["'Kanit'", "'Sarabun'"], plex: ["'IBM Plex Sans Thai'", "'IBM Plex Sans Thai Looped'"], noto: ["'Noto Serif Thai'", "'Noto Sans Thai'"] };
+  const draw = () => wrap.replaceChildren(...FONTS.map(([id, name, desc]) => h('button.th-font', { 'aria-pressed': String(getFont() === id), onclick: () => { setFont(id); draw(); } },
+    h('b', { style: { fontFamily: fam[id][0] } }, 'วางแผนวันนี้ อุ่นใจวันหน้า'), h('span', { style: { fontFamily: fam[id][1] } }, 'เบี้ยเริ่มต้น 1,250 บาท/เดือน คุ้มครองค่ารักษา'), h('small', name + ' · ' + desc))));
+  draw(); return wrap;
 }
