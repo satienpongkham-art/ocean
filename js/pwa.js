@@ -54,4 +54,11 @@ export function setTextSize(z) { ls.set('textsize', z); if (z === 'm') delete do
 export function getHaptic() { return ls.get('haptic') !== '0'; }
 export function setHaptic(on) { ls.set('haptic', on ? '1' : '0'); }
 
+/** ล้างแคชทั้งหมดแล้วโหลดเวอร์ชันล่าสุด (ข้อมูลลูกค้าไม่หาย — อยู่ใน localStorage) */
+export async function forceUpdate() {
+  try { const ks = await caches.keys(); await Promise.all(ks.map((k) => caches.delete(k))); } catch {}
+  try { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map((r) => r.unregister())); } catch {}
+  location.replace(location.pathname + '?v=' + Date.now() + location.hash);
+}
+
 export function hideSplash() { const s = document.getElementById('splash'); if (s && !s.classList.contains('hide')) { s.classList.add('hide'); setTimeout(() => s.remove(), 400); } }
