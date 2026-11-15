@@ -28,6 +28,7 @@ export function renderPresent(id, qs = {}) {
   const toggleSenior = () => { sessionStorage.setItem('senior', senior ? '0' : '1'); import('../app.js').then((m) => m.rerender()); };
   return h('div.present', { class: senior ? 'senior' : '', 'data-title': 'นำเสนอ ' + c.nick },
     h('div.ptop', h('a.btn.ghost', { href: '#/client/' + id }, icon('close'), 'ออก'), h('div.row', { style: { gap: '6px' } },
+      h('button.btn', { onclick: () => import('../app.js').then((m) => m.setClientMode(true)), title: 'ซ่อนข้อมูลส่วนตัวก่อนยื่นมือถือ' }, icon('user'), 'โหมดลูกค้า'),
       h('button.btn', { 'aria-pressed': String(senior), onclick: toggleSenior, title: 'โหมดผู้สูงวัย: ตัวใหญ่ สีชัด เหลือเรื่องสำคัญ' }, h('b', { style: { fontSize: '18px' } }, 'ก'), senior ? 'ปกติ' : 'ตัวใหญ่'), h('button.btn', { onclick: () => copyText(shareText(p, r, tier)), 'aria-label': 'คัดลอกข้อความสรุป' }, icon('copy'), 'ข้อความ'), h('button.btn.primary', { onclick: () => shareImage(p, r, tier) }, icon('upload'), 'ส่งเป็นภาพ'))),
     h('div.small.muted', 'แผนความคุ้มครองที่ออกแบบสำหรับ'),
     h('h1', 'คุณ' + c.nick),

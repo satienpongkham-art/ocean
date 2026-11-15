@@ -29,6 +29,8 @@ const COMMANDS = [
   ['เป้าหมาย & ตัวเลข', 'เป้า ค่าคอม เป้าหมาย', 'target', '#/work/goals'],
   ['ยอดขาย', 'ยอดขาย กรมธรรม์ ครบชำระ', 'line', '#/work/sales'],
   ['ท่อการขาย', 'ท่อ pipeline ขั้น', 'work', '#/work'],
+  ['ตัวช่วยเลือกแผน', 'เลือกแผน ตัวไหนดี finder แนะนำ', 'compass', '#/plans/finder'],
+  ['โหมดลูกค้า', 'โหมดลูกค้า ยื่นมือถือ ซ่อนข้อมูล', 'user', () => import('../app.js').then((m) => m.setClientMode(true))],
   ['จำลองเหตุการณ์', 'จำลอง ป่วย มะเร็ง อุบัติเหตุ ต้องจ่ายเอง', 'flame', '#/tools/simulate'],
   ['รายชื่ออัจฉริยะ', 'รายชื่อ กรอง เงื่อนไข smart list', 'filter', '#/clients/lists'],
   ['มีอะไรใหม่', 'อัปเดต ใหม่ เวอร์ชัน changelog', 'info', () => import('../app.js').then((m) => m.showWhatsNew(m.APP_VERSION.split(' ')[0]))],

@@ -7,6 +7,9 @@ import { coach } from './engine/work.js';
 import { setTextHook } from './ui.js';
 import { glossify } from './glossary.js';
 setTextHook(glossify);
+import { setEmptyArt } from './ui.js';
+import { illus } from './illus.js';
+setEmptyArt(() => illus('empty', { size: 96 }));
 
 const NAV = [
   { id: 'today', label: 'วันนี้', icon: 'today', href: '#/' },
@@ -16,12 +19,12 @@ const NAV = [
   { id: 'tools', label: 'เครื่องมือ', icon: 'tools', href: '#/tools' },
 ];
 const SIDE_SUB = {
-  plans: [['#/plans', 'คลังแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
+  plans: [['#/plans', 'คลังแผน'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
   tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.1 · 15 พ.ย. 69';
+export const APP_VERSION = '5.2 · 15 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -52,7 +55,9 @@ const routes = [
   [/^\/present\/([\w-]+)$/, 'clients', (q, id) => import('./views/present.js').then((m) => m.renderPresent(id, q))],
   [/^\/work\/sales$/, 'work', () => import('./views/sales.js').then((m) => m.renderSales())],
   [/^\/tools\/display$/, 'tools', () => import('./views/tools.js').then((m) => m.renderDisplay())],
-  [/^\/plan\/([\w-]+)$/, 'plans', (q, id) => import('./views/plans.js').then((m) => m.renderCatalog(q, id))],
+  [/^\/plan\/([\w-]+)$/, 'plans', (q, id) => import('./views/planpage.js').then((m) => m.renderPlanPage(id))],
+  [/^\/plans\/finder$/, 'plans', () => import('./views/finder.js').then((m) => m.renderFinder())],
+  [/^\/proposal\/([\w-]+)$/, 'clients', (q, id) => import('./views/proposal.js').then((m) => m.renderProposal(id))],
   [/^\/clients\/?$/, 'clients', (q) => import('./views/clients.js').then((m) => m.renderList(q))],
   [/^\/client\/new$/, 'clients', (q) => import('./views/clients.js').then((m) => m.renderForm(null, q))],
   [/^\/client\/([\w-]+)\/edit$/, 'clients', (q, id) => import('./views/clients.js').then((m) => m.renderForm(id, q))],
@@ -90,11 +95,34 @@ const routes = [
 ];
 
 let current = '';
+let vtBusy = false;
+// ── โหมดลูกค้า: ซ่อนข้อมูลส่วนตัว ก่อนยื่นมือถือให้ลูกค้าดู ──
+const CLIENT_OK = [/^\/plans/, /^\/plan\//, /^\/sheet\//, /^\/present\//, /^\/proposal\//, /^\/client\/[\w-]+\/simulate$/, /^\/tools\/(glossary|simulate)$/];
+export const clientMode = () => sessionStorage.getItem('clientMode') === '1';
+export function setClientMode(on) {
+  sessionStorage.setItem('clientMode', on ? '1' : '0');
+  document.body.classList.toggle('client-mode', on);
+  renderClientBar();
+  if (on && !CLIENT_OK.some((re) => re.test(location.hash.slice(1).split('?')[0]))) location.hash = '#/plans'; else route();
+}
+function renderClientBar() {
+  document.querySelector('.cm-bar')?.remove();
+  if (!clientMode()) return;
+  let timer = null;
+  const exitBtn = h('button.cm-exit', { 'aria-label': 'ออกจากโหมดลูกค้า: กดค้าง 1 วินาที',
+    onpointerdown: () => { exitBtn.classList.add('hold'); timer = setTimeout(() => setClientMode(false), 1000); },
+    onpointerup: () => { clearTimeout(timer); exitBtn.classList.remove('hold'); }, onpointerleave: () => { clearTimeout(timer); exitBtn.classList.remove('hold'); },
+    onkeydown: (e) => { if (e.key === 'Enter') setClientMode(false); } }, icon('close'), 'ออก (กดค้าง)');
+  document.body.append(h('div.cm-bar', { role: 'region', 'aria-label': 'โหมดลูกค้า' }, h('span.cm-dot'), h('b', 'โหมดลูกค้า'),
+    h('a', { href: '#/plans' }, 'แผน'), h('a', { href: '#/plans/finder' }, 'เลือกแผน'), exitBtn));
+}
 export async function route() {
   const raw = location.hash.slice(1) || '/';
   const [path, qs] = raw.split('?');
   const q = Object.fromEntries(new URLSearchParams(qs || ''));
-  if (isSheetOpen() && !/^\/plan\//.test(path)) closeSheet(true);
+  if (isSheetOpen()) closeSheet(true);
+  // โหมดลูกค้า: เปิดได้เฉพาะหน้าที่ไม่มีข้อมูลส่วนตัวของคนอื่น
+  if (clientMode() && !CLIENT_OK.some((re) => re.test(path))) { location.hash = '#/plans'; return; }
   for (const [re, nav, fn] of routes) {
     const m = path.match(re);
     if (m) {
@@ -105,8 +133,18 @@ export async function route() {
       current = raw;
       try {
         const node = await fn(q, ...m.slice(1));
-        if (node) { const v = $('#view'); v.replaceChildren(node); }
-        if (!samePage && !/^\/plan\//.test(path)) {
+        if (node) {
+          const v = $('#view');
+          const swap = () => v.replaceChildren(node);
+          const calm = matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduce';
+          if (!samePage && !calm && document.startViewTransition && !vtBusy) {
+            vtBusy = true;
+            const vt = document.startViewTransition(swap);
+            for (const pr of [vt.ready, vt.finished, vt.updateCallbackDone]) pr.catch(() => {});
+            vt.finished.catch(() => {}).finally(() => { vtBusy = false; });
+          } else swap();
+        }
+        if (!samePage) {
           window.scrollTo(0, 0);
           // ย้ายโฟกัสไปที่หัวเรื่องของหน้าใหม่ (โปรแกรมอ่านหน้าจอรู้ว่าเปลี่ยนหน้าแล้ว)
           setTimeout(() => { const v = $('#view'); if (v.contains(document.activeElement) || isSheetOpen()) return; const hd = v.querySelector('h1'); if (hd) { hd.setAttribute('tabindex', '-1'); hd.focus({ preventScroll: true }); } }, 60);
@@ -174,6 +212,7 @@ store.onSync(() => { const raw = location.hash.slice(1) || '/'; const p = raw.sp
     sessionStorage.setItem('shared', JSON.stringify({ title: sp.get('title') || '', text: sp.get('text') || '', url: sp.get('url') || '' }));
     history.replaceState(null, '', location.pathname + '#/share');
   } }
+if (clientMode()) { document.body.classList.add('client-mode'); renderClientBar(); }
 route();
 // แสดง "มีอะไรใหม่" ครั้งเดียวหลังอัปเดตเวอร์ชัน
 setTimeout(() => {

@@ -271,6 +271,7 @@ export function quickSheet() {
     ['link', 'ได้รายชื่อแนะนำ', '+2 คะแนน', () => log('referral')],
     ['flame', 'โหมดโทรรวด', 'โทรทีละคน', () => go('#/work/call')],
     ['grid', 'ตรวจการเงิน', 'แบบเร็ว 6 ขั้น', () => go('#/check')],
+    ['user', 'โหมดลูกค้า', 'ซ่อนข้อมูลก่อนยื่นมือถือ', () => { closeSheet(true); import('../app.js').then((m) => m.setClientMode(true)); }],
   ];
   sheet({ title: 'บันทึกด่วน', body: h('div.quick-grid', items.map(([ic, t, d, fn]) => h('button', { onclick: fn }, h('span.qi', icon(ic)), h('b', t), h('span', d)))) });
 }
