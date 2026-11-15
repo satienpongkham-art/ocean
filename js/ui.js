@@ -354,14 +354,25 @@ export function moneyInput(name, value, presets = []) {
  * ตัวช่วยกรอกทีละขั้น
  * steps: [{ title, render: (data) => node, read?: (node, data) => void }]
  */
-export function wizard(steps, data, { onDone, doneLabel = 'เสร็จ', onCancel } = {}) {
+export function wizard(steps, data, { onDone, doneLabel = 'เสร็จ', onCancel, autosave } = {}) {
   let i = 0;
   const root = h('div.card');
+  // บันทึกฟอร์มค้างไว้อัตโนมัติ (กรอกครึ่งทางแล้วมีสายเข้า กลับมาข้อมูลยังอยู่)
+  const DK = autosave ? 'advdesk.v1.draft.' + autosave : null;
+  let saved = null; try { saved = DK && JSON.parse(localStorage.getItem(DK) || 'null'); } catch {}
+  if (saved && Date.now() - saved.at > 7 * 864e5) { saved = null; try { localStorage.removeItem(DK); } catch {} }
+  let tmr;
+  const persist = () => { if (!DK) return; clearTimeout(tmr); tmr = setTimeout(() => { try { const s = steps[i]; const b = root.querySelector('.wiz-body'); if (s.read && b) s.read(b, data); localStorage.setItem(DK, JSON.stringify({ at: Date.now(), i, data })); } catch {} }, 400); };
+  if (DK) { root.addEventListener('input', persist); root.addEventListener('click', persist); }
+  const clearDraft = () => { if (DK) try { localStorage.removeItem(DK); } catch {} };
   const draw = () => {
     const s = steps[i];
-    const body = s.render(data);
+    const body = s.render(data); body.classList.add('wiz-body');
     const collect = () => { if (s.read) s.read(body, data); };
     root.replaceChildren(
+      saved ? h('div.draft-bar', { role: 'status' }, icon('doc'), h('span', `มีข้อมูลที่กรอกค้างไว้ (${new Date(saved.at).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })})`),
+        h('button.btn.sm.primary', { type: 'button', onclick: () => { Object.assign(data, saved.data); i = Math.min(saved.i || 0, steps.length - 1); saved = null; draw(); } }, 'กู้คืน'),
+        h('button.btn.sm.ghost', { type: 'button', onclick: () => { saved = null; clearDraft(); draw(); } }, 'ทิ้ง')) : null,
       h('div.wiz-top', h('div.wiz-dots', steps.map((_, k) => h('i', { class: k <= i ? 'on' : '' }))), h('span.wiz-step', `ขั้น ${i + 1}/${steps.length}`)),
       h('div.wiz-title', s.title),
       body,
@@ -370,7 +381,7 @@ export function wizard(steps, data, { onDone, doneLabel = 'เสร็จ', onC
           : (onCancel ? h('button.btn', { type: 'button', onclick: onCancel }, 'ยกเลิก') : null),
         i < steps.length - 1
           ? h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (!ok()) return; i++; draw(); window.scrollTo({ top: 0 }); } }, 'ถัดไป', icon('next'))
-          : h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (!ok()) return; onDone && onDone(data); } }, icon('check'), doneLabel)));
+          : h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (!ok()) return; clearTimeout(tmr); clearDraft(); onDone && onDone(data); } }, icon('check'), doneLabel)));
     function ok() {
       if (!s.valid || s.valid(data)) return true;
       let e = root.querySelector('.wiz-err');

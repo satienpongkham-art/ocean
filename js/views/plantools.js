@@ -20,6 +20,9 @@ const back = (href, title, subTxt) => h('div.back-row', h('a.icon-btn', { href, 
 export function renderPlanTools() {
   const n = store.all('premiums').length;
   const tiles = [
+    ['#/plans/build', 'layers', 'ต่อชุดแผน + จัดตามงบ', 'วางแผนเป็นชุด เห็นด้านที่ยังว่าง'],
+    ['#/plans/body', 'heart', 'แผนที่ร่างกาย', 'แตะส่วนของร่างกาย ดูแผนที่ช่วย'],
+    ['#/plans/path', 'compass', 'เส้นทางชีวิต', '7 ช่วงชีวิต กับแผนที่เหมาะ'],
     ['#/plans/finder', 'compass', 'ตัวช่วยเลือกแผน', '3 คำถาม ได้ 2–3 แผนพร้อมเหตุผล'],
     ['#/plans/attach', 'layers', 'แผนที่การแนบสัญญา', 'สัญญาหลักตัวไหน แนบอะไรได้ · จัดชุด'],
     ['#/plans/copay', 'info', 'Copayment มาตรฐานใหม่', '3 กรณีที่ต้องร่วมจ่าย + ตัวคำนวณ'],

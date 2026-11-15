@@ -19,12 +19,12 @@ const NAV = [
   { id: 'tools', label: 'เครื่องมือ', icon: 'tools', href: '#/tools' },
 ];
 const SIDE_SUB = {
-  plans: [['#/plans', 'คลังแผน'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
+  plans: [['#/plans', 'คลังแผน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
+  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/tools/content', 'ปฏิทินคอนเทนต์'], ['#/tools/tipcard', 'ภาพทิปการเงิน'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.2 · 15 พ.ย. 69';
+export const APP_VERSION = '5.3 · 15 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -56,6 +56,11 @@ const routes = [
   [/^\/work\/sales$/, 'work', () => import('./views/sales.js').then((m) => m.renderSales())],
   [/^\/tools\/display$/, 'tools', () => import('./views/tools.js').then((m) => m.renderDisplay())],
   [/^\/plan\/([\w-]+)$/, 'plans', (q, id) => import('./views/planpage.js').then((m) => m.renderPlanPage(id))],
+  [/^\/plans\/body$/, 'plans', () => import('./views/planviz.js').then((m) => m.renderBody())],
+  [/^\/plans\/build$/, 'plans', (q) => import('./views/planviz.js').then((m) => m.renderBuilder(q))],
+  [/^\/plans\/path$/, 'plans', (q) => import('./views/planviz.js').then((m) => m.renderPath(q))],
+  [/^\/tools\/content$/, 'tools', () => import('./views/content.js').then((m) => m.renderContent())],
+  [/^\/tools\/tipcard$/, 'tools', (q) => import('./views/content.js').then((m) => m.renderTipCard(q))],
   [/^\/plans\/finder$/, 'plans', () => import('./views/finder.js').then((m) => m.renderFinder())],
   [/^\/proposal\/([\w-]+)$/, 'clients', (q, id) => import('./views/proposal.js').then((m) => m.renderProposal(id))],
   [/^\/clients\/?$/, 'clients', (q) => import('./views/clients.js').then((m) => m.renderList(q))],
@@ -97,7 +102,7 @@ const routes = [
 let current = '';
 let vtBusy = false;
 // ── โหมดลูกค้า: ซ่อนข้อมูลส่วนตัว ก่อนยื่นมือถือให้ลูกค้าดู ──
-const CLIENT_OK = [/^\/plans/, /^\/plan\//, /^\/sheet\//, /^\/present\//, /^\/proposal\//, /^\/client\/[\w-]+\/simulate$/, /^\/tools\/(glossary|simulate)$/];
+const CLIENT_OK = [/^\/plans/, /^\/plans\/(body|build|path)/, /^\/plan\//, /^\/sheet\//, /^\/present\//, /^\/proposal\//, /^\/client\/[\w-]+\/simulate$/, /^\/tools\/(glossary|simulate)$/];
 export const clientMode = () => sessionStorage.getItem('clientMode') === '1';
 export function setClientMode(on) {
   sessionStorage.setItem('clientMode', on ? '1' : '0');
