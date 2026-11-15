@@ -5,7 +5,8 @@ import { OBJECTIONS } from '../../data/objections.js';
 import { DEFAULT_PROFILE } from '../../data/profile.js';
 import { profile } from '../app.js';
 import { choices } from '../ui.js';
-import { canInstall, install, isStandalone, isIOS, iosGuide, getTheme, setTheme, getTextSize, setTextSize, getHaptic, setHaptic } from '../pwa.js';
+import { canInstall, install, isStandalone, isIOS, iosGuide, getTheme, setTheme, getTextSize, setTextSize, getHaptic, setHaptic, forceUpdate } from '../pwa.js';
+import { APP_VERSION } from '../app.js';
 
 export function renderTools() {
   const p = profile();
@@ -22,7 +23,7 @@ export function renderTools() {
   ];
   return h('div', { 'data-title': 'เครื่องมือ' },
     h('div.topbar', h('div', h('h1', 'เครื่องมือ'))),
-    h('div.card.profile-card', h('div.mark', initials(p.name || 'A')), h('div', h('b', p.name), h('div.small.muted', `${p.title} · ${p.company}`), h('div.small', `รหัสตัวแทน ${p.agentCode || '—'} · ใบอนุญาต ${p.licenseLife || 'ยังไม่ได้กรอก'}`))),
+    h('div.card.profile-card', h('div.mark', initials(p.name || 'A')), h('div', h('b', p.name), h('div.small.muted', `${p.title} · ${p.company}`), h('div.small', `รหัสตัวแทน ${p.agentCode || '—'} · ใบอนุญาต ${p.licenseLife || 'ยังไม่ได้กรอก'}`), h('div.xs.muted', 'แอปเวอร์ชัน ' + APP_VERSION))),
     h('div.grid.g3', { style: { marginTop: '12px' } }, tiles.map(([href, ic, t, d]) => h('a.card', { href, style: { textDecoration: 'none', color: 'inherit', display: 'flex', gap: '12px', alignItems: 'center' } },
       h('div.avatar', icon(ic)), h('div', h('b', t), h('div.small.muted', d))))));
 }
@@ -143,6 +144,8 @@ export function renderDisplay() {
     h('div.card', installRow,
       h('div.set-row', h('div', h('b', 'ตัวเลขบนไอคอน'), h('small', 'แสดงจำนวนงานสำคัญวันนี้บนไอคอนแอป (Android / iPhone iOS 16.4+ ที่ติดตั้งแล้ว)')), h('span.tag', 'อัตโนมัติ')),
       h('div.set-row', h('div', h('b', 'กดค้างที่ไอคอน'), h('small', 'เมนูลัด: เพิ่มลูกค้า · โทรนัด · คลังแผน · ค้นหา (Android)')), h('span.tag', 'พร้อมใช้'))),
+    h('div.section', h('h2', 'เวอร์ชันแอป'), h('div.card', h('div.set-row', h('div', h('b', 'เวอร์ชัน ' + APP_VERSION), h('small', 'ถ้าหน้าตาไม่เปลี่ยนหลังอัปเดต กดปุ่มนี้ (ข้อมูลลูกค้าไม่หาย)')),
+      h('button.btn.primary.sm', { onclick: () => forceUpdate() }, icon('sync'), 'อัปเดตแอปตอนนี้')))),
     h('div.section', h('h2', 'ขนาดตัวอักษร'), h('div.card', choices('ts', getTextSize(), [['m', 'ปกติ'], ['l', 'ใหญ่'], ['xl', 'ใหญ่มาก']], { onChange: setTextSize }),
       h('p.small.muted', { style: { marginTop: '10px' } }, 'ใช้ "ใหญ่" ตอนเปิดให้ลูกค้าดู จะอ่านง่ายขึ้น'))),
     h('div.section', h('h2', 'ธีม'), h('div.card', choices('th', getTheme(), [['auto', 'ตามมือถือ'], ['light', 'สว่าง'], ['dark', 'มืด']], { onChange: setTheme }))),
