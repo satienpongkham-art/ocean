@@ -79,13 +79,17 @@ export function render() {
     content: ['w2', () => h('div.bt.bt-content', h('div.row.between', h('span.bt-l', icon('pen'), 'คอนเทนต์วันนี้'), h('a.small', { href: '#/tools/content' }, 'ปฏิทิน →')),
       tc ? [h('b.bt-hook', tc.hook), h('div.row', { style: { gap: '6px', marginTop: '8px' } }, h('button.btn.sm', { onclick: () => import('./content.js').then((m) => copyText(m.caption(tc))) }, icon('copy'), 'คัดลอกแคปชั่น'), h('a.btn.sm', { href: '#/tools/tipcard?t=' + encodeURIComponent(tc.hook) + '&b=' + encodeURIComponent(tc.points.join(' · ')) }, icon('pen'), 'ทำภาพ'))]
         : h('p.small.muted', 'วันนี้ไม่มีโพสต์ในแผน · ', h('a', { href: '#/tools/tipcard' }, 'ทำภาพทิป')))],
+    brand: ['', () => { const bm = settings.brandMission || {}; const d = bm.start ? Math.min(30, Math.round((new Date(today) - new Date(bm.start)) / 864e5) + 1) : 0; const n = Object.values(bm.done || {}).filter(Boolean).length;
+      return h('a.bt', { href: '#/brand' }, h('span.bt-l', icon('star'), 'แบรนด์ของฉัน'), h('b.bt-n', d ? d : '—', h('small', d ? '/30 วัน' : ' เริ่มภารกิจ')), bar(n / 30)); }],
+    studio: ['', () => { const c = store.all('content'); const ready = c.filter((x) => x.status === 'ready').length;
+      return h('a.bt', { href: '#/studio' }, h('span.bt-l', icon('pen'), 'สตูดิโอ'), h('b.bt-n', ready, h('small', ' พร้อมโพสต์')), h('small.bt-s', `${c.filter((x) => x.status === 'idea').length} ไอเดีย · ${c.filter((x) => x.status === 'doing').length} กำลังทำ`)); }],
     card: ['', () => h('button.bt', { onclick: () => import('../card.js').then((m) => m.shareCard()) }, h('span.bt-l', icon('share'), 'นามบัตร'), h('b.bt-n.sm', 'แชร์'), h('small.bt-s', 'ส่งให้ลูกค้าใหม่'))],
     plans: ['', () => h('a.bt', { href: '#/plans/build' }, h('span.bt-l', icon('layers'), 'ต่อชุดแผน'), h('b.bt-n.sm', 'เปิด'), h('small.bt-s', 'จัดตามงบได้'))],
     quick: ['w2', () => h('div.bt', h('span.bt-l', icon('grid'), 'ทางลัด'), h('div.quick',
       h('a', { href: '#/work/calendar' }, icon('cal'), 'ปฏิทิน'), h('a', { href: '#/check' }, icon('grid'), 'ตรวจการเงิน'), h('a', { href: '#/plans/body' }, icon('heart'), 'แผนที่ร่างกาย'),
       h('a', { href: '#/plans/path' }, icon('compass'), 'เส้นทางชีวิต'), h('a', { href: '#/clients/lists' }, icon('filter'), 'รายชื่ออัจฉริยะ'), h('a', { href: '#/tools/train' }, icon('bulb'), 'ฝึกจำแผน')))],
   };
-  const NAMES = { goal: 'เป้าเดือนนี้', pts: 'คะแนนวันนี้', level: 'เลเวล', week: 'สัปดาห์นี้', call: 'โทรรวด', tasks: 'งานสำคัญ', appts: 'นัดวันนี้', content: 'คอนเทนต์วันนี้', card: 'นามบัตร', plans: 'ต่อชุดแผน', quick: 'ทางลัด' };
+  const NAMES = { goal: 'เป้าเดือนนี้', pts: 'คะแนนวันนี้', level: 'เลเวล', week: 'สัปดาห์นี้', call: 'โทรรวด', tasks: 'งานสำคัญ', appts: 'นัดวันนี้', content: 'คอนเทนต์วันนี้', card: 'นามบัตร', brand: 'แบรนด์ของฉัน', studio: 'สตูดิโอ', plans: 'ต่อชุดแผน', quick: 'ทางลัด' };
   const order = (settings.bento || []).filter((x) => T[x.id]);
   for (const id of Object.keys(T)) if (!order.some((x) => x.id === id)) order.push({ id, on: true });
   const editBento = () => {

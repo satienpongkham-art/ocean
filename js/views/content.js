@@ -54,6 +54,7 @@ export function renderContent() {
     h('ul', it.points.map((x) => h('li', x))),
     h('div.small', h('b', 'ปิดท้าย: '), it.cta, it.plan && PLAN[it.plan] ? [' · ', h('a', { href: '#/plan/' + it.plan }, 'แผนที่เกี่ยวข้อง: ' + PLAN[it.plan].short)] : null),
     h('div.cc-acts',
+      h('button.btn.sm.primary', { onclick: () => import('./studio.js').then((m) => { const x = m.createItem(m.GEN.idea(it, it.pil), { pillar: it.pil, title: it.hook }); store.put('content', { ...x, date: it.date }); location.hash = '#/studio/' + x.id; }) }, icon('pen'), 'ทำในสตูดิโอ'),
       h('button.btn.sm', { onclick: () => copyText(caption(it)) }, icon('copy'), 'คัดลอกแคปชั่น'),
       ['tip', 'carousel'].includes(it.format) ? h('a.btn.sm', { href: '#/tools/tipcard?t=' + encodeURIComponent(it.hook) + '&b=' + encodeURIComponent(it.points.join(' · ')) }, icon('pen'), 'ทำภาพ') : null,
       h('button.btn.sm' + (done[it.date] ? '.primary' : ''), { 'aria-pressed': String(!!done[it.date]), onclick: () => store.saveSettings({ contentDone: { ...done, [it.date]: !done[it.date] } }) }, icon('check'), done[it.date] ? 'โพสต์แล้ว' : 'ทำเครื่องหมายว่าโพสต์แล้ว')));

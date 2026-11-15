@@ -1,0 +1,12 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { fvMonthly, monthlyFor, compoundCompare, retirement, education, emergency } from '../js/engine/calc.js';
+const near = (a, b, tol = 1) => assert.ok(Math.abs(a - b) <= tol, `${a} ≈ ${b}`);
+test('ออมรายเดือน ไม่มีผลตอบแทน = เงินต้น', () => { assert.equal(fvMonthly(1000, 0, 10), 120000); });
+test('ออมรายเดือน 1,000 ผลตอบแทน 6%/ปี 10 ปี ≈ 164,699 (ฝากต้นงวด)', () => { near(fvMonthly(1000, 6, 10), 164699, 5); });
+test('monthlyFor เป็นสูตรกลับของ fvMonthly', () => { const m = monthlyFor(500000, 4, 15); near(fvMonthly(m, 4, 15), 500000, 1); });
+test('เริ่มเร็วได้มากกว่า', () => { const r = compoundCompare({ monthly: 2000, rate: 4, startA: 25, startB: 35, end: 60 }); assert.ok(r.a > r.b); assert.equal(r.paidA - r.paidB, 240000); });
+test('เกษียณ: ไม่มีเงินเฟ้อ ไม่มีผลตอบแทน = รายจ่าย × เดือน', () => { const r = retirement({ age: 30, retireAge: 60, lifeTo: 80, monthlyNow: 20000, inflation: 0, returnPre: 0, returnPost: 0 }); near(r.need, 20000 * 240); near(r.save, r.need / 360); });
+test('เกษียณ: เงินเฟ้อทำให้รายจ่ายวันเกษียณสูงขึ้น', () => { const r = retirement({ age: 30, monthlyNow: 20000, inflation: 3 }); near(r.monthlyAtRetire, 20000 * Math.pow(1.03, 30), 1); });
+test('ทุนการศึกษา: ไม่มีเงินเฟ้อ = ค่าเรียน × ปี', () => { assert.equal(education({ childAge: 5, startAge: 18, years: 4, costPerYear: 100000, inflation: 0 }).total, 400000); });
+test('เงินสำรอง', () => { const e = emergency({ expense: 20000, months: 6, have: 30000, perMonth: 5000 }); assert.equal(e.target, 120000); assert.equal(e.monthsToGo, 18); });
