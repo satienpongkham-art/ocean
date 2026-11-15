@@ -21,10 +21,12 @@
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/ui2.css">
   <link rel="stylesheet" href="css/ui3.css">
+  <link rel="stylesheet" href="css/ui4.css">
   <script>
     // ตั้งค่าธีม/ขนาดตัวอักษรก่อนแสดงผล (ไม่ให้จอกระพริบ)
     try { var t = localStorage.getItem('advdesk.v1.theme'); if (t && t !== 'auto') document.documentElement.dataset.theme = t;
-      var z = localStorage.getItem('advdesk.v1.textsize'); if (z) document.documentElement.dataset.text = z; } catch (e) {}
+      var z = localStorage.getItem('advdesk.v1.textsize'); if (z) document.documentElement.dataset.text = z;
+      var c = localStorage.getItem('advdesk.v1.palette'); if (c && c !== 'ink') document.documentElement.dataset.palette = c; } catch (e) {}
   </script>
 </head>
 <body>

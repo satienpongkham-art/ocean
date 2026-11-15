@@ -14,11 +14,11 @@ const NAV = [
 ];
 const SIDE_SUB = {
   plans: [['#/plans', 'คลังแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
-  work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'ชั่วโมงโทรนัด'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
+  work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
+  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '3.3 · 15 พ.ย. 69';
+export const APP_VERSION = '4.0 · 15 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -58,6 +58,8 @@ const routes = [
   [/^\/check$/, 'clients', () => import('./views/fhc.js').then((m) => m.renderCheck(null))],
   [/^\/client\/([\w-]+)$/, 'clients', (q, id) => import('./views/clients.js').then((m) => m.renderDetail(id))],
   [/^\/work\/?$/, 'work', () => import('./views/work.js').then((m) => m.renderPipeline())],
+  [/^\/work\/calendar$/, 'work', () => import('./views/calendar.js').then((m) => m.renderCalendar())],
+  [/^\/tools\/train$/, 'tools', (q) => import('./views/train.js').then((m) => m.renderTrain(q))],
   [/^\/work\/call$/, 'work', () => import('./views/work.js').then((m) => m.renderCall())],
   [/^\/work\/goals$/, 'work', () => import('./views/work.js').then((m) => m.renderGoals())],
   [/^\/work\/review$/, 'work', () => import('./views/work.js').then((m) => m.renderReview())],
@@ -81,6 +83,7 @@ export async function route() {
     if (m) {
       renderNav(nav, path);
       document.body.classList.toggle('presenting', /^\/present\//.test(path));
+      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call)/.test(path));
       const samePage = current.split('?')[0] === path;
       current = raw;
       try {
@@ -108,6 +111,9 @@ function updateBadge() {
   } catch {}
 }
 setTimeout(hideSplash, 2500);
+
+// ปุ่ม + ลอย (บันทึกด่วน) อยู่ทุกหน้า
+document.body.append(h('button.fab', { 'aria-label': 'บันทึกด่วน', onclick: () => import('./views/common.js').then((m) => m.quickSheet()) }, icon('plus')));
 
 window.addEventListener('hashchange', route);
 store.onChange(() => {

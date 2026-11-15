@@ -1,8 +1,8 @@
 // ─── หน้า "วันนี้" v2: นับถอยหลัง · วงคะแนน · งานสำคัญ 3 อย่าง · นัดวันนี้ · ทางลัด ───
-import { h, icon, dateTH, todayISO } from '../ui.js';
+import { h, icon, dateTH, todayISO, fmt } from '../ui.js';
 import * as store from '../store.js';
 import { PLANS, closingInfo } from '../../data/plans.js';
-import { coach, pointsOn, countBy, weekRange } from '../engine/work.js';
+import { coach, pointsOn, countBy, weekRange, level, totalPoints, callQueue } from '../engine/work.js';
 import { apptSheet, apptResultSheet } from './common.js';
 import { profile } from '../app.js';
 import { installCard } from '../pwa.js';
@@ -10,14 +10,9 @@ import { duePolicies } from './sales.js';
 import { policyName } from './common.js';
 
 let showAll = false;
+const MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
-function ring(value, target) {
-  const r = 32, c = 2 * Math.PI * r, pct = Math.min(1, value / Math.max(1, target));
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 76 76');
-  svg.innerHTML = `<circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--paper-2)" stroke-width="8"/><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--primary)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c * pct} ${c}"/>`;
-  return h('div.ring', svg, h('b', h('span', value, h('small', 'จาก ' + target))));
-}
+const bar = (pct) => h('div.hbar', h('i', { style: { width: Math.max(2, Math.min(100, pct * 100)) + '%' } }));
 
 export function render() {
   const clients = store.all('clients');
@@ -40,6 +35,15 @@ export function render() {
   const hello = hour < 12 ? 'สวัสดีตอนเช้า' : hour < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
   const noHealth = clients.filter((c) => (!c.healthLevel || c.healthLevel === 'none' || c.healthLevel === 'welfare') && c.stage !== 'paused').length;
 
+  // เป้าเดือนนี้: เบี้ยที่ต้องขาย = รายได้ต่อปี ÷ อัตราค่าคอม ÷ 12
+  const goal = { incomeYear: 600000, commissionRate: 0.3, ...(settings.goal || {}) };
+  const monthTarget = goal.incomeYear / Math.max(0.01, goal.commissionRate || 0.3) / 12;
+  const ym = today.slice(0, 7);
+  const sold = store.all('policies').filter((x) => ['submitted', 'issued'].includes(x.status) && (x.submitDate || '').startsWith(ym));
+  const monthPrem = sold.reduce((t, x) => t + (+x.premium || 0), 0);
+  const lv = level(totalPoints(activities));
+  const queue = callQueue(clients).length;
+
   const taskEl = (it) => h('a.task', { class: it.kind, href: it.go }, h('span.ic', icon(it.icon)), h('span.tt', h('b', it.title), h('span', it.why)), icon('next'));
   const tasks = h('div');
   const drawTasks = () => tasks.replaceChildren(
@@ -54,30 +58,42 @@ export function render() {
       a.date <= today ? h('button.btn.sm', { onclick: () => apptResultSheet(a) }, 'บันทึกผล') : null);
   };
 
+  const hero = h('div.hero',
+    h('div.hero-top', h('div', h('div.hero-sub', dateTH(today, true)), h('h1', `${hello} คุณ${(p.name || '').split(' ')[0]}`)),
+      h('a.hero-btn', { href: '#/search', 'aria-label': 'ค้นหา' }, icon('search'))),
+    h('a.hero-goal', { href: '#/work/sales' },
+      h('div.row.between', h('span', `เป้าเบี้ยเดือน${MONTHS[+today.slice(5, 7) - 1]}`), h('b', `${fmt(monthPrem)} / ${fmt(monthTarget)}`)),
+      bar(monthPrem / monthTarget),
+      h('small', monthPrem >= monthTarget ? `ถึงเป้าแล้ว! ปิดได้ ${sold.length} เคส` : `อีก ${fmt(monthTarget - monthPrem)} บาท · ปิดแล้ว ${sold.length} เคส`)),
+    h('div.hero-stats',
+      h('a', { href: '#/work/goals' }, h('span', 'คะแนนวันนี้'), h('b', pts, h('small', '/' + target)), bar(pts / target)),
+      h('a', { href: '#/work/goals' }, h('span', 'เลเวล'), h('b', 'Lv.' + lv.lv), bar(lv.pct)),
+      h('a', { href: '#/work/review' }, h('span', 'สัปดาห์นี้'), h('b', wk.appt, h('small', ' นัด')), h('small.hs-sub', `ปิด ${wk.close} · เสนอ ${wk.present}`))),
+    h('div.hero-acts',
+      h('a.hero-cta', { href: '#/work/call' }, icon('flame'), queue ? `โทรรวด · ${queue} คน` : 'โทรรวด'),
+      h('a.hero-chip', { href: '#/work/calendar' }, icon('cal'), 'ปฏิทิน'),
+      h('button.hero-chip', { onclick: () => apptSheet() }, icon('plus'), 'นัด')));
+
   return h('div', { 'data-title': 'วันนี้' },
     installCard(),
-    h('div.topbar', h('div', h('div.sub', dateTH(today, true)), h('h1', `${hello} คุณ${(p.name || '').split(' ')[0]}`)), h('div.row', { style: { gap: '8px' } }, h('a.icon-btn', { href: '#/search', 'aria-label': 'ค้นหา' }, icon('search')), h('button.btn.primary', { onclick: () => apptSheet() }, icon('plus'), 'นัด'))),
+    hero,
 
-    ...closingPlans.map((x) => h('a.countdown', { href: '#/plan/' + x.plan.id, style: { textDecoration: 'none', color: 'inherit', marginBottom: '12px' } },
+    ...closingPlans.map((x) => h('a.countdown', { href: '#/plan/' + x.plan.id, style: { textDecoration: 'none', color: 'inherit', marginTop: '12px' } },
       h('div.big', x.days), h('div', { style: { flex: 1 } }, h('b', `วัน ${x.plan.short} ปิดรับ`), h('div.small.muted', noHealth ? `ลูกค้า ${noHealth} คนยังไม่มีประกันสุขภาพของตัวเอง` : 'แตะเพื่อดูแผน')), icon('next'))),
 
-    h('div.card', h('div.today-strip', ring(pts, target),
-      h('div', h('div.small.muted', { style: { marginBottom: '6px' } }, 'คะแนนกิจกรรมวันนี้ · สัปดาห์นี้'),
-        h('div.mini-stats', h('div', h('b', wk.appt), h('span', 'ได้นัด')), h('div', h('b', wk.meet + wk.present), h('span', 'พบ/เสนอ')), h('div', h('b', wk.close), h('span', 'ปิดได้')))))),
-
-    h('div.section', h('h2', 'ทำอะไรก่อนดี'), h('div.card', { style: { paddingTop: '6px', paddingBottom: '6px' } }, tasks)),
+    h('div.section', h('h2', 'งานสำคัญวันนี้'), h('div.card', { style: { paddingTop: '6px', paddingBottom: '6px' } }, tasks)),
 
     h('div.section', h('h2', 'นัดวันนี้'), h('div.card', { style: { paddingTop: '6px', paddingBottom: '6px' } },
       todays.length ? todays.map(apptEl) : h('p.small.muted', { style: { padding: '10px 0' } }, next ? 'วันนี้ว่าง · นัดถัดไป:' : 'วันนี้ยังไม่มีนัด'),
       !todays.length && next ? apptEl(next) : null)),
 
     h('div.section', h('h2', 'ทางลัด'), h('div.quick',
-      h('a', { href: '#/work/call' }, icon('phone'), 'โทรนัด'),
+      h('a', { href: '#/work/calendar' }, icon('cal'), 'ปฏิทิน'),
+      h('a', { href: '#/tools/train' }, icon('bulb'), 'ฝึกจำแผน'),
+      h('a', { href: '#/check' }, icon('grid'), 'ตรวจการเงิน'),
       h('a', { href: '#/plans/advisor' }, icon('compass'), 'แนะนำแผน'),
-      h('a', { href: '#/client/new' }, icon('plus'), 'รายชื่อใหม่'),
       h('a', { href: '#/plans' }, icon('plans'), 'ดูแผน'),
-      h('a', { href: '#/tools/captions' }, icon('pen'), 'ทำโพสต์'),
-      h('a', { href: '#/check' }, icon('grid'), 'ตรวจการเงิน'))),
+      h('a', { href: '#/tools/captions' }, icon('pen'), 'ทำโพสต์'))),
 
     !store.sync.config.url ? h('a.callout.warn', { href: '#/tools/sync', style: { display: 'block', marginTop: '16px', color: 'inherit', textDecoration: 'none' } }, 'ข้อมูลยังอยู่แค่เครื่องนี้ — แตะเพื่อตั้งค่าซิงก์กับคอม') : null);
 }

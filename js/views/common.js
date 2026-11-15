@@ -169,3 +169,20 @@ export function policyRow(p, { showClient = false } = {}) {
       h('span', h('i.status-dot', { style: { background: STATUS_COLOR[p.status] || 'var(--na)' } }), [Object.fromEntries(POLICY_STATUS)[p.status], p.premium ? fmt(p.premium) + '/ปี' : null, p.nextDue ? 'ครบชำระ ' + dateTH(p.nextDue) : null].filter(Boolean).join(' · '))),
     h('span.pr', icon('next')));
 }
+
+// ── ปุ่ม + ลอย: บันทึกด่วนจากทุกหน้า ─────────────────────
+export function quickSheet() {
+  const go = (href) => { closeSheet(true); location.hash = href; };
+  const log = (type) => { closeSheet(true); logActivity(type, null); };
+  const items = [
+    ['phone', 'โทร / ทัก', '+1 คะแนน', () => log('call')],
+    ['cal', 'นัดใหม่', 'ลงนัด + Google Calendar', () => { closeSheet(true); apptSheet(); }],
+    ['star', 'ขายได้', 'บันทึกกรมธรรม์', () => { closeSheet(true); policySheet(); }],
+    ['plus', 'รายชื่อใหม่', 'เพิ่มลูกค้า', () => go('#/client/new')],
+    ['clients', 'พบลูกค้า', '+3 คะแนน', () => log('meet')],
+    ['link', 'ได้รายชื่อแนะนำ', '+2 คะแนน', () => log('referral')],
+    ['flame', 'โหมดโทรรวด', 'โทรทีละคน', () => go('#/work/call')],
+    ['grid', 'ตรวจการเงิน', 'แบบเร็ว 6 ขั้น', () => go('#/check')],
+  ];
+  sheet({ title: 'บันทึกด่วน', body: h('div.quick-grid', items.map(([ic, t, d, fn]) => h('button', { onclick: fn }, h('span.qi', icon(ic)), h('b', t), h('span', d)))) });
+}

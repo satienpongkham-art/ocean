@@ -49,6 +49,8 @@ export function haptic(ms = 12) { try { if (ls.get('haptic') !== '0' && navigato
 // ── ธีม & ขนาดตัวอักษร ──
 export function getTheme() { return ls.get('theme') || 'auto'; }
 export function setTheme(t) { ls.set('theme', t); if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; }
+export function getPalette() { return ls.get('palette') || 'ink'; }
+export function setPalette(c) { ls.set('palette', c); if (c === 'ink') delete document.documentElement.dataset.palette; else document.documentElement.dataset.palette = c; }
 export function getTextSize() { return ls.get('textsize') || 'm'; }
 export function setTextSize(z) { ls.set('textsize', z); if (z === 'm') delete document.documentElement.dataset.text; else document.documentElement.dataset.text = z; }
 export function getHaptic() { return ls.get('haptic') !== '0'; }
