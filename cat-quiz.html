@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คุณเป็นแมวแบบไหน?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Prompt:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---- OCEAN LIFE brand palette (light) ---- */
+    --ocean:#0067B1;        /* brand ocean blue */
+    --ocean-deep:#004E86;
+    --ocean-mid:#2E9BD6;
+    --sky:#E7F4FC;          /* pale sky wash */
+    --sky-2:#D3EBF9;
+    --foam:#F4FAFE;         /* near-white card */
+    --coral:#FF6B35;        /* brand warm accent */
+    --coral-deep:#F0521B;
+    --coral-soft:#FFE7DC;
+    --sun:#FFB13C;
+    --sun-soft:#FFF0D6;
+    --leaf:#1FA97A;
+
+    --ink:#0E2A3F;          /* near-black text on light — high contrast */
+    --ink-2:#3B5A70;
+    --ink-3:#6C8399;
+    --line:#DCEAF3;
+    --card:#FFFFFF;
+
+    --r-xl:28px; --r-lg:22px; --r-md:16px; --r-sm:12px;
+    --shadow:0 18px 40px rgba(0,78,134,.14);
+    --shadow-sm:0 6px 16px rgba(0,78,134,.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;min-height:100%;}
+  body{
+    background:
+      radial-gradient(900px 340px at 82% -60px, rgba(255,177,60,.16), transparent 62%),
+      radial-gradient(760px 320px at 6% 4%, rgba(0,103,177,.12), transparent 60%),
+      radial-gradient(1200px 400px at 50% -80px, #FFFFFF, transparent 70%),
+      linear-gradient(180deg, var(--sky) 0%, var(--sky-2) 46%, #EAF6FD 100%);
+    background-attachment:fixed;
+    font-family:'Noto Sans Thai',sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* floating ambient particles */
+  #particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  #particles .p{position:absolute;bottom:-24px;border-radius:50%;background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.95), rgba(255,177,60,.25));box-shadow:0 0 10px rgba(255,177,60,.35);animation:floatUp linear infinite;}
+  @keyframes floatUp{0%{transform:translateY(0) translateX(0);opacity:0;}12%{opacity:.8;}88%{opacity:.6;}100%{transform:translateY(-116vh) translateX(26px);opacity:0;}}
+
+  /* soft ambient waves at the very bottom */
+  .waves{position:fixed;left:0;right:0;bottom:0;height:120px;z-index:0;pointer-events:none;opacity:.6;}
+  .waves svg{width:100%;height:100%;display:block;}
+
+  #app{position:relative;z-index:1;max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:18px 16px 32px;}
+
+  /* ---------- Brand bar ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .logo{display:flex;align-items:center;gap:9px;}
+  .logo .wave-mark{width:30px;height:30px;flex:0 0 auto;}
+  .logo .name{display:flex;flex-direction:column;line-height:1;}
+  .logo .name b{font-family:'Prompt',sans-serif;font-weight:800;font-size:15px;color:var(--ocean);letter-spacing:.02em;}
+  .logo .name span{font-family:'Prompt',sans-serif;font-weight:500;font-size:9px;color:var(--ink-3);letter-spacing:.14em;margin-top:2px;}
+
+  /* ---------- Progress: endowed-progress bar ---------- */
+  .progress-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+  .progress-label{font-family:'Prompt',sans-serif;font-size:11px;font-weight:600;color:var(--ocean);}
+  .progress-track{width:118px;height:8px;border-radius:100px;background:var(--sky-2);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,78,134,.12);}
+  .progress-fill{height:100%;width:0;border-radius:100px;background:linear-gradient(90deg,var(--ocean-mid),var(--ocean));transition:width .5s cubic-bezier(.4,0,.2,1);}
+
+  /* ---------- Card ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r-xl);
+    padding:0 0 22px;flex:1;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:var(--shadow);animation:cardIn .5s cubic-bezier(.2,.7,.2,1);
+  }
+  @keyframes cardIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+
+  /* ---------- Page transitions ---------- */
+  .anim-in-right{animation:inRight .42s cubic-bezier(.16,.84,.28,1);}
+  .anim-in-left{animation:inLeft .42s cubic-bezier(.16,.84,.28,1);}
+  .anim-out-left{animation:outLeft .22s cubic-bezier(.4,0,1,.6) forwards;}
+  .anim-out-right{animation:outRight .22s cubic-bezier(.4,0,1,.6) forwards;}
+  .anim-fade{animation:fadeSoft .5s cubic-bezier(.16,.84,.28,1);}
+  @keyframes inRight{from{opacity:0;transform:translateX(28px) scale(.985);}to{opacity:1;transform:none;}}
+  @keyframes inLeft{from{opacity:0;transform:translateX(-28px) scale(.985);}to{opacity:1;transform:none;}}
+  @keyframes outLeft{to{opacity:0;transform:translateX(-22px) scale(.99);}}
+  @keyframes outRight{to{opacity:0;transform:translateX(22px) scale(.99);}}
+  @keyframes fadeSoft{from{opacity:0;transform:scale(.99) translateY(6px);}to{opacity:1;transform:none;}}
+
+  /* moon-wipe overlay used between chapters */
+  #wipe{position:fixed;inset:0;z-index:60;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0;}
+  #wipe.show{pointer-events:auto;animation:wipeFlash .62s ease;}
+  #wipe .disc{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 38% 34%,#FFF7E2,#FFD873 70%,#F2B24C);box-shadow:0 0 60px 20px rgba(255,216,115,.6);}
+  @keyframes wipeFlash{0%{opacity:0;}18%{opacity:1;}100%{opacity:0;}}
+  #wipe.show .disc{animation:discZoom .62s ease;}
+  @keyframes discZoom{0%{transform:scale(.2);}55%{transform:scale(34);}100%{transform:scale(60);opacity:0;}}
+
+  /* ---------- Interstitial beat (ref: sketch + line + button) ---------- */
+  #screen-beat{background:linear-gradient(180deg,#FFFDF8,#FFF6EA);border-color:#F3E4CE;}
+  .beat-wrap{padding:40px 26px 30px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;}
+  .beat-eyebrow{font-family:'Prompt',sans-serif;font-weight:700;font-size:11px;letter-spacing:.18em;color:var(--coral-deep);text-transform:uppercase;margin-bottom:22px;opacity:.9;}
+  .beat-art{width:210px;height:180px;background:#FBF6EE;border-radius:22px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:inset 0 0 0 1px #F0E4D0, 0 12px 26px rgba(180,140,80,.14);}
+  .beat-art svg{width:150px;height:150px;}
+  .beat-text{font-family:'Noto Sans Thai',sans-serif;font-size:18px;line-height:1.7;color:#6E5A44;font-weight:500;margin:0 0 28px;max-width:300px;}
+  .beat-text .em{color:var(--coral-deep);font-weight:700;}
+  .beat-btn{max-width:280px;background:linear-gradient(135deg,#6E5334,#4A3822);box-shadow:0 12px 26px rgba(74,56,34,.3);}
+  .beat-btn::after{background:linear-gradient(120deg,transparent,rgba(255,255,255,.35),transparent);}
+  .sketch-stroke{stroke:#7A6047;stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .sketch-draw{stroke-dasharray:1;stroke-dashoffset:1;}
+
+  /* ---------- Stage ---------- */
+  .stage{position:relative;width:100%;height:196px;overflow:hidden;background:linear-gradient(170deg,#BFE6FA,#E9F6FE);}
+  .stage-bg{position:absolute;inset:0;transition:background .5s ease;}
+  .stage-decor{position:absolute;inset:0;}
+  .stage-decor svg{width:100%;height:100%;display:block;}
+  .stage-sun{position:absolute;top:20px;right:26px;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 38% 34%,#FFF4DC,var(--sun) 70%);box-shadow:0 0 28px 5px rgba(255,177,60,.5);}
+  .cat-glow{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,177,60,.28),transparent 66%);pointer-events:none;animation:glowPulse 3.6s ease-in-out infinite;}
+  @keyframes glowPulse{0%,100%{opacity:.5;transform:translateX(-50%) scale(.95);}50%{opacity:.9;transform:translateX(-50%) scale(1.05);}}
+  .cat-shadow{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);width:104px;height:15px;border-radius:50%;background:rgba(0,78,134,.16);filter:blur(4px);}
+  .cat-figure{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:130px;height:130px;animation:bob 3.6s ease-in-out infinite;z-index:1;}
+  @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-6px);}}
+  /* living cat: blink + tail wag */
+  .cat-lid{animation:blink 5.2s ease-in-out infinite;}
+  @keyframes blink{0%,92%,100%{height:0;y:104px;}95%{height:12px;y:110px;}97%{height:0;y:104px;}}
+  .cat-tail{animation:tailWag 3.2s ease-in-out infinite;transform-box:fill-box;}
+  @keyframes tailWag{0%,100%{transform:rotate(0deg);}50%{transform:rotate(-10deg);}}
+  .result-cat-stage .cat-lid{animation-duration:4s;}
+  .birds{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+  .bird{position:absolute;width:18px;height:9px;opacity:.5;animation:fly linear infinite;}
+  .bird svg{width:100%;height:100%;}
+  .bird.b1{top:18%;animation-duration:16s;}
+  .bird.b2{top:30%;width:13px;opacity:.35;animation-duration:22s;animation-delay:5s;}
+  @keyframes fly{0%{transform:translateX(-40px);}50%{transform:translateX(200px) translateY(-8px);}100%{transform:translateX(430px);}}
+  .scene-pop{animation:scenePop .45s ease;}
+  @keyframes scenePop{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
+
+  .body-pad{padding:20px 20px 0;}
+
+  /* ---------- Act + chapter ---------- */
+  .act-tag{display:inline-flex;align-items:center;gap:6px;font-family:'Prompt',sans-serif;font-weight:700;font-size:11px;letter-spacing:.04em;color:var(--coral-deep);background:var(--coral-soft);padding:5px 12px;border-radius:100px;margin-bottom:12px;}
+  .act-tag .d{width:5px;height:5px;border-radius:50%;background:var(--coral);animation:glowPulse 2s ease-in-out infinite;}
+  .chapter-title{font-family:'Prompt',sans-serif;font-weight:700;font-size:20px;line-height:1.3;color:var(--ink);margin:0 0 6px;}
+  .scene{font-size:16.5px;line-height:1.72;color:var(--ink-2);margin:0 0 16px;}
+  .prompt{font-family:'Prompt',sans-serif;font-weight:700;font-size:16px;color:var(--ocean);margin:0 0 14px;}
+
+  /* ---------- Options: big tappable, one-line ---------- */
+  .options{display:flex;flex-direction:column;gap:11px;margin-top:auto;}
+  .opt{
+    position:relative;display:block;width:100%;text-align:left;overflow:hidden;
+    background:var(--foam);border:2px solid var(--line);border-radius:var(--r-md);
+    padding:15px 16px 15px 52px;cursor:pointer;font-family:'Noto Sans Thai',sans-serif;
+    color:var(--ink);font-size:15.5px;font-weight:500;line-height:1.5;
+    transition:border-color .18s, background .18s, transform .14s, box-shadow .18s;
+  }
+  .opt::before{content:'';position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);transition:left .55s ease;pointer-events:none;}
+  .opt:hover::before{left:130%;}
+  .opt .num{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-family:'Prompt',sans-serif;font-weight:700;font-size:14px;color:var(--ocean);
+    background:var(--sky);border:1.5px solid var(--sky-2);transition:transform .18s, background .18s, color .18s;
+  }
+  .opt:hover{border-color:var(--ocean-mid);background:#fff;box-shadow:0 10px 24px rgba(0,103,177,.14);transform:translateY(-2px);}
+  .opt:hover .num{background:var(--ocean);color:#fff;transform:translateY(-50%) scale(1.08) rotate(-4deg);}
+  .opt:active{transform:scale(.99);}
+  .opt:focus-visible{outline:3px solid var(--sun);outline-offset:2px;}
+  .opt.chosen{border-color:var(--ocean);background:var(--sky);}
+
+  .cost-toggle{
+    display:inline-flex;align-items:center;gap:5px;margin-top:11px;
+    font-family:'Prompt',sans-serif;font-size:12px;font-weight:600;color:var(--ink-3);
+    background:transparent;border:none;padding:4px 0 0;cursor:pointer;transition:color .15s;
+  }
+  .cost-toggle:hover{color:var(--coral-deep);}
+  .cost-toggle:focus-visible{outline:2px solid var(--sun);outline-offset:2px;border-radius:4px;}
+  .cost-toggle .chev{font-size:9px;transition:transform .2s;}
+  .cost-toggle[aria-expanded="true"] .chev{transform:rotate(180deg);}
+  .cost-body{overflow:hidden;max-height:0;opacity:0;transition:max-height .28s ease,opacity .28s ease,margin .28s ease;font-size:13.5px;line-height:1.6;color:var(--ink-2);}
+  .cost-body.open{max-height:140px;opacity:1;margin-top:9px;padding:10px 12px;background:var(--coral-soft);border-radius:10px;}
+  .cost-body .flag{font-family:'Prompt',sans-serif;font-weight:700;color:var(--coral-deep);font-size:12px;display:block;margin-bottom:2px;}
+
+  /* ---------- Intro ---------- */
+  .intro-eyebrow{display:inline-flex;align-self:flex-start;align-items:center;gap:6px;font-family:'Prompt',sans-serif;font-weight:700;font-size:12px;color:var(--coral-deep);background:var(--coral-soft);padding:6px 13px;border-radius:100px;margin-bottom:14px;}
+  h1{font-family:'Prompt',sans-serif;font-weight:800;font-size:28px;line-height:1.28;color:var(--ink);margin:0 0 12px;letter-spacing:-.01em;}
+  h1 .hl{color:var(--ocean);}
+  .intro-copy{font-size:16px;line-height:1.75;color:var(--ink-2);margin:0 0 16px;}
+  .social-proof{display:flex;align-items:center;gap:10px;margin:0 0 20px;padding:12px 14px;background:var(--sky);border-radius:var(--r-md);}
+  .sp-cats{display:flex;}
+  .sp-cats span{width:30px;height:30px;border-radius:50%;border:2px solid #fff;margin-left:-9px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 5px rgba(0,78,134,.15);}
+  .sp-cats span:first-child{margin-left:0;}
+  .sp-text{font-size:13px;line-height:1.5;color:var(--ink-2);}
+  .sp-text b{color:var(--ocean);font-weight:700;}
+
+  .btn{
+    position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:linear-gradient(135deg,var(--coral),var(--coral-deep));color:#fff;border:none;border-radius:100px;
+    font-family:'Prompt',sans-serif;font-weight:700;font-size:17px;padding:16px 20px;cursor:pointer;
+    box-shadow:0 12px 26px rgba(240,82,27,.32);transition:transform .15s;
+  }
+  .btn::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg);transition:left .6s;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn:hover::after{left:130%;}
+  .btn:active{transform:translateY(0) scale(.98);}
+  .btn:focus-visible{outline:3px solid var(--ocean);outline-offset:3px;}
+  .btn-line{font-family:'Prompt',sans-serif;font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px;}
+
+  .btn-ghost{display:block;width:100%;background:#fff;color:var(--ocean);border:2px solid var(--line);border-radius:100px;font-family:'Prompt',sans-serif;font-weight:700;font-size:15px;padding:13px 20px;cursor:pointer;transition:border-color .15s;}
+  .btn-ghost:hover{border-color:var(--ocean-mid);}
+  .btn-ghost:focus-visible{outline:3px solid var(--sun);outline-offset:2px;}
+
+  /* ---------- Result ---------- */
+  .result-hero{position:relative;padding:22px 20px 18px;text-align:center;background:linear-gradient(170deg,var(--sky),#fff);}
+  .result-badge{display:inline-flex;align-items:center;gap:6px;font-family:'Prompt',sans-serif;font-weight:700;font-size:11px;letter-spacing:.06em;color:var(--coral-deep);background:var(--coral-soft);padding:5px 13px;border-radius:100px;margin-bottom:6px;}
+  .result-cat-stage{position:relative;width:150px;height:150px;margin:6px auto 4px;}
+  .result-cat-stage .cat-figure{position:static;transform:none;width:150px;height:150px;animation:bob 3.6s ease-in-out infinite;}
+  h2.result-name{font-family:'Prompt',sans-serif;font-weight:800;font-size:27px;color:var(--ocean);margin:2px 0 2px;}
+  .result-breed{font-family:'Prompt',sans-serif;font-weight:600;font-size:13px;color:var(--ink-3);margin-bottom:8px;}
+  .result-tagline{font-family:'Prompt',sans-serif;font-weight:700;font-size:15px;color:var(--coral-deep);margin-bottom:10px;}
+  .result-copy{font-size:15px;line-height:1.72;color:var(--ink-2);}
+  .result-rarity{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-family:'Prompt',sans-serif;font-weight:600;font-size:12px;color:var(--ocean);background:#fff;border:1.5px solid var(--sky-2);padding:6px 14px;border-radius:100px;}
+
+  .ending{margin:18px 20px 0;padding:16px;border-radius:var(--r-md);background:linear-gradient(135deg,var(--sun-soft),#fff);border:1.5px solid #FCE4B8;}
+  .ending .lead{display:flex;align-items:center;gap:6px;font-family:'Prompt',sans-serif;font-weight:700;font-size:12px;letter-spacing:.04em;color:var(--coral-deep);margin-bottom:8px;}
+  .ending p{margin:0;font-size:14.5px;line-height:1.75;color:var(--ink-2);font-style:italic;}
+
+  .sparkle{position:absolute;pointer-events:none;font-size:18px;animation:sparklePop 1s ease forwards;}
+  @keyframes sparklePop{0%{opacity:0;transform:scale(.2) translateY(0);}35%{opacity:1;transform:scale(1.1) translateY(-8px);}100%{opacity:0;transform:scale(.7) translateY(-30px);}}
+
+  /* ---------- Pyramid ---------- */
+  .reef{margin:18px 20px 0;background:var(--sky);border-radius:var(--r-lg);padding:18px 16px 10px;}
+  .reef-h{font-family:'Prompt',sans-serif;font-weight:700;font-size:15px;color:var(--ink);text-align:center;margin-bottom:2px;}
+  .reef-sub{font-size:12.5px;color:var(--ink-3);text-align:center;margin-bottom:14px;line-height:1.5;}
+  .tri-wrap{width:100%;max-width:240px;margin:0 auto 16px;}
+  .tri-wrap svg{width:100%;height:auto;overflow:visible;}
+  .band{transition:fill-opacity 1.1s cubic-bezier(.4,0,.2,1) .1s;}
+  .pct-txt{font-family:'Prompt',sans-serif;font-size:14px;font-weight:800;}
+
+  .reef-row{margin-bottom:12px;padding:13px 14px;border-radius:var(--r-md);background:#fff;border:1.5px solid var(--line);}
+  .reef-row:last-child{margin-bottom:2px;}
+  .reef-row-top{display:flex;align-items:center;gap:10px;}
+  .reef-ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto;}
+  .ic-r{background:#DFF6EC;} .ic-p{background:#DBEEFB;} .ic-g{background:#FFEBD6;}
+  .reef-label{font-family:'Prompt',sans-serif;font-weight:700;font-size:14px;color:var(--ink);}
+  .reef-pct{margin-left:auto;font-family:'Prompt',sans-serif;font-weight:800;font-size:17px;}
+  .pct-r{color:var(--leaf);} .pct-p{color:var(--ocean);} .pct-g{color:var(--coral-deep);}
+  .reef-bar{height:7px;border-radius:100px;background:var(--sky-2);margin:10px 0 0;overflow:hidden;}
+  .reef-bar i{display:block;height:100%;width:0;border-radius:100px;transition:width 1s cubic-bezier(.4,0,.2,1) .2s;}
+  .bar-r{background:var(--leaf);} .bar-p{background:var(--ocean);} .bar-g{background:var(--coral);}
+  .reef-comment{font-size:13px;line-height:1.65;color:var(--ink-2);margin:10px 0 0;}
+  .reef-tip{font-size:12.5px;line-height:1.6;color:var(--ocean-deep);margin:8px 0 0;padding:9px 11px;background:var(--sky);border-radius:10px;}
+  .reef-tip b{color:var(--coral-deep);}
+
+  .cta-card{margin:18px 20px 0;padding:18px;border-radius:var(--r-lg);background:linear-gradient(135deg,var(--ocean),var(--ocean-deep));text-align:center;}
+  .cta-card .k{font-family:'Prompt',sans-serif;font-weight:800;font-size:16px;color:#fff;margin-bottom:6px;line-height:1.4;}
+  .cta-card .s{font-size:13px;line-height:1.6;color:#CFE7F7;margin-bottom:14px;}
+  .cta-card .btn{background:#fff;color:var(--ocean-deep);box-shadow:0 10px 22px rgba(0,0,0,.18);}
+  .cta-card .btn::after{background:linear-gradient(120deg,transparent,rgba(0,103,177,.15),transparent);}
+
+  .share-row{display:flex;gap:10px;margin:16px 20px 0;}
+  .share-row>*{margin:0;}
+  .disclaimer{text-align:center;font-size:11px;color:var(--ink-3);line-height:1.6;margin:14px 20px 0;}
+
+  .hidden{display:none !important;}
+  /* ---------- Hidden LINE easter-egg modal ---------- */
+  #lineEgg{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(10,30,50,.5);backdrop-filter:blur(4px);opacity:0;transition:opacity .3s ease;}
+  #lineEgg.show{opacity:1;}
+  #lineEgg .egg-card{position:relative;width:100%;max-width:330px;background:#fff;border-radius:26px;padding:26px 24px 24px;text-align:center;box-shadow:0 30px 70px rgba(6,10,28,.4);transform:translateY(16px) scale(.96);transition:transform .34s cubic-bezier(.2,.8,.2,1);}
+  #lineEgg.show .egg-card{transform:none;}
+  .egg-close{position:absolute;top:14px;right:16px;width:30px;height:30px;border-radius:50%;background:var(--sky);color:var(--ocean);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;}
+  .egg-emoji{font-size:32px;margin-bottom:6px;}
+  .egg-title{font-family:'Prompt',sans-serif;font-weight:800;font-size:20px;color:var(--ocean);margin-bottom:6px;}
+  .egg-sub{font-size:13.5px;line-height:1.6;color:var(--ink-2);margin-bottom:16px;}
+  .egg-qr{width:180px;height:180px;border-radius:14px;border:6px solid var(--sky);background:#fff;}
+  .egg-hint{font-size:11.5px;color:var(--ink-3);margin:12px 0 12px;}
+  .egg-btn{display:block;background:#06C755;color:#fff;text-decoration:none;font-family:'Prompt',sans-serif;font-weight:700;font-size:15px;padding:13px;border-radius:100px;box-shadow:0 10px 22px rgba(6,199,85,.3);transition:transform .15s;}
+  .egg-btn:hover{transform:translateY(-2px);}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="waves">
+  <svg viewBox="0 0 1440 120" preserveAspectRatio="none"><path d="M0,60 C240,120 480,10 720,60 C960,110 1200,20 1440,60 L1440,120 L0,120Z" fill="#BFE6FA"/></svg>
+</div>
+<div id="particles" aria-hidden="true"></div>
+<div id="wipe" aria-hidden="true"><div class="disc"></div></div>
+
+<div id="app">
+
+  <div class="topbar">
+    <div class="logo">
+      <svg class="wave-mark" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#0067B1"/><path d="M6,24 Q13,16 20,24 T34,24" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M6,30 Q13,22 20,30 T34,30" stroke="#FF6B35" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+      <div class="name"><b>หาดจันทร์เจ้า</b><span>MOONLIT BEACH QUIZ</span></div>
+    </div>
+    <div class="progress-wrap" id="progressWrap" style="visibility:hidden;">
+      <div class="progress-label" id="progressLabel">เริ่มการเดินทาง</div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="card" id="screen-intro">
+    <div class="stage">
+      <div class="stage-bg" style="background:linear-gradient(170deg,#BFE6FA,#E9F6FE);"></div>
+      <div class="stage-sun"></div>
+      <div class="stage-decor" id="introDecor"></div>
+      <div class="birds" id="introBirds"></div>
+      <div class="cat-glow"></div>
+      <div class="cat-shadow"></div>
+      <div class="cat-figure" id="introCat"></div>
+    </div>
+    <div class="body-pad">
+      <span class="intro-eyebrow">🐾 แบบทดสอบ 12 ข้อ · รู้ผลใน 3 นาที</span>
+      <h1>คุณเป็น<span class="hl">แมว</span><br>แบบไหน?</h1>
+      <p class="intro-copy">
+        คืนหนึ่งคุณตื่นขึ้นบน <b>หาดจันทร์เจ้า</b> ต้องเดินทางกลับบ้านให้ทันจันทร์เต็มดวง ทุกทางเลือกจะค่อย ๆ เผยว่าคุณดูแลเงินแบบไหน
+      </p>
+      <div class="social-proof">
+        <div class="sp-cats"><span style="background:#FCEBD2;">🐱</span><span style="background:#DDEFFB;">😺</span><span style="background:#E7DEF5;">😻</span></div>
+        <div class="sp-text"><b>มีแมว 10 พันธุ์</b> รอให้คุณค้นพบ<br>คุณจะเป็นตัวไหน?</div>
+      </div>
+      <button class="btn" id="startBtn">เริ่มเลย ✨</button>
+      <div class="btn-line">ฟรี · ไม่ต้องกรอกข้อมูล · เล่นซ้ำได้</div>
+    </div>
+  </div>
+
+  <!-- QUESTION -->
+  <div class="card hidden" id="screen-question">
+    <div class="stage">
+      <div class="stage-bg" id="stageBg"></div>
+      <div class="stage-sun" id="stageSun"></div>
+      <div class="stage-decor" id="stageDecor"></div>
+      <div class="birds" id="stageBirds"></div>
+      <div class="cat-glow"></div>
+      <div class="cat-shadow"></div>
+      <div class="cat-figure" id="questionCat"></div>
+    </div>
+    <div class="body-pad">
+      <span class="act-tag" id="actTag"><span class="d"></span>องก์ที่ ๑</span>
+      <h3 class="chapter-title" id="chapterTitle"></h3>
+      <p class="scene" id="sceneText"></p>
+      <p class="prompt" id="promptText"></p>
+      <div class="options" id="optionsRow"></div>
+    </div>
+  </div>
+
+  <!-- INTERSTITIAL story beat -->
+  <div class="card hidden" id="screen-beat">
+    <div class="beat-wrap">
+      <div class="beat-eyebrow" id="beatEyebrow"></div>
+      <div class="beat-art" id="beatArt"></div>
+      <p class="beat-text" id="beatText"></p>
+      <button class="btn beat-btn" id="beatBtn">ไปต่อ</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card hidden" id="screen-result">
+    <div class="result-hero">
+      <span class="result-badge">🎉 ผลลัพธ์ของคุณ</span>
+      <div class="result-cat-stage" id="resultCatStage"><div class="cat-figure" id="resultCat"></div></div>
+      <h2 class="result-name" id="resultName"></h2>
+      <div class="result-breed" id="resultBreed"></div>
+      <div class="result-tagline" id="resultTagline"></div>
+      <p class="result-copy" id="resultCopy"></p>
+      <div class="result-rarity" id="resultRarity"></div>
+    </div>
+
+    <div class="ending" id="ending">
+      <div class="lead">📖 ตอนจบของคุณ</div>
+      <p id="endingText"></p>
+    </div>
+
+    <div class="reef">
+      <div class="reef-h">🪸 พีระมิดการเงินของคุณ</div>
+      <div class="reef-sub">3 ชั้นแห่งความมั่นคง ที่คุณสร้างระหว่างทางกลับบ้าน</div>
+      <div class="tri-wrap">
+        <svg viewBox="0 0 200 165" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gR" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#1FA97A"/><stop offset="1" stop-color="#5FD9AE"/></linearGradient>
+            <linearGradient id="gP" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0067B1"/><stop offset="1" stop-color="#5FB6E8"/></linearGradient>
+            <linearGradient id="gG" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#F0521B"/><stop offset="1" stop-color="#FFB13C"/></linearGradient>
+          </defs>
+          <polygon id="bR" class="band" points="12,150 188,150 158.7,104 41.3,104" fill="url(#gR)" fill-opacity="0" stroke="#fff" stroke-width="2.5"/>
+          <polygon id="bP" class="band" points="41.3,104 158.7,104 129.3,58 70.7,58" fill="url(#gP)" fill-opacity="0" stroke="#fff" stroke-width="2.5"/>
+          <polygon id="bG" class="band" points="70.7,58 129.3,58 100,18" fill="url(#gG)" fill-opacity="0" stroke="#fff" stroke-width="2.5"/>
+          <text id="tR" class="pct-txt" x="100" y="132" text-anchor="middle" fill="#0B5138" stroke="#fff" stroke-width="3.5" paint-order="stroke">0%</text>
+          <text id="tP" class="pct-txt" x="100" y="86" text-anchor="middle" fill="#043A63" stroke="#fff" stroke-width="3.5" paint-order="stroke">0%</text>
+          <text id="tG" class="pct-txt" x="100" y="44" text-anchor="middle" fill="#7A2A0C" stroke="#fff" stroke-width="3.5" paint-order="stroke">0%</text>
+        </svg>
+      </div>
+
+      <div class="reef-row">
+        <div class="reef-row-top"><span class="reef-ic ic-r">⚓</span><span class="reef-label">เงินสำรองฉุกเฉิน</span><span class="reef-pct pct-r" id="pctR">0%</span></div>
+        <div class="reef-bar"><i class="bar-r" id="barR"></i></div>
+        <div class="reef-comment" id="cmtR"></div>
+        <div class="reef-tip" id="tipR"></div>
+      </div>
+      <div class="reef-row">
+        <div class="reef-row-top"><span class="reef-ic ic-p">🛡️</span><span class="reef-label">ป้องกันความเสี่ยง</span><span class="reef-pct pct-p" id="pctP">0%</span></div>
+        <div class="reef-bar"><i class="bar-p" id="barP"></i></div>
+        <div class="reef-comment" id="cmtP"></div>
+        <div class="reef-tip" id="tipP"></div>
+      </div>
+      <div class="reef-row">
+        <div class="reef-row-top"><span class="reef-ic ic-g">🌱</span><span class="reef-label">ต่อยอดความมั่งคั่ง</span><span class="reef-pct pct-g" id="pctG">0%</span></div>
+        <div class="reef-bar"><i class="bar-g" id="barG"></i></div>
+        <div class="reef-comment" id="cmtG"></div>
+        <div class="reef-tip" id="tipG"></div>
+      </div>
+    </div>
+
+    <div class="cta-card">
+      <div class="k" id="ctaK"></div>
+      <div class="s" id="ctaS"></div>
+      <button class="btn" id="ctaBtn">ปรึกษาผู้เชี่ยวชาญฟรี</button>
+    </div>
+
+    <div class="share-row">
+      <button class="btn-ghost" id="againBtn">🔄 เล่นอีกครั้ง</button>
+      <button class="btn-ghost" id="shareBtn">📤 แชร์ผล</button>
+    </div>
+    <p class="disclaimer">แบบทดสอบนี้เพื่อความบันเทิงและสะท้อนนิสัยการเงินแบบเบา ๆ ไม่ใช่คำแนะนำทางการเงิน ประกันภัย หรือภาษีอย่างเป็นทางการ 🐚</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const reduceMotion=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  // ambient floating particles
+  if(!reduceMotion){
+    const pc=document.getElementById('particles');
+    if(pc){for(let i=0;i<14;i++){const el=document.createElement('div');el.className='p';
+      const sz=Math.random()*9+4;el.style.width=sz+'px';el.style.height=sz+'px';
+      el.style.left=Math.random()*100+'%';el.style.animationDuration=(Math.random()*12+13)+'s';
+      el.style.animationDelay=(Math.random()*14)+'s';pc.appendChild(el);}}
+  }
+
+  const BIRD=`<svg viewBox="0 0 20 10"><path d="M0,6 Q5,0 10,6 Q15,0 20,6" stroke="#7FA8C4" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`;
+  ['introBirds','stageBirds'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=`<div class="bird b1">${BIRD}</div><div class="bird b2">${BIRD}</div>`;});
+
+  /* ---------- Cat art (realistic-ish breeds via color/ears/markings) ---------- */
+  function catBody(o){
+    const fill=o.fill, light=o.light||'#fff', stroke=o.stroke||'rgba(14,42,63,.22)';
+    const blush=o.blush||'#FFC0B8', eye=o.eye||'#243B57', mouth=o.mouth||'#3A5068';
+    const ears=o.ears||'up';
+    const inner=o.inner||'#FFC7CE';
+    const patches=o.patches||'', extra=o.extra||'', ruff=o.ruff||'';
+    // ears (with pink inner)
+    const earL = ears==='fold'
+      ? `<path d="M56,64 Q47,40 84,52 Q78,72 60,70 Z" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`
+      : `<path d="M54,72 Q44,20 90,50 Z" fill="${fill}" stroke="${stroke}" stroke-width="2"/><path d="M63,63 Q57,40 82,54 Z" fill="${inner}" opacity=".85"/>`;
+    const earR = ears==='fold'
+      ? `<path d="M164,64 Q173,40 136,52 Q142,72 160,70 Z" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`
+      : `<path d="M166,72 Q176,20 130,50 Z" fill="${fill}" stroke="${stroke}" stroke-width="2"/><path d="M157,63 Q163,40 138,54 Z" fill="${inner}" opacity=".85"/>`;
+    return `
+      <g class="cat-tail" style="transform-origin:182px 140px;">
+        <path d="M172,150 Q212,148 205,110 Q201,90 182,98" fill="none" stroke="${fill}" stroke-width="17" stroke-linecap="round"/>
+      </g>
+      ${ruff}
+      ${earL}${earR}
+      <ellipse cx="110" cy="120" rx="82" ry="66" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      ${patches}
+      <ellipse cx="110" cy="150" rx="46" ry="30" fill="${light}"/>
+      <ellipse cx="66" cy="182" rx="18" ry="11" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <ellipse cx="154" cy="182" rx="18" ry="11" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <!-- cheeks -->
+      <ellipse cx="72" cy="130" rx="12" ry="7" fill="${blush}" opacity=".65"/>
+      <ellipse cx="148" cy="130" rx="12" ry="7" fill="${blush}" opacity=".65"/>
+      <!-- whiskers -->
+      <path d="M52,118 L20,110 M52,126 L18,127 M52,134 L22,142" stroke="${fill}" stroke-width="1.8" opacity=".45" stroke-linecap="round"/>
+      <path d="M168,118 L200,110 M168,126 L202,127 M168,134 L198,142" stroke="${fill}" stroke-width="1.8" opacity=".45" stroke-linecap="round"/>
+      <!-- big chibi eyes with blink -->
+      <g class="cat-eye">
+        <ellipse cx="86" cy="116" rx="9" ry="11" fill="#fff"/>
+        <circle cx="86" cy="117" r="7.5" fill="${eye}"/>
+        <circle cx="88.6" cy="113.8" r="2.6" fill="#fff"/>
+        <circle cx="83.5" cy="120" r="1.3" fill="#fff" opacity=".7"/>
+      </g>
+      <g class="cat-eye">
+        <ellipse cx="134" cy="116" rx="9" ry="11" fill="#fff"/>
+        <circle cx="134" cy="117" r="7.5" fill="${eye}"/>
+        <circle cx="136.6" cy="113.8" r="2.6" fill="#fff"/>
+        <circle cx="131.5" cy="120" r="1.3" fill="#fff" opacity=".7"/>
+      </g>
+      <!-- eyelids for blink -->
+      <rect class="cat-lid" x="76" y="104" width="20" height="0" rx="6" fill="${fill}"/>
+      <rect class="cat-lid" x="124" y="104" width="20" height="0" rx="6" fill="${fill}"/>
+      <!-- nose + mouth -->
+      <path d="M106,128 L114,128 L110,133 Z" fill="${blush}" stroke="${mouth}" stroke-width=".8" opacity=".9"/>
+      <path d="M110,133 Q104,140 98,136 M110,133 Q116,140 122,136" stroke="${mouth}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      ${extra}
+    `;
+  }
+  const S=(o)=>`<svg viewBox="0 0 220 200" width="100%" height="100%" class="catsvg">${catBody(o)}</svg>`;
+
+  // The wandering "traveler" cat shown during questions — a curious tuxedo explorer
+  function traveler(){
+    return S({fill:'#54627E',light:'#EEF3FA',blush:'#E3B8C0',eye:'#1B2740',inner:'#E7B7C5',
+      patches:`<path d="M110,80 Q84,92 82,142 Q110,152 138,142 Q136,92 110,80 Z" fill="#EEF3FA"/>`,
+      extra:`<circle cx="38" cy="58" r="3" fill="#FFB13C" opacity=".9"/><circle cx="186" cy="78" r="2.4" fill="#FFB13C" opacity=".8"/><circle cx="176" cy="150" r="2" fill="#FFD873" opacity=".8"/>`});
+  }
+
+  // 11 archetype cats — mapped to Thai + popular breeds
+  const CATS={
+    traveler,
+    // stray -> Wichian Mat (Siamese) — lively, lives-in-the-moment
+    siamese: ()=>S({fill:'#EFE7DA',light:'#FBF7F0',stroke:'rgba(120,90,60,.3)',blush:'#F3C9A0',eye:'#3B82C4',
+      patches:`<path d="M56,70 Q46,22 88,52 Z" fill="#6B5647"/><path d="M164,70 Q176,22 132,52 Z" fill="#6B5647"/><ellipse cx="110" cy="150" rx="30" ry="20" fill="#C9B49E" opacity=".5"/>`}),
+    // dreamer -> Turkish Angora white — elegant dreamer
+    angora: ()=>S({fill:'#F6F7F9',light:'#FFFFFF',stroke:'rgba(90,120,150,.28)',blush:'#FFC9C0',eye:'#2E9BD6',
+      ruff:`<ellipse cx="110" cy="128" rx="94" ry="66" fill="#FFFFFF" opacity=".7"/>`,
+      extra:`<circle cx="150" cy="70" r="2.4" fill="#7EC6EE"/>`}),
+    // stingy -> Korat (Si-Sawat) — careful Thai silver-blue, said to bring wealth if kept
+    korat: ()=>S({fill:'#8A97A6',light:'#C9D3DC',stroke:'rgba(50,70,90,.3)',blush:'#B9A7C0',eye:'#7FB98A'}),
+    // black -> Bombay — bold night gambler
+    bombay: ()=>S({fill:'#2B2F3A',light:'rgba(255,255,255,.12)',stroke:'rgba(255,255,255,.16)',blush:'#5A4E6E',eye:'#FFB13C',mouth:'#C9B8E0'}),
+    // tabby -> classic brown tabby — guarded protector
+    tabby: ()=>S({fill:'#C88A4E',light:'#F3DBB8',stroke:'rgba(90,50,20,.3)',blush:'#F0B080',
+      patches:`<path d="M92,84 Q110,74 128,84" stroke="#7A4A22" stroke-width="6" fill="none" opacity=".55" stroke-linecap="round"/><path d="M78,150 Q110,162 142,150" stroke="#7A4A22" stroke-width="6" fill="none" opacity=".4" stroke-linecap="round"/><path d="M110,88 L110,150" stroke="#7A4A22" stroke-width="5" opacity=".4"/>`}),
+    // persian -> fluffy hoarder of comfort
+    persian: ()=>S({fill:'#F3ECDD',light:'#FFFBF3',stroke:'rgba(150,120,80,.28)',blush:'#FFD0C4',
+      ruff:`<ellipse cx="110" cy="128" rx="98" ry="70" fill="#FFFBF3" opacity=".85"/>`,
+      patches:`<ellipse cx="90" cy="108" rx="4" ry="10" fill="#E6D9BE" opacity=".7"/><ellipse cx="130" cy="108" rx="4" ry="10" fill="#E6D9BE" opacity=".7"/>`}),
+    // cloud -> Scottish Fold grey — still searching, folded ears, gentle
+    scottish: ()=>S({fill:'#A7B0BC',light:'#D9E0E7',stroke:'rgba(60,80,100,.28)',ears:'fold',blush:'#C9B9C6',
+      patches:`<ellipse cx="84" cy="98" rx="18" ry="13" fill="#8A94A2" opacity=".5"/><ellipse cx="140" cy="104" rx="16" ry="14" fill="#8A94A2" opacity=".4"/>`}),
+    // calico -> Kao Manee / calico lucky — balance
+    calico: ()=>S({fill:'#F8F5EF',light:'#FFFFFF',stroke:'rgba(120,110,90,.28)',blush:'#FFC9C0',eye:'#3B82C4',
+      patches:`<ellipse cx="72" cy="96" rx="26" ry="21" fill="#F0A23C" opacity=".9"/><ellipse cx="150" cy="104" rx="22" ry="26" fill="#3A4656" opacity=".85"/><path d="M56,70 Q46,22 88,52 Z" fill="#F0A23C"/>`}),
+    // pearl -> British Shorthair blue — solid, ready for next level
+    british: ()=>S({fill:'#7E93B0',light:'#B9C8DC',stroke:'rgba(40,60,90,.3)',blush:'#C0B4CE',eye:'#F0A23C'}),
+    // gold -> golden — master of the pyramid
+    golden: ()=>S({fill:'#E9AF43',light:'#FFE7B0',stroke:'rgba(120,80,20,.3)',blush:'#FFD199',
+      extra:`<circle cx="42" cy="58" r="3" fill="#fff" opacity=".85"/><circle cx="180" cy="72" r="2.4" fill="#fff" opacity=".8"/><path d="M100,26 l3,7 7,0 -5.5,4.5 2,7 -6.5,-4.5 -6.5,4.5 2,-7 -5.5,-4.5 7,0 z" fill="#FFD873"/>`}),
+  };
+
+  document.getElementById('introCat').innerHTML=traveler();
+
+  /* ---------- Scene decor (bright, daytime) ---------- */
+  const SCENES=[
+    {g:'linear-gradient(170deg,#BFE6FA,#E9F6FE)',d:`<svg viewBox="0 0 300 196"><path d="M0,176 Q80,160 160,174 T300,172 L300,196 L0,196Z" fill="#F5E6C8"/><path d="M0,186 Q90,172 170,184 T300,182 L300,196 L0,196Z" fill="#EED8AE"/></svg>`},
+    {g:'linear-gradient(170deg,#CDECFB,#EAF6E9)',d:`<svg viewBox="0 0 300 196"><path d="M120,110 L180,110 L174,158 L126,158Z" fill="#FF8F5E"/><rect x="120" y="110" width="60" height="9" fill="#F0521B"/><path d="M150,110 Q130,84 112,104 Q120,116 150,110Z" fill="#FFB13C"/><path d="M150,110 Q170,84 188,104 Q180,116 150,110Z" fill="#FFB13C"/></svg>`},
+    {g:'linear-gradient(170deg,#D6ECFB,#F3EEE0)',d:`<svg viewBox="0 0 300 196"><rect x="96" y="120" width="108" height="54" rx="6" fill="#E8C79A"/><path d="M96,120 L150,96 L204,120Z" fill="#C98F52"/><path d="M120,140 h60 v34 h-60z" fill="#FBEAD0"/><circle cx="150" cy="112" r="5" fill="#FFB13C"/></svg>`},
+    {g:'linear-gradient(170deg,#C9EEF7,#EAFBF0)',d:`<svg viewBox="0 0 300 196"><path d="M0,196 L0,140 Q60,112 120,146 L120,196Z" fill="#8FD9B0"/><path d="M210,196 Q206,140 220,112 Q232,140 226,168" stroke="#1FA97A" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="226" cy="120" rx="10" ry="13" fill="#3FC490"/><circle cx="150" cy="108" r="8" fill="#FFE39A" opacity=".9"/></svg>`},
+    {g:'linear-gradient(170deg,#BCE3F7,#E4F4FC)',d:`<svg viewBox="0 0 300 196"><ellipse cx="150" cy="164" rx="120" ry="24" fill="#7FC8EA" opacity=".55"/><ellipse cx="150" cy="164" rx="74" ry="14" fill="none" stroke="#fff" stroke-width="2.5" opacity=".8"><animate attributeName="rx" values="40;90" dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values=".9;0" dur="2.6s" repeatCount="indefinite"/></ellipse></svg>`},
+    {g:'linear-gradient(170deg,#CDECFB,#EAF6FB)',d:`<svg viewBox="0 0 300 196"><rect x="92" y="112" width="116" height="60" fill="#FBEAD0" stroke="#F0521B" stroke-width="2.5"/><path d="M82,112 L218,112 L202,82 L98,82Z" fill="#FF8F5E"/><path d="M98,82 L110,112 M124,82 L136,112 M150,82 L162,112 M176,82 L188,112" stroke="#fff" stroke-width="7" opacity=".55"/></svg>`},
+    {g:'linear-gradient(170deg,#AECDE8,#DDEEF9)',d:`<svg viewBox="0 0 300 196"><path d="M20,120 Q150,150 280,120" stroke="#8A6D4A" stroke-width="4" fill="none"/><path d="M20,120 Q150,178 280,120" stroke="#8A6D4A" stroke-width="4" fill="none"/><path d="M60,128 v34 M110,138 v34 M190,138 v34 M240,128 v34" stroke="#8A6D4A" stroke-width="4"/><path d="M150,150 l-6,20 M150,150 l6,20" stroke="#B08A5A" stroke-width="3" opacity=".7"/></svg>`},
+    {g:'linear-gradient(170deg,#9FC2E0,#CBE4F5)',d:`<svg viewBox="0 0 300 196"><path d="M40,196 L40,120 L80,120 L80,196Z" fill="#6E8AA8" opacity=".7"/><path d="M120,196 L120,100 L160,100 L160,196Z" fill="#5C7690" opacity=".8"/><path d="M210,196 L210,130 L250,130 L250,196Z" fill="#6E8AA8" opacity=".65"/><circle cx="150" cy="60" r="4" fill="#FFE39A" class="tw"/></svg>`},
+    {g:'linear-gradient(170deg,#CFE6F5,#EAF3E6)',d:`<svg viewBox="0 0 300 196"><circle cx="150" cy="120" r="34" fill="none" stroke="#C98F52" stroke-width="4"/><path d="M150,86 v68 M116,120 h68" stroke="#C98F52" stroke-width="3" opacity=".6"/><circle cx="150" cy="120" r="10" fill="#FFD873"/></svg>`},
+    {g:'linear-gradient(170deg,#B9DCF3,#E8F3FB)',d:`<svg viewBox="0 0 300 196"><path d="M150,180 L150,120 M150,120 L90,80 M150,120 L150,70 M150,120 L210,80" stroke="#8A6D4A" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="90" cy="76" r="7" fill="#FF8F5E"/><circle cx="150" cy="64" r="7" fill="#FFB13C"/><circle cx="210" cy="76" r="7" fill="#3FC490"/></svg>`},
+    {g:'linear-gradient(170deg,#9FC2E0,#CBE4F5)',d:`<svg viewBox="0 0 300 196"><ellipse cx="90" cy="42" rx="52" ry="24" fill="#B8C9DA" opacity=".9"/><ellipse cx="180" cy="34" rx="60" ry="27" fill="#A6BACE" opacity=".9"/><path d="M100,140 L88,178 M150,135 L138,176 M200,142 L188,180" stroke="#8FB6D8" stroke-width="2.5" opacity=".7"><animate attributeName="opacity" values="0;.9;0" dur="1.1s" repeatCount="indefinite"/></path></svg>`},
+    {g:'linear-gradient(170deg,#CFEAFB,#FFF3DC)',d:`<svg viewBox="0 0 300 196"><path d="M108,184 L108,92 Q150,56 192,92 L192,184Z" fill="#FBEAD0" stroke="#F0521B" stroke-width="3"/><path d="M132,92 Q150,72 168,92" fill="#FFB13C"/><circle cx="66" cy="140" r="11" fill="#FFB13C" opacity=".9"/><circle cx="236" cy="132" r="8" fill="#FFB13C" opacity=".8"/></svg>`},
+  ];
+  document.getElementById('introDecor').innerHTML=SCENES[0].d;
+
+  const chapterNums=['๑','๒','๓','๔','๕','๖','๗','๘','๙','๑๐','๑๑','๑๒'];
+  const ACTS=[
+    'องก์ที่ ๑ · ออกเดินทาง','องก์ที่ ๑ · ออกเดินทาง','องก์ที่ ๑ · ออกเดินทาง',
+    'องก์ที่ ๒ · บททดสอบ','องก์ที่ ๒ · บททดสอบ','องก์ที่ ๒ · บททดสอบ','องก์ที่ ๒ · บททดสอบ','องก์ที่ ๒ · บททดสอบ','องก์ที่ ๒ · บททดสอบ',
+    'องก์ที่ ๓ · จุดเปลี่ยน','องก์ที่ ๓ · จุดเปลี่ยน','องก์ที่ ๓ · จุดเปลี่ยน'
+  ];
+
+  /* ---------- Hand-drawn sketch art for story beats ---------- */
+  const SKETCH={
+    potion:`<svg viewBox="0 0 150 150"><path class="sketch-stroke" d="M58,26 h34 M64,26 v20 l-20,52 a30,30 0 0 0 28,42 h6 a30,30 0 0 0 28,-42 l-20,-52 v-20"/><path class="sketch-stroke" d="M52,96 q23,12 46,0" /><circle cx="66" cy="108" r="3" fill="#7A6047"/><circle cx="82" cy="118" r="4" fill="#7A6047"/><circle cx="74" cy="100" r="2.5" fill="#7A6047"/><path class="sketch-stroke" d="M96,20 l4,8 M104,26 l7,3 M100,36 l8,-1" /></svg>`,
+    moon:`<svg viewBox="0 0 150 150"><path class="sketch-stroke" d="M95,30 a45,45 0 1 0 25,78 a36,36 0 1 1 -25,-78 z"/><path class="sketch-stroke" d="M40,40 l3,7 M32,54 l7,2 M120,120 l5,5 M126,60 l6,-2"/><circle cx="46" cy="96" r="2.5" fill="#7A6047"/><circle cx="118" cy="46" r="2" fill="#7A6047"/></svg>`,
+    clock:`<svg viewBox="0 0 150 150"><circle class="sketch-stroke" cx="75" cy="78" r="40"/><path class="sketch-stroke" d="M75,78 v-24 M75,78 l16,10"/><path class="sketch-stroke" d="M48,40 l-14,-12 M102,40 l14,-12"/><path class="sketch-stroke" d="M40,120 l-8,10 M110,120 l8,10"/></svg>`,
+    door:`<svg viewBox="0 0 150 150"><path class="sketch-stroke" d="M48,128 V44 a27,27 0 0 1 54,0 v84 z"/><path class="sketch-stroke" d="M48,128 h54"/><circle class="sketch-stroke" cx="90" cy="86" r="3.5"/><path class="sketch-stroke" d="M75,20 v-8 M110,30 l6,-6 M40,30 l-6,-6"/><path class="sketch-stroke" d="M62,70 q13,-10 26,0" opacity=".6"/></svg>`,
+    paw:`<svg viewBox="0 0 150 150"><ellipse class="sketch-stroke" cx="75" cy="92" rx="26" ry="20"/><ellipse class="sketch-stroke" cx="48" cy="58" rx="9" ry="12"/><ellipse class="sketch-stroke" cx="68" cy="46" rx="9" ry="13"/><ellipse class="sketch-stroke" cx="90" cy="46" rx="9" ry="13"/><ellipse class="sketch-stroke" cx="108" cy="58" rx="9" ry="12"/></svg>`,
+    map:`<svg viewBox="0 0 150 150"><path class="sketch-stroke" d="M30,40 l30,-8 30,8 30,-8 v70 l-30,8 -30,-8 -30,8 z"/><path class="sketch-stroke" d="M60,32 v70 M90,40 v70" opacity=".6"/><path class="sketch-stroke" d="M40,60 q20,10 40,0 t30,-4" opacity=".6"/><path d="M104,84 l4,4 4,-4 -4,-4z" fill="#B0472A"/></svg>`,
+    heart:`<svg viewBox="0 0 150 150"><path class="sketch-stroke" d="M75,110 C40,84 44,52 66,52 c9,0 9,8 9,8 s0,-8 9,-8 c22,0 26,32 -9,58 z"/><path class="sketch-stroke" d="M40,40 l4,8 M110,40 l-4,8" opacity=".6"/></svg>`,
+  };
+
+  /* ---------- Story beats: prologue + interstitials keyed by position ----------
+     shown BEFORE the chapter index in `before`. */
+  const BEATS=[
+    { before:0, eyebrow:'บทนำ', art:'potion',
+      text:'คืนนั้นคุณเผลอเลียของเหลวเรืองแสงในขวดเก่า ๆ ริมหาด โลกก็หมุนวน…แล้วทุกอย่างก็เปลี่ยนไป', btn:'เกิดอะไรขึ้น?' },
+    { before:0, eyebrow:'บทนำ', art:'moon',
+      text:'คุณลืมตาใต้ แสงจันทร์เพ็ญ บนหาดที่ไม่รู้จัก มีเสียงกระซิบว่า “ประตูจะเปิดเมื่อจันทร์เต็มดวง…เดินให้ทันนะ”', btn:'เริ่มเดินทาง' },
+    { before:3, eyebrow:'เข้าสู่องก์ ๒', art:'map',
+      text:'พ้นชายหาดมาแล้ว เส้นทางเริ่มคดเคี้ยวเข้าป่าลึก ทุกก้าวต่อจากนี้ จะวัดใจคุณหนักขึ้นเรื่อย ๆ', btn:'เดินต่อ' },
+    { before:6, eyebrow:'ระหว่างทาง', art:'clock',
+      text:'เอ้า…เพลินเกินไปแล้ว จันทร์เกือบเต็มดวง ต้องรีบกลับละ!', btn:'วิ่ง ๆ ๆ ๆ' },
+    { before:9, eyebrow:'เข้าสู่องก์ ๓', art:'heart',
+      text:'ปลายทางใกล้เข้ามาแล้ว หัวใจเต้นแรง สิ่งที่คุณเลือกจากนี้ จะกำหนดว่าคุณจะกลับบ้านแบบไหน', btn:'ก้าวต่อไป' },
+    { before:11, eyebrow:'ก่อนก้าวสุดท้าย', art:'door',
+      text:'พายุสงบแล้ว ประตูกลับบ้าน เรืองแสงอยู่เบื้องหน้า ก้าวต่อไปคือก้าวสุดท้าย', btn:'เข้าใกล้ประตู' },
+  ];
+  function beatsBefore(idx){ return BEATS.filter(b=>b.before===idx); }
+
+
+  /* ---------- Story ---------- */
+  const questions=[
+    { title:'คลื่นซัดคุณขึ้นฝั่ง',
+      scene:'คุณตื่นบนทรายเปียก คนแปลกหน้ายื่นแผนที่ขาด ๆ ให้ “ทางลัดมีจริง แต่ไม่มีใครกลับมาเล่าว่ามันพาไปไหน” เขายิ้มแล้วหายไปกับสายลม',
+      prompt:'ก้าวแรกบนหาดนี้ ใจคุณพาไปทางไหน?',
+      options:[
+        {t:'ค่อย ๆ เดินเลียบหาด เก็บเกี่ยวทุกอย่างที่คลื่นพัดมา',c:'ระหว่างที่คุณเพลินกับปัจจุบัน เวลาก็ไหลผ่านไปเงียบ ๆ',type:'stray'},
+        {t:'เชื่อสัญชาตญาณ ลัดเข้าทางที่ไม่มีใครกล้าไป',c:'ทางที่ไม่มีใครเล่าถึง อาจเพราะไม่มีใครได้กลับมาเล่า',type:'dreamer'},
+        {t:'ตั้งสติก่อน สำรวจสิ่งที่มีในมือให้ครบถ้วน',c:'ขณะที่คุณมั่นใจว่าพร้อม จันทร์ก็เต็มดวงขึ้นทุกคืน',type:'stingy'},
+        {t:'เดินทางหลัก แต่ทดไว้ในใจว่าทางลัดอยู่ตรงไหน',c:'การไม่เลือกสักทางเต็มตัว บางครั้งก็คือการไม่ได้อะไรเต็มที่เลย',type:'wise'},
+      ]},
+    { title:'กล่องไร้เจ้าของ',
+      scene:'กล่องผูกริบบิ้นวางเด่นอยู่กลางทาง ป้ายไม้จาง ๆ เขียนว่า “ของคนที่กล้าพอ” คุณได้ยินบางอย่างขยับอยู่ข้างใน',
+      prompt:'กล่องนั้นเรียกร้องบางอย่างจากคุณ คุณจะ...',
+      options:[
+        {t:'หยิบติดมือไปก่อน ค่อยเปิดตอนที่พร้อม',c:'บางสิ่งที่เราแบกไว้ “เผื่อวันหน้า” กลายเป็นน้ำหนักของวันนี้',type:'stray'},
+        {t:'เปิดเดี๋ยวนี้เลย ชีวิตมีไว้ให้ลอง',c:'พอเปิดแล้ว จะปิดกลับไปเป็นเหมือนเดิมไม่ได้อีก',type:'dreamer'},
+        {t:'ปล่อยมันไว้ตรงนั้น สิ่งที่ไม่รู้จักไม่จำเป็นต้องเป็นของเรา',c:'คุณจะเดินจากไปพร้อมคำถามที่ไม่มีวันได้คำตอบ',type:'stingy'},
+        {t:'พิจารณารอบ ๆ หาเบาะแสก่อนตัดสินใจ',c:'ความรอบคอบกินเวลา และเวลาคือสิ่งที่คุณมีไม่มาก',type:'wise'},
+      ]},
+    { title:'บ้านร้างริมทาง',
+      scene:'บ้านไม้เก่าเปิดประตูค้างไว้ มีเตียงนุ่ม ๆ กองไฟ และของกินวางรอราวกับมีใครเชิญ แต่ก็ไม่เห็นเจ้าของสักคน',
+      prompt:'ค่ำคืนหนาวเย็น บ้านหลังนี้ชวนให้พัก คุณจะ...',
+      options:[
+        {t:'เข้าไปพักให้สบายเต็มที่ พรุ่งนี้ค่อยว่ากัน',c:'ความสบายที่ได้มาง่าย ๆ มักมีราคาที่ยังมองไม่เห็น',type:'stray'},
+        {t:'รื้อค้นทั้งบ้าน เผื่อมีสมบัติซ่อนอยู่',c:'ยิ่งขุดลึก ยิ่งเสี่ยงปลุกสิ่งที่ไม่ควรปลุก',type:'dreamer'},
+        {t:'ไม่เข้าไปเลย นอนข้างนอกปลอดภัยกว่า',c:'คุณจะหนาวสั่นทั้งคืน เพื่อแลกกับความอุ่นใจ',type:'stingy'},
+        {t:'พักพอหายเหนื่อย แล้วออกเดินแต่เช้า',c:'คุณจะไม่ได้พักเต็มอิ่ม และต้องฝืนตื่นทั้งที่ยังล้า',type:'wise'},
+      ]},
+    { title:'ถั่ววิเศษของกระรอก',
+      scene:'กระรอกตาเป็นประกายวางเมล็ดเรืองแสงตรงหน้า “ปลูกคืนนี้ พรุ่งนี้ได้ปราสาททั้งหลัง” มันกระซิบ “แต่ต้องใช้เหรียญของเจ้าทุกเหรียญรดน้ำ”',
+      prompt:'เมล็ดพันธุ์แห่งความหวังอยู่ตรงหน้า คุณจะ...',
+      options:[
+        {t:'ลองสักครึ่ง อีกครึ่งเก็บไว้ให้ใจสบาย',c:'ครึ่ง ๆ กลาง ๆ อาจแปลว่าไม่ได้ทั้งความฝันและความอุ่นใจ',type:'stray'},
+        {t:'ทุ่มทุกเหรียญ ความฝันใหญ่ต้องกล้าลงทุนใหญ่',c:'ถ้าคำหวานนั้นลวง คุณจะเหลือเพียงสองมือเปล่า',type:'dreamer'},
+        {t:'ยิ้มแล้วปฏิเสธ สิ่งที่ถืออยู่มีค่ากว่าคำสัญญา',c:'บางโอกาสที่แท้จริง มาเคาะประตูแค่ครั้งเดียว',type:'stingy'},
+        {t:'ทดลองด้วยเหรียญส่วนน้อย พิสูจน์ก่อนค่อยเชื่อ',c:'คุณจำกัดความเสียหาย พร้อม ๆ กับจำกัดความฝันของตัวเอง',type:'wise'},
+      ]},
+    { title:'สระน้ำขอพร',
+      scene:'สระน้ำสีเงินปรากฏขึ้นกลางป่า เสียงลมเล่าว่าใครกระโดดลงไปจะได้พรหนึ่งข้อ แต่ไม่มีใครเคยเห็นก้นสระ และไม่มีใครเล่าว่าเกิดอะไรกับคนที่ลงไป',
+      prompt:'พรหนึ่งข้อรออยู่ใต้ผิวน้ำที่มองไม่เห็น คุณจะ...',
+      options:[
+        {t:'วางทุกอย่างลง แล้วโดดตามใจปรารถนา',c:'สิ่งที่คุณวางไว้ริมสระ อาจไม่รอคุณกลับขึ้นมา',type:'stray'},
+        {t:'กระโดดทันที ก่อนที่ความกลัวจะห้ามคุณไว้',c:'ความกล้าที่ไม่ลืมตา บางทีก็แยกไม่ออกจากความประมาท',type:'dreamer'},
+        {t:'มองน้ำนิ่ง ๆ จนแน่ใจ—แต่ความแน่ใจไม่เคยมาถึง',c:'ระหว่างที่คุณรอให้มั่นใจร้อยเปอร์เซ็นต์ พรก็เลือนหายไป',type:'stingy'},
+        {t:'หย่อนกิ่งไม้หยั่งดูก่อน แล้วจึงตัดสินใจ',c:'คนที่หยั่งเชิงนานเกินไป มักได้พรที่สั้นลงทุกที',type:'wise'},
+      ]},
+    { title:'ร้านเสบียงริมหาด',
+      scene:'ร้านเล็ก ๆ เรียงของเต็มชั้น ทั้งตะเกียงกันพายุ เชือกเหนียว และของสวยวิบวับที่ไม่จำเป็นแต่สวยจับใจ เจ้าของยิ้มบาง ๆ “คืนพายุใกล้มาแล้วนะ”',
+      prompt:'เหรียญมีจำกัด ความอยากไม่มีจำกัด คุณจะ...',
+      options:[
+        {t:'เลือกของที่ทำให้ใจฟู แม้ไม่ใช่ของจำเป็น',c:'ความสุขวันนี้ อาจยืมมาจากความมั่นคงของวันพายุ',type:'stray'},
+        {t:'ทุ่มให้ตะเกียงที่เล่าลือว่าส่องเห็นอนาคต',c:'ถ้ามันเป็นแค่คำเล่าลือ คุณจะไม่เหลืออะไรกันพายุ',type:'dreamer'},
+        {t:'ชั่งใจอยู่นาน สุดท้ายเดินออกมามือเปล่า',c:'การไม่ยอมเสียอะไรเลย บางครั้งก็คือการเสียโอกาสไป',type:'stingy'},
+        {t:'หยิบแค่สิ่งที่จะได้ใช้จริงในคืนพายุ',c:'คุณจะเดินจากไปพร้อมสายตาที่ยังเหลียวมองของชิ้นนั้น',type:'wise'},
+      ]},
+    { title:'สะพานเชือกขาด',
+      scene:'สะพานเชือกทอดข้ามเหวลึก แต่ไม้กระดานหลายแผ่นหลุดหาย ข้างล่างมองไม่เห็นก้น อีกฝั่งคือทางที่สั้นกว่ามาก',
+      prompt:'สะพานสั่นไหวอยู่ตรงหน้า คุณจะ...',
+      options:[
+        {t:'เดินข้ามไปเรื่อย ๆ ไม่คิดมาก เดี๋ยวก็ถึง',c:'ความไม่คิดมาก บนสะพานขาด อาจแลกด้วยราคาที่แพงที่สุด',type:'stray'},
+        {t:'วิ่งข้ามให้เร็วที่สุด ก่อนเชือกจะขาด',c:'ยิ่งเร็วเท่าไร ยิ่งพลาดพลั้งได้ง่ายเท่านั้น',type:'dreamer'},
+        {t:'ไม่ข้าม เดินอ้อมทางไกลที่ปลอดภัยกว่า',c:'ทางอ้อมกินเวลาหลายชั่วโมง ที่คุณอาจไม่มีเหลือ',type:'stingy'},
+        {t:'ทดสอบไม้ทีละแผ่น ก่อนวางน้ำหนักลงไป',c:'ทุกก้าวที่ระวัง คือทุกวินาทีที่จันทร์ใกล้เต็มดวง',type:'wise'},
+      ]},
+    { title:'เงาในป่าลึก',
+      scene:'ทางพาคุณเข้าป่าทึบ มีแสงดวงเล็ก ๆ กะพริบอยู่ไกล ๆ พร้อมเสียงกระซิบชวนให้เดินตาม มันอาจเป็นทางออก—หรืออาจเป็นสิ่งที่ล่อให้หลง',
+      prompt:'ในความมืดที่มองไม่เห็นทาง คุณจะ...',
+      options:[
+        {t:'เดินตามแสงอย่างสบายใจ ในเมื่อไม่รู้จะไปทางไหน',c:'คนที่เดินตามแสงของคนอื่น มักหลงไปไกลกว่าเดิม',type:'stray'},
+        {t:'วิ่งเข้าหาแสงเต็มแรง ยอมเสี่ยงเพื่อทางออก',c:'ถ้าแสงนั้นลวงตา คุณจะหมดแรงในที่ที่ลึกที่สุด',type:'dreamer'},
+        {t:'หยุดนิ่งอยู่กับที่ รอจนฟ้าสาง',c:'ความปลอดภัยของการไม่ขยับ แลกมาด้วยทั้งคืนที่หายไป',type:'stingy'},
+        {t:'ทำเครื่องหมายไว้ทุกก้าว แล้วค่อย ๆ คลำทาง',c:'คุณจะไม่หลง แต่ก็จะไปถึงช้ากว่าคนที่กล้าเสี่ยง',type:'wise'},
+      ]},
+    { title:'เพื่อนร่วมทางที่หลงทาง',
+      scene:'ลูกแมวตัวเล็กนั่งสั่นอยู่ข้างทาง มันหลงมาไกลจากบ้าน และมองคุณด้วยแววตาอ้อนวอน แต่การพามันไปด้วยจะทำให้คุณช้าลง',
+      prompt:'สายตาคู่นั้นจ้องมาที่คุณ คุณจะ...',
+      options:[
+        {t:'อุ้มมันไปด้วยเลย ค่อยคิดเรื่องอื่นทีหลัง',c:'ใจดีโดยไม่คิดหน้าหลัง บางทีก็ทำให้ทั้งคู่ไปไม่ถึงฝั่ง',type:'stray'},
+        {t:'สัญญาว่าจะพากลับ แม้ยังไม่รู้ทางเลย',c:'คำสัญญาที่เกินกำลัง อาจกลายเป็นภาระของทั้งสองชีวิต',type:'dreamer'},
+        {t:'เดินจากไป ตัวเองยังเอาไม่รอดเลย',c:'คุณจะไปถึงเร็วขึ้น แต่แบกความรู้สึกผิดไปด้วยตลอดทาง',type:'stingy'},
+        {t:'แบ่งอาหารให้ แล้วชี้ทางปลอดภัยให้มัน',c:'คุณช่วยเท่าที่ทำได้ แต่ก็ต้องยอมรับว่าช่วยได้ไม่หมด',type:'wise'},
+      ]},
+    { title:'ทางแยกสามสาย',
+      scene:'ทางแยกออกเป็นสามสาย ป้ายไม้ผุ ๆ เขียนไว้ว่า “ทางเร็ว · ทางสวย · ทางปลอดภัย” แต่ตัวอักษรลางเลือนจนไม่แน่ใจว่าอันไหนคืออันไหน',
+      prompt:'สามทางทอดยาวไปคนละทิศ คุณจะเลือก...',
+      options:[
+        {t:'เดินทางที่ดูสวยที่สุด อย่างน้อยก็ได้เพลิน',c:'ความสวยระหว่างทาง ไม่ได้แปลว่าปลายทางจะสวยตาม',type:'stray'},
+        {t:'เลือกทางที่ดูท้าทายสุด ของดีมักอยู่ปลายทางยาก',c:'ทางที่ยากที่สุด บางครั้งก็ยากเพราะมันคือทางตัน',type:'dreamer'},
+        {t:'เลือกทางที่ดูคุ้นตาที่สุด ปลอดภัยไว้ก่อน',c:'สิ่งที่คุ้นเคย อาจพาคุณวนกลับมาที่เดิม',type:'stingy'},
+        {t:'สังเกตร่องรอยบนพื้น เลือกทางที่มีคนเดินผ่านล่าสุด',c:'รอยเท้าคนอื่นบอกทางได้ แต่ไม่ได้บอกว่าเขาไปถึงไหม',type:'wise'},
+      ]},
+    { title:'พายุใหญ่เข้าฝั่ง',
+      scene:'ฟ้าเปลี่ยนสีในพริบตา ลมแรงจนแทบยืนไม่อยู่ ประตูกลับบ้านอยู่ไม่ไกล แต่เพื่อนบ้านกำลังช่วยกันมุงหลังคาและตะโกนเรียกคุณให้ไปช่วย',
+      prompt:'พายุมาถึงแล้ว หัวใจคุณสั่งให้...',
+      options:[
+        {t:'วิ่งฝ่าไปที่ประตูเลย บ้านอยู่แค่เอื้อม',c:'ถ้าประตูยังไม่เปิด คุณจะเหลือแค่ตัวเองกลางพายุ',type:'stray'},
+        {t:'ปีนที่สูงเพื่อดูว่าประตูเปิดหรือยัง',c:'ที่ที่มองเห็นไกลที่สุด มักเป็นที่ที่อันตรายที่สุด',type:'dreamer'},
+        {t:'ขุดหลุมหลบ ปิดทุกช่องไม่ให้ลมเล็ดลอด',c:'ในที่กำบังที่ปิดสนิท คุณจะไม่รู้เลยว่าเมื่อไรฟ้าจะเปิด',type:'stingy'},
+        {t:'ช่วยเพื่อนบ้านก่อน แล้วอาศัยกำบังร่วมกัน',c:'คุณต้องเลื่อนบ้านของตัวเองออกไป เพื่อวางใจในคนอื่น',type:'wise'},
+      ]},
+    { title:'ประตูสุดท้าย',
+      scene:'พายุสงบ ประตูเรืองแสงอยู่ตรงหน้า ก่อนถึงธรณี มีถุงเหรียญที่คุณสะสมมาทั้งเส้นทางวางอยู่ นางฟ้าจันทร์ปรากฏกาย “จะทำอะไรกับมันก่อนกลับ ก็สุดแท้แต่ใจเจ้า”',
+      prompt:'ก้าวสุดท้ายก่อนถึงบ้าน คุณจะ...',
+      options:[
+        {t:'ใช้มันเฉลิมฉลองค่ำคืนนี้ให้สุดใจ',c:'พรุ่งนี้ที่บ้าน คุณอาจต้องเริ่มนับหนึ่งใหม่',type:'stray'},
+        {t:'เดิมพันครั้งสุดท้าย ขอเพิ่มเป็นสิบเท่า',c:'ถ้าพลาด คุณจะข้ามประตูไปพร้อมความว่างเปล่า',type:'dreamer'},
+        {t:'ฝังมันไว้ในที่ปลอดภัย ไม่แตะต้องอีกเลย',c:'สิ่งที่ถูกเก็บงำจนลืม ก็เท่ากับไม่เคยมีอยู่',type:'stingy'},
+        {t:'แบ่งเป็นส่วน ๆ ทั้งใช้ เก็บ และให้มันงอกเงย',c:'คุณจะไม่ได้ฉลองที่ยิ่งใหญ่ แต่จะหลับตาลงอย่างสงบ',type:'wise'},
+      ]},
+  ];
+
+  /* ---------- Archetypes: real breeds ---------- */
+  const results={
+    stray:  {cat:'siamese', name:'แมววิเชียรมาศ', breed:'Wichian Mat · แมวไทยขี้เล่น', rarity:'พบได้ทั่วไป · 22%',
+      tag:'สายใช้ชีวิตวันนี้ให้สุด', copy:'ร่าเริง กล้าคว้าความสุขตรงหน้าเสมอ แต่ฐานเงินสำรองยังบาง พอพายุมาแบบไม่ทันตั้งตัว เลยตั้งหลักลำบากกว่าคนอื่น'},
+    dreamer:{cat:'angora', name:'แมวขาวมณี', breed:'Khao Manee · นักฝันผู้สง่างาม', rarity:'พบได้ทั่วไป · 18%',
+      tag:'สายฝันใหญ่ กล้าเสี่ยง', copy:'หัวใจนักฝัน กล้าเดิมพันเพื่อสิ่งที่ยิ่งใหญ่ แต่มักลืมสวมเกราะก่อนออกเดินทาง พอเกิดเหตุไม่คาดฝัน แผนทั้งหมดสะดุดได้ง่าย'},
+    stingy: {cat:'korat', name:'แมวโคราช', breed:'Korat (สีสวาด) · ผู้ระวังทุกก้าว', rarity:'พบได้ทั่วไป · 16%',
+      tag:'สายเซฟ เก็บทุกบาท', copy:'ระวังที่สุดในอาณาจักร มีฐานมั่นคงและป้องกันตัวดี แต่แทบไม่ปล่อยเหรียญออกไปทำงาน เงินที่นอนนิ่งจึงค่อย ๆ ด้อยค่าตามเวลา'},
+    black:  {cat:'bombay', name:'แมวบอมเบย์', breed:'Bombay · นักเดิมพันราตรี', rarity:'ไม่ค่อยพบ · 9%',
+      tag:'สายบู๊ ทุ่มสุดตัว', copy:'กล้าทุ่มทุกอย่างไปกับการต่อยอด และผลก็งอกเงยไม่เลว แต่แทบไม่เหลือเงินสำรองหรือเกราะเลย หากพลาดสักครั้ง อาจไม่มีตาข่ายรองรับ'},
+    tabby:  {cat:'tabby', name:'แมวลายสลิด', breed:'Brown Tabby · ผู้พิทักษ์ระวังภัย', rarity:'ไม่ค่อยพบ · 8%',
+      tag:'สายกันไว้ก่อน', copy:'ใส่ใจความคุ้มครองอย่างดี อุ่นใจในทุกฉาก แต่ยังไม่มีฐานเงินสำรองหนาพอ และเหรียญก็ยังไม่ได้ออกไปทำงานเพิ่มค่า'},
+    persian:{cat:'persian', name:'แมวเปอร์เซีย', breed:'Persian · นักสะสมความมั่นคง', rarity:'ไม่ค่อยพบ · 8%',
+      tag:'สายเซฟตี้ นุ่มฟู', copy:'เก็บเงินสำรองแน่นราวปุยขนหนา อุ่นใจดี แต่ยังไม่ได้วางเกราะป้องกัน และไม่ได้ให้เหรียญส่วนเกินออกไปงอกเงย'},
+    cloud:  {cat:'scottish', name:'แมวสก็อตติชโฟลด์', breed:'Scottish Fold · ผู้กำลังหาจังหวะ', rarity:'กำลังเริ่มต้น · 10%',
+      tag:'สายเพิ่งเริ่ม', copy:'ยังหาจังหวะที่ลงตัวไม่เจอสักด้าน ทั้งสำรอง ป้องกัน และต่อยอด ต่างบางไปพร้อมกัน แต่ไม่เป็นไร ทุกการเดินทางเริ่มจากก้าวแรกเสมอ'},
+    calico: {cat:'calico', name:'แมวสามสี', breed:'Calico · แมวมงคลสมดุล', rarity:'หายาก · 6%',
+      tag:'สายสมดุลมงคล', copy:'หายากและเป็นมงคล ดูแลครบทั้งสามด้านในระดับใช้ได้ดี ทั้งสำรอง ป้องกัน และต่อยอด เหลือแค่ค่อย ๆ เติมแต่ละด้านให้แน่นขึ้นอีกนิด'},
+    pearl:  {cat:'british', name:'แมวบริติชช็อตแฮร์', breed:'British Shorthair · พร้อมสู่ระดับถัดไป', rarity:'หายาก · 5%',
+      tag:'สายมั่นคงพร้อมโต', copy:'วางรากฐานทั้งสามด้านแข็งแรงและรอบคอบตลอดทาง ถึงเวลามองหาด่านถัดไปแล้ว นั่นคือการบริหารภาษีให้ทำงานร่วมกับแผนที่มีอยู่'},
+    gold:   {cat:'golden', name:'แมวทองคำ', breed:'Golden · เจ้าแห่งพีระมิด', rarity:'หายากมาก · 3%',
+      tag:'สายมาสเตอร์การเงิน', copy:'ไปได้ไกลกว่านักเดินทางส่วนใหญ่ ทั้งสำรอง เกราะป้องกัน และการต่อยอดแข็งแรงครบเครื่อง เหรียญของคุณกำลังงอกเงยสวยงามในทุกสภาพอากาศ'},
+  };
+
+  const endings={
+    stray:'คุณข้ามประตูพร้อมเสียงหัวเราะและมือว่างเปล่า บ้านต้อนรับเหมือนเดิม เพียงแต่คืนนี้คุณแอบคิดว่า…ถ้าเก็บเหรียญไว้สักหน่อย พรุ่งนี้คงเริ่มสบายกว่านี้',
+    dreamer:'ประตูปิดลงหลังคุณ ความฝันยังเรืองแสง แต่กระเป๋าเบาหวิว คุณเรียนรู้ว่าการฝันให้ไกลนั้นดี ถ้ามีเกราะสักชั้นติดตัวไปด้วย',
+    stingy:'คุณกลับถึงบ้านอย่างปลอดภัย เหรียญยังอยู่ครบ—บางเหรียญฝังไว้จนลืมที่ คืนนั้นสอนคุณว่า ความมั่นคงที่ไม่เคยขยับ ก็ค่อย ๆ เล็กลง',
+    black:'คุณข้ามประตูมาได้พร้อมสิ่งที่ต่อยอดไว้อย่างงาม แต่ใจยังเต้นแรงจากความเสี่ยงที่แทบไม่รอด บ้านเตือนเบา ๆ ว่า คราวหน้าเผื่อตาข่ายรองรับไว้บ้าง',
+    tabby:'คุณกลับบ้านอย่างอุ่นใจ มีเกราะรอบตัว แต่พอมองย้อนไป คุณเห็นว่าตัวเองยืนนิ่งหลายฉากเกินไป คราวหน้าอาจถึงเวลาให้เหรียญได้ออกเดินบ้าง',
+    persian:'บ้านโอบรับคุณด้วยความนุ่มนวล ฐานที่สร้างมั่นคงราวขนหนา แต่ในความอุ่นนั้น ยังมีช่องว่างของเกราะและการเติบโต รอให้เติมในครั้งต่อไป',
+    cloud:'คุณกลับถึงบ้านทั้งที่ยังงง ๆ กับเส้นทาง ไม่มีด้านไหนแน่นเต็มร้อย แต่ก็ไม่มีด้านไหนสายเกินเริ่ม พรุ่งนี้คือหน้าแรกของแผนที่ฉบับใหม่ของคุณ',
+    calico:'ประตูเปิดกว้างต้อนรับคุณอย่างอบอุ่น คุณกลับบ้านพร้อมสมดุลที่หายาก—ทั้งสำรอง เกราะ และการเติบโต คืนนี้จบลงอย่างงดงาม',
+    pearl:'คุณก้าวข้ามธรณีอย่างมั่นคง เส้นทางทั้งหมดหล่อหลอมคุณให้พร้อมสำหรับด่านที่ลึกกว่า จันทร์กระซิบว่า “ครั้งหน้า ลองเรียนรู้เรื่องภาษีดูสิ”',
+    gold:'ประตูสาดแสงทองรับคุณกลับบ้าน คุณคือนักเดินทางที่หาดจันทร์เจ้าจะจดจำ—ผู้กลับถึงบ้านโดยไม่ทิ้งด้านใดไว้ข้างหลัง',
+  };
+
+  const cta={
+    stray:{k:'อยากมีเงินสำรองที่อุ่นใจกว่านี้?',s:'ประกันสะสมทรัพย์ช่วยสร้างวินัยเก็บเงิน พร้อมความคุ้มครองชีวิตในตัว'},
+    dreamer:{k:'ฝันใหญ่ได้ ถ้ามีเกราะที่ดี',s:'ประกันสุขภาพและอุบัติเหตุ ช่วยให้คุณเสี่ยงตามฝันได้อย่างสบายใจ'},
+    stingy:{k:'ลองให้เงินได้ออกไปทำงานบ้าง',s:'ประกันควบการลงทุนช่วยต่อยอด พร้อมความคุ้มครองในแผนเดียว'},
+    black:{k:'เสริมตาข่ายรองรับให้แผนเสี่ยงของคุณ',s:'ประกันสุขภาพและสะสมทรัพย์ ช่วยให้สิ่งที่ต่อยอดอยู่รอดทุกสภาพอากาศ'},
+    tabby:{k:'มีเกราะดีแล้ว เสริมฐานและการเติบโต',s:'ประกันสะสมทรัพย์และควบการลงทุน ช่วยให้พีระมิดครบทุกชั้น'},
+    persian:{k:'ฐานแน่นแล้ว เพิ่มเกราะและการต่อยอด',s:'ประกันสุขภาพและควบการลงทุน เติมอีกสองชั้นให้สมบูรณ์'},
+    cloud:{k:'เริ่มก้าวแรกไปด้วยกัน',s:'ปรึกษาผู้เชี่ยวชาญฟรี วางแผนการเงินทีละชั้นแบบที่เหมาะกับคุณ'},
+    calico:{k:'รักษาสมดุลนี้ให้แน่นขึ้นอีก',s:'ทบทวนแผนกับผู้เชี่ยวชาญ เพื่อเติมแต่ละชั้นให้มั่นคงยิ่งขึ้น'},
+    pearl:{k:'ถึงเวลาบริหารภาษีให้คุ้มค่า',s:'ประกันลดหย่อนภาษีและบำนาญ ช่วยให้ทุกอย่างที่สร้างมาคุ้มขึ้น'},
+    gold:{k:'ดูแลภาษีและมรดกให้ครบวงจร',s:'ปรึกษาผู้เชี่ยวชาญเรื่องวางแผนภาษีและส่งต่อความมั่งคั่ง'},
+  };
+
+  function cmt(layer,p){
+    const t={
+      r:{lo:'ฐานเงินสำรองยังบาง หากเกิดเหตุไม่คาดฝัน แผนทั้งหมดสั่นคลอนได้ง่าย',mid:'มีเงินสำรองอยู่บ้าง แต่ยังไม่หนาพอรับมือเหตุฉุกเฉินระยะยาว',hi:'ฐานเงินสำรองแน่นหนามาก เป็นรากฐานที่มั่นคงที่สุด'},
+      p:{lo:'ชั้นป้องกันยังบางมาก หากเจ็บป่วยหรืออุบัติเหตุ อาจกระทบแผนทั้งหมด',mid:'มีการป้องกันอยู่บ้าง แต่ยังน่าทบทวนว่าครอบคลุมพอหรือยัง',hi:'ชั้นป้องกันแข็งแรงดี มีเกราะรองรับเหตุไม่คาดฝันได้ในระดับหนึ่ง'},
+      g:{lo:'เหรียญยังไม่ค่อยได้ทำงาน ปล่อยไว้เฉย ๆ มูลค่าอาจลดตามเงินเฟ้อ',mid:'เริ่มให้เงินงอกเงยแล้ว แต่ยังกระจุกอยู่ไม่กี่ที่',hi:'ต่อยอดได้ยอดเยี่ยม เหรียญกำลังทำงานหนักแทนคุณ'},
+    }[layer];
+    return p<50?t.lo:p<80?t.mid:t.hi;
+  }
+  function tip(layer,p){
+    const t={
+      r:{lo:'กันเงินไว้ในบัญชีแยก ให้ครอบคลุมค่าใช้จ่าย 3-6 เดือนก่อน',mid:'ทยอยเติมให้ครบ 6 เดือน จะทำให้ฐานมั่นคงขึ้นอีกขั้น',hi:'ย้ายเงินส่วนเกินไปบัญชีดอกเบี้ยสูง ให้เงินสำรองทำงานเล็กน้อย'},
+      p:{lo:'ศึกษาความคุ้มครองพื้นฐาน เช่น ประกันสุขภาพหรืออุบัติเหตุ',mid:'ทบทวนวงเงินคุ้มครองปีละครั้ง ให้ทันค่าครองชีพที่เปลี่ยนไป',hi:'ทบทวนกรมธรรม์เป็นระยะ ให้ยังตอบโจทย์ชีวิตที่เปลี่ยนไป'},
+      g:{lo:'เริ่มศึกษาการลงทุนพื้นฐาน เช่น กองทุนรวม เริ่มจากน้อย ๆ ก่อน',mid:'กระจายสินทรัพย์ให้หลากหลาย และดูกองทุนลดหย่อนภาษี SSF/RMF',hi:'ดูแลสิทธิภาษีและการวางแผนระยะยาวควบคู่ ให้ผลลัพธ์ยั่งยืนขึ้น'},
+    }[layer];
+    return p<50?t.lo:p<80?t.mid:t.hi;
+  }
+
+  function tier(v){ if(v>=83)return 2; if(v<=67)return 0; return 1; } // 2=strong,1=mid,0=weak
+  function determine(r,p,g,wise,total){
+    const tR=tier(r),tP=tier(p),tG=tier(g),tiers=[tR,tP,tG];
+    const weak=tiers.filter(x=>x===0).length, strong=tiers.filter(x=>x===2).length, wr=wise/total;
+    if(weak>=3) return 'cloud';
+    if(weak===2 && strong===0 && wr<0.25) return 'cloud'; // scattered, uncommitted
+    if(weak===0){
+      if(strong===3 && wr>=0.5) return 'gold';
+      if(strong>=2 && wr>=0.375) return 'pearl';
+      return 'calico';
+    }
+    if(weak===2){ if(tR>0) return 'persian'; if(tP>0) return 'tabby'; return 'black'; }
+    if(tR===0) return 'stray'; if(tP===0) return 'dreamer'; return 'stingy';
+  }
+
+  /* ---------- Flow ---------- */
+  let current=0;
+  const scores={stray:0,dreamer:0,stingy:0,wise:0};
+  const total=questions.length;
+
+  const $=id=>document.getElementById(id);
+  const screenIntro=$('screen-intro'),screenQ=$('screen-question'),screenR=$('screen-result'),screenBeat=$('screen-beat');
+  const ALL=[screenIntro,screenQ,screenR,screenBeat];
+
+  // Smooth crossfade+slide. Outgoing and incoming overlap briefly for a seamless feel.
+  let animating=false;
+  function goto(target, render, dir){
+    dir=dir||'right';
+    const cur=ALL.find(s=>!s.classList.contains('hidden'));
+    const inCls = dir==='left' ? 'anim-in-left' : (dir==='fade'?'anim-fade':'anim-in-right');
+    const show=()=>{
+      ALL.forEach(s=>{if(s!==target)s.classList.add('hidden');});
+      if(render)render();
+      target.classList.remove('hidden','anim-in-left','anim-in-right','anim-fade','anim-out-left','anim-out-right');
+      void target.offsetWidth;
+      if(!reduceMotion)target.classList.add(inCls);
+      window.scrollTo({top:0,behavior:reduceMotion?'auto':'smooth'});
+      setTimeout(()=>{animating=false;},260);
+    };
+    if(cur && cur!==target && !reduceMotion){
+      const outCls= dir==='left' ? 'anim-out-right':'anim-out-left';
+      cur.classList.remove('anim-in-left','anim-in-right','anim-fade');
+      cur.classList.add(outCls);
+      setTimeout(show,180);   // shorter: overlap for smoothness
+    } else show();
+  }
+
+  // moon-wipe — used ONLY when crossing into a new act, for a special feel
+  function wipe(cb){
+    if(reduceMotion){cb&&cb();return;}
+    const w=$('wipe');w.classList.remove('show');void w.offsetWidth;w.classList.add('show');
+    setTimeout(()=>{cb&&cb();},260);
+    setTimeout(()=>w.classList.remove('show'),620);
+  }
+  function actIndex(i){ return i<2?0 : i<6?1 : 2; }
+
+  function updateProgress(){
+    $('progressWrap').style.visibility='visible';
+    const shown=Math.min(total, current);
+    const pct=Math.round(((shown+0.15)/total)*100);
+    $('progressFill').style.width=Math.min(100,pct)+'%';
+    $('progressLabel').textContent = current>=total?'เสร็จแล้ว!':`ข้อ ${Math.min(current+1,total)} จาก ${total}`;
+  }
+
+  function renderQuestion(){
+    const q=questions[current],scn=SCENES[current];
+    $('actTag').innerHTML=`<span class="d"></span>${ACTS[current]}`;
+    $('chapterTitle').textContent=`บทที่ ${chapterNums[current]} · ${q.title}`;
+    $('sceneText').textContent=q.scene;
+    $('promptText').textContent=q.prompt;
+    $('questionCat').innerHTML=traveler();
+    $('stageBg').style.background=scn.g;
+    $('stageDecor').innerHTML=scn.d;
+
+    const row=$('optionsRow');row.innerHTML='';
+    const shuffled=q.options.map((o,idx)=>({o,idx})).sort(()=>Math.random()-0.5);
+    shuffled.forEach(({o:opt},i)=>{
+      const el=document.createElement('div');
+      el.className='opt';el.setAttribute('role','button');el.setAttribute('tabindex','0');
+      el.style.animationDelay=(0.04*i)+'s';
+      el.innerHTML=`<span class="num">${i+1}</span><div>${opt.t}</div>`+
+        `<button class="cost-toggle" type="button" aria-expanded="false"><span class="chev">▾</span>เงื่อนไข</button>`+
+        `<div class="cost-body"><span class="flag">⚠ เงื่อนไข</span>${opt.c}</div>`;
+      const choose=()=>select(opt.type,el);
+      el.addEventListener('click',choose);
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});
+      const tg=el.querySelector('.cost-toggle'),bd=el.querySelector('.cost-body');
+      tg.addEventListener('click',e=>{e.stopPropagation();const o=bd.classList.toggle('open');tg.setAttribute('aria-expanded',o?'true':'false');});
+      tg.addEventListener('keydown',e=>e.stopPropagation());
+      row.appendChild(el);
+    });
+    updateProgress();
+    if(!reduceMotion){const st=$('stageDecor');st.classList.remove('scene-pop');void st.offsetWidth;st.classList.add('scene-pop');}
+  }
+
+  // Show any story beats queued before chapter `idx`, one by one, then the chapter.
+  function playBeatsThen(idx, done){
+    const queue=beatsBefore(idx).slice();
+    function next(){
+      if(queue.length===0){ done(); return; }
+      const b=queue.shift();
+      renderBeat(b, next);
+    }
+    next();
+  }
+
+  function renderBeat(b, onNext){
+    goto(screenBeat, ()=>{
+      $('beatEyebrow').textContent=b.eyebrow;
+      $('beatArt').innerHTML=SKETCH[b.art]||'';
+      $('beatText').innerHTML=b.text;
+      $('beatBtn').textContent=b.btn||'ไปต่อ';
+      $('progressWrap').style.visibility = (current>0 && current<total) ? 'visible' : 'hidden';
+      const btn=$('beatBtn');
+      const fresh=btn.cloneNode(true);btn.parentNode.replaceChild(fresh,btn);
+      fresh.addEventListener('click',()=>{ onNext(); });
+    }, 'fade');
+  }
+
+  function select(type,el){
+    if(animating)return; animating=true;
+    if(el){el.classList.add('chosen');}
+    const from=current;
+    scores[type]++;current++;
+    const proceed=()=>{
+      if(current<total){
+        playBeatsThen(current, ()=> goto(screenQ, renderQuestion, 'right'));
+      } else {
+        playBeatsThen(total, ()=> showResult());
+      }
+    };
+    const crossingAct = current<total && actIndex(from)!==actIndex(current);
+    // quick highlight tick, then transition. Wipe only when we cross into a new act.
+    setTimeout(()=>{
+      if(crossingAct && !reduceMotion) wipe(proceed);
+      else proceed();
+    }, 130);
+  }
+
+  function sparkles(c){
+    const e=['✨','⭐','💫','🎉'];
+    for(let i=0;i<8;i++){const s=document.createElement('span');s.className='sparkle';s.textContent=e[i%e.length];
+      s.style.left=(30+Math.random()*90)+'px';s.style.top=(10+Math.random()*70)+'px';s.style.animationDelay=(Math.random()*.35)+'s';
+      c.appendChild(s);setTimeout(()=>s.remove(),1300);}
+  }
+
+  function showResult(){
+    const r=Math.round(100-scores.stray/total*100);
+    const p=Math.round(100-scores.dreamer/total*100);
+    const g=Math.round(100-scores.stingy/total*100);
+    const key=determine(r,p,g,scores.wise,total);
+    const R=results[key];
+
+    goto(screenR, ()=>{
+      $('resultCat').innerHTML=CATS[R.cat]();
+      $('resultName').textContent=R.name;
+      $('resultBreed').textContent=R.breed;
+      $('resultTagline').textContent=R.tag;
+      $('resultCopy').textContent=R.copy;
+      $('resultRarity').innerHTML=`✦ ความหายาก: ${R.rarity}`;
+      $('endingText').textContent=endings[key];
+
+      $('bR').setAttribute('fill-opacity',(0.35+0.65*(r/100)).toFixed(2));
+      $('bP').setAttribute('fill-opacity',(0.35+0.65*(p/100)).toFixed(2));
+      $('bG').setAttribute('fill-opacity',(0.35+0.65*(g/100)).toFixed(2));
+      $('tR').textContent=r+'%';$('tP').textContent=p+'%';$('tG').textContent=g+'%';
+      $('pctR').textContent=r+'%';$('pctP').textContent=p+'%';$('pctG').textContent=g+'%';
+      $('cmtR').textContent=cmt('r',r);$('cmtP').textContent=cmt('p',p);$('cmtG').textContent=cmt('g',g);
+      $('tipR').innerHTML='<b>💡 เคล็ดลับ:</b> '+tip('r',r);
+      $('tipP').innerHTML='<b>💡 เคล็ดลับ:</b> '+tip('p',p);
+      $('tipG').innerHTML='<b>💡 เคล็ดลับ:</b> '+tip('g',g);
+      $('ctaK').textContent=cta[key].k;$('ctaS').textContent=cta[key].s;
+      $('progressWrap').style.visibility='hidden';
+    }, 'right');
+
+    setTimeout(()=>{$('barR').style.width=r+'%';$('barP').style.width=p+'%';$('barG').style.width=g+'%';},400);
+    if(!reduceMotion)setTimeout(()=>sparkles($('resultCatStage')),650);
+  }
+
+  function reset(){
+    current=0;scores.stray=scores.dreamer=scores.stingy=scores.wise=0;
+    ['bR','bP','bG'].forEach(id=>$(id).setAttribute('fill-opacity','0'));
+    ['barR','barP','barG'].forEach(id=>$(id).style.width='0');
+    $('progressWrap').style.visibility='hidden';
+    goto(screenIntro,null,'left');
+  }
+
+  $('startBtn').addEventListener('click',()=>{
+    // prologue beats (before chapter 0) then chapter 1
+    playBeatsThen(0, ()=> goto(screenQ, renderQuestion, 'right'));
+  });
+  $('againBtn').addEventListener('click',reset);
+  $('ctaBtn').addEventListener('click',()=>{
+    const b=$('ctaBtn'),o=b.textContent;
+    b.textContent='💙 ขอบคุณที่เล่น!';setTimeout(()=>b.textContent=o,2000);
+  });
+  $('shareBtn').addEventListener('click',()=>{
+    const b=$('shareBtn'),o=b.textContent;
+    const name=$('resultName').textContent;
+    const text=`ฉันคือ ${name} 🐾 มาดูกันว่าคุณเป็นแมวแบบไหน!`;
+    if(navigator.share){navigator.share({title:'คุณเป็นแมวแบบไหน?',text,url:location.href}).catch(()=>{});}
+    else{navigator.clipboard.writeText(text+' '+location.href).then(()=>{b.textContent='✓ คัดลอกแล้ว';setTimeout(()=>b.textContent=o,1800);}).catch(()=>{});}
+  });
+
+  /* ---------- Hidden LINE easter egg: tap the cat 7 times ---------- */
+  (function(){
+    let taps=0,timer=null;
+    function open(){
+      const ov=document.createElement('div');ov.id='lineEgg';
+      ov.innerHTML=`<div class="egg-card">
+        <div class="egg-close" role="button" tabindex="0">✕</div>
+        <div class="egg-emoji">🐾💬</div>
+        <div class="egg-title">เจอทางลับแล้ว!</div>
+        <div class="egg-sub">อยากคุยเรื่องการวางแผนกับคนจริง ๆ ไหม? สแกนเพื่อทักทายได้เลย</div>
+        <img class="egg-qr" alt="LINE QR" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUoAAAFKCAIAAAD0S4FSAAAGR0lEQVR4nO3dwW3kRhBAUcvY+wbiJBy6k3AgGwF91cFoWO5tVPPve3dRHM589KVQ/Hie5zeg6PfpGwBOkTdkyRuy5A1Z8oYseUOWvCFL3pAlb8iSN2TJG7LkDVnyhix5Q5a8IUvekCVvyJI3ZMkbsr7t/PH3P/78Sbdxix9///W///bc0zh3VztX3rHzrNb37Df5mdMbsuQNWfKGLHlDlrwhS96QJW/IkjdkyRuytqbW1qYmotZ2pprOzVrtmJpLe+N8WO83ueb0hix5Q5a8IUvekCVvyJI3ZMkbsuQNWfKGrINTa2t3biY7d+Wd2bJzc2k7V+7tPHvjb3LN6Q1Z8oYseUOWvCFL3pAlb8iSN2TJG7LkDVljU2t8dm4D3LnJs51JrDt3nvU4vSFL3pAlb8iSN2TJG7LkDVnyhix5Q5a8IcvU2hecmw/b+b9T7twex2dOb8iSN2TJG7LkDVnyhix5Q5a8IUvekCVvyBqbWnvjZNKd78S88652TM20vfE3ueb0hix5Q5a8IUvekCVvyJI3ZMkbsuQNWfKGrINTa2+cl1qb2i527klO3fPU5+39Jtec3pAlb8iSN2TJG7LkDVnyhix5Q5a8IUvekLU1tdbbTbX2xs9751zaOW/8js5xekOWvCFL3pAlb8iSN2TJG7LkDVnyhix5Q9bW1Nqdu7imZq3u3C62ZufZZ3f+NnY4vSFL3pAlb8iSN2TJG7LkDVnyhix5Q5a8IevjeZ5Dl96ZTLpzQmhq9ujck5z6jna88X2pa+eu7PSGLHlDlrwhS96QJW/IkjdkyRuy5A1Z8oasg1NrO944p/Wr7Uvb8cbvaOo5m1oD/oW8IUvekCVvyJI3ZMkbsuQNWfKGLHlD1tbU2p2TOt4f+t/dOfH2q+2H84ZQ4MvkDVnyhix5Q5a8IUvekCVvyJI3ZMkbssZ2rb1x69WdejNea2988+zUPTu9IUvekCVvyJI3ZMkbsuQNWfKGLHlDlrwh69u5S9+5t2zHnVvcpkx9v280NWfp9IYseUOWvCFL3pAlb8iSN2TJG7LkDVnyhqytqbWdaZupyaQ7Z+neOA83deU3zv9N/dqd3pAlb8iSN2TJG7LkDVnyhix5Q5a8IUvekHVw19qds0d3vslxxxsn7dbu3KV3zrlP5PSGLHlDlrwhS96QJW/IkjdkyRuy5A1Z8oasj+d5Dl363ETU2p1bzc5NRN05xTX1NNbunPBb27lnpzdkyRuy5A1Z8oYseUOWvCFL3pAlb8iSN2SN7Vo7d+Vzm7re+PbJO6epzk2PTblzotHpDVnyhix5Q5a8IUvekCVvyJI3ZMkbsuQNWVtTa1Nvcly7c8vXjjtnvO789tempvSmfnVOb8iSN2TJG7LkDVnyhix5Q5a8IUvekCVvyLr0DaFTV77z/67d+R7PqX14a1PvaZ36vE5vyJI3ZMkbsuQNWfKGLHlDlrwhS96QJW/I2ppau/OtiFPOzS3d+ZzfuHtsx53b49ac3pAlb8iSN2TJG7LkDVnyhix5Q5a8IUvekLX1htCdOZ43zgD1do+t3fkd3bmJ7c7pQKc3ZMkbsuQNWfKGLHlDlrwhS96QJW/IkjdkbU2tvXFj1tp6Qmhqu9i5ablz/3fKne+lnXqSTm/IkjdkyRuy5A1Z8oYseUOWvCFL3pAlb8jamlpbu3NT17n5oTv3pU2Zmpa78zlPzbQ5vSFL3pAlb8iSN2TJG7LkDVnyhix5Q5a8Ievg1NranW9UXJvatnXnJNaUqb1lU3vadji9IUvekCVvyJI3ZMkbsuQNWfKGLHlDlrwha2xq7Y125tLunKWbcm7+b2qr2Z3fgtMbsuQNWfKGLHlDlrwhS96QJW/IkjdkyRuyTK19wdSs1dobZ+l2/nZqAuzcXZ27stMbsuQNWfKGLHlDlrwhS96QJW/IkjdkyRuyxqbW7twBtvbGeak7n/O5jWh3vonVG0KBn0zekCVvyJI3ZMkbsuQNWfKGLHlDlrwh6+DU2rm3MU65c9vWnW/MnJpLm/q8O+xaA75M3pAlb8iSN2TJG7LkDVnyhix5Q5a8IevjeZ7pewCOcHpDlrwhS96QJW/IkjdkyRuy5A1Z8oYseUOWvCFL3pAlb8iSN2TJG7LkDVnyhix5Q5a8IUvekPUPY9c/39OZXCEAAAAASUVORK5CYII="/>
+        <div class="egg-hint">หรือกดปุ่มด้านล่างถ้าเปิดในมือถือ</div>
+        <a class="egg-btn" href="https://line.me/ti/p/k4xkDnJcnf" target="_blank" rel="noopener">เพิ่มเพื่อนใน LINE</a>
+      </div>`;
+      document.body.appendChild(ov);
+      requestAnimationFrame(()=>ov.classList.add('show'));
+      const close=()=>{ov.classList.remove('show');setTimeout(()=>ov.remove(),300);};
+      ov.addEventListener('click',e=>{if(e.target===ov)close();});
+      ov.querySelector('.egg-close').addEventListener('click',close);
+    }
+    document.addEventListener('click',e=>{
+      const cat=e.target.closest('.cat-figure');
+      if(!cat) return;
+      taps++;
+      cat.animate?.([{transform:'scale(1)'},{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:220});
+      clearTimeout(timer);timer=setTimeout(()=>taps=0,1200);
+      if(taps>=7){taps=0;open();}
+    });
+  })();
+})();
+</script>
+</body>
+</html>
