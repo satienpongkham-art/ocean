@@ -51,6 +51,10 @@ export function getTheme() { return ls.get('theme') || 'auto'; }
 export function setTheme(t) { ls.set('theme', t); if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; }
 export function getPalette() { return ls.get('palette') || 'ink'; }
 export function setPalette(c) { ls.set('palette', c); if (c === 'ink') delete document.documentElement.dataset.palette; else document.documentElement.dataset.palette = c; }
+export function getLeading() { return ls.get('leading') || 'normal'; }
+export function setLeading(v) { ls.set('leading', v); if (v === 'normal') delete document.documentElement.dataset.leading; else document.documentElement.dataset.leading = v; }
+export function getMotion() { return ls.get('motion') || 'auto'; }
+export function setMotion(v) { ls.set('motion', v); if (v === 'auto') delete document.documentElement.dataset.motion; else document.documentElement.dataset.motion = v; }
 export function getTextSize() { return ls.get('textsize') || 'm'; }
 export function setTextSize(z) { ls.set('textsize', z); if (z === 'm') delete document.documentElement.dataset.text; else document.documentElement.dataset.text = z; }
 export function getHaptic() { return ls.get('haptic') !== '0'; }

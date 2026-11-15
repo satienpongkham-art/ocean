@@ -7,19 +7,85 @@
   "start_url": "./#/",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
-  "orientation": "portrait",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#f5f2ec",
   "theme_color": "#f5f2ec",
   "icons": [
-    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "เพิ่มลูกค้า", "short_name": "เพิ่มลูกค้า", "url": "./#/client/new", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
-    { "name": "โทรนัด", "short_name": "โทรนัด", "url": "./#/work/call", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
-    { "name": "คลังแผน", "short_name": "แผน", "url": "./#/plans", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
-    { "name": "ค้นหา", "short_name": "ค้นหา", "url": "./#/search", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
-  ]
+    {
+      "name": "เพิ่มลูกค้า",
+      "short_name": "เพิ่มลูกค้า",
+      "url": "./#/client/new",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "โหมดโทรรวด",
+      "short_name": "โทรรวด",
+      "url": "./#/work/call",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "คลังแผน",
+      "short_name": "แผน",
+      "url": "./#/plans",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "ค้นหา",
+      "short_name": "ค้นหา",
+      "url": "./#/search",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

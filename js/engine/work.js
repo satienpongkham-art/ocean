@@ -118,8 +118,34 @@ export function reverseGoal({ incomeYear, avgPremium, commissionRate, workWeeks 
   return { commPerCase, premiumYear: casesYear * (avgPremium || 0), cases: per(casesYear), appts: per(apptsYear), contacts: per(contactsYear) };
 }
 
+/** จังหวะดูแลหลังการขาย (นับจากวันอนุมัติ/วันที่ลูกค้ารับกรมธรรม์) */
+const addD = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return isoDate(d); };
+const addM = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setMonth(d.getMonth() + n); return isoDate(d); };
+export const CARE = [
+  { id: 'deliver', name: 'ส่งมอบกรมธรรม์ + อธิบายความคุ้มครอง', from: 'issue', at: (x) => addD(x, 7) },
+  { id: 'freelook', name: 'ครบ 15 วันพิจารณา — ถามว่ามีข้อสงสัยไหม', from: 'deliver', at: (x) => addD(x, 15) },
+  { id: 'referral', name: 'ขอบคุณ + ขอรายชื่อแนะนำ', from: 'deliver', at: (x) => addD(x, 30) },
+  { id: 'm6', name: 'ครบ 6 เดือน — ทักถาม อัปเดตข้อมูล/ผู้รับประโยชน์', from: 'deliver', at: (x) => addM(x, 6) },
+  { id: 'y1', name: 'ครบรอบ 1 ปี — ทบทวนความคุ้มครอง + ตรวจการเงินซ้ำ', from: 'issue', at: (x) => addM(x, 12) },
+];
+export function milestones(pol) {
+  if (pol.status !== 'issued') return [];
+  const issue = pol.issueDate || pol.submitDate; if (!issue) return [];
+  const done = pol.care || {};
+  return CARE.map((m) => {
+    const base = m.from === 'issue' ? issue : pol.deliverDate;
+    if (!base) return null;
+    return { ...m, date: m.at(base), done: m.id === 'deliver' ? !!pol.deliverDate || !!done.deliver : !!done[m.id] };
+  }).filter(Boolean);
+}
+export function nextMilestone(pol) { return milestones(pol).find((m) => !m.done) || null; }
+
+/** ลูกค้าที่ยังไม่มีขั้นต่อไป (ยังอยู่ในการขาย แต่ไม่ได้ตั้งวันติดตาม) */
+export const noNextStep = (c, busy = new Set()) => !['paused', 'delivered', 'closed'].includes(c.stage) && !c.nextDate && !busy.has(c.id);
+export const busyIds = (appts, today = todayISO()) => new Set(appts.filter((a) => a.status === 'planned' && a.date >= today).map((a) => a.clientId));
+
 /** โค้ชวันนี้: รายการสิ่งที่ควรทำ เรียงตามความสำคัญ */
-export function coach({ clients, appts, activities, settings, closingPlans = [] }) {
+export function coach({ clients, appts, activities, settings, closingPlans = [], policies = [] }) {
   const today = todayISO();
   const items = [];
   const cById = Object.fromEntries(clients.map((c) => [c.id, c]));
@@ -161,6 +187,16 @@ export function coach({ clients, appts, activities, settings, closingPlans = [] 
   for (const p of closingPlans) {
     const noHealth = clients.filter((c) => (!c.healthLevel || c.healthLevel === 'none' || c.healthLevel === 'welfare') && c.stage !== 'paused' && (ageFrom(c.birthday) ?? c.age ?? 30) <= 75);
     items.push({ pri: 95, kind: 'hot', icon: 'clock', title: `${p.plan.short} ปิดรับอีก ${p.days} วัน`, why: noHealth.length ? `ลูกค้า ${noHealth.length} คนยังไม่มีประกันสุขภาพของตัวเอง: ${noHealth.slice(0, 4).map((c) => c.nick).join(', ')}${noHealth.length > 4 ? '…' : ''}` : 'แจ้งลูกค้าที่สนใจก่อนปิดรับ', go: '#/clients?f=nohealth' });
+  }
+
+  const busy = busyIds(appts, today);
+  const nn = clients.filter((c) => noNextStep(c, busy));
+  if (nn.length) items.push({ pri: 45, kind: '', icon: 'next', title: `${nn.length} คนยังไม่มีขั้นต่อไป`, why: nn.slice(0, 4).map((c) => c.nick).join(', ') + (nn.length > 4 ? '…' : '') + ' — ตั้งวันติดตาม ไม่ให้ใครตกหล่น', go: '#/clients?f=nonext' });
+
+  for (const pol of policies) {
+    const m = nextMilestone(pol); if (!m) continue;
+    const d = daysBetween(today, m.date);
+    if (d <= 3 && d >= -45) { const c = cById[pol.clientId]; items.push({ pri: d <= 0 ? 68 : 58, kind: 'good', icon: 'heart', title: `${c?.nick || 'ลูกค้า'}: ${m.name.split(' — ')[0]}`, why: (d < 0 ? `เลยกำหนด ${-d} วัน` : d === 0 ? 'ถึงกำหนดวันนี้' : `อีก ${d} วัน`) + ' · ดูแลหลังการขาย', go: c ? `#/client/${c.id}` : '#/work/sales' }); }
   }
 
   const target = +settings.dailyPoints || 20;

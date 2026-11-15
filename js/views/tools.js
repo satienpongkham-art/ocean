@@ -5,7 +5,7 @@ import { OBJECTIONS } from '../../data/objections.js';
 import { DEFAULT_PROFILE } from '../../data/profile.js';
 import { profile } from '../app.js';
 import { choices } from '../ui.js';
-import { canInstall, install, isStandalone, isIOS, iosGuide, getTheme, setTheme, getPalette, setPalette, getTextSize, setTextSize, getHaptic, setHaptic, forceUpdate } from '../pwa.js';
+import { canInstall, install, isStandalone, isIOS, iosGuide, getTheme, setTheme, getPalette, setPalette, getLeading, setLeading, getMotion, setMotion, getTextSize, setTextSize, getHaptic, setHaptic, forceUpdate } from '../pwa.js';
 import { APP_VERSION } from '../app.js';
 
 export function renderTools() {
@@ -14,6 +14,7 @@ export function renderTools() {
     ['#/tools/tax', 'tax', 'คำนวณภาษี', 'ภาษีที่ลดได้จากเบี้ยประกัน'],
     ['#/tools/objections', 'chat', 'รับมือข้อโต้แย้ง', `${OBJECTIONS.length} สถานการณ์ที่เจอบ่อย`],
     ['#/tools/train', 'bulb', 'ฝึกตัวเอง', 'ฝึกจำแผน · ซ้อมข้อโต้แย้ง'],
+    ['#/plans/tools', 'layers', 'เครื่องมือแผน', 'แนบสัญญา · Copayment · รอคอย · ตารางเบี้ย'],
     ['#/tools/captions', 'pen', 'แคปชั่นโพสต์', 'Facebook · IG · TikTok'],
     ['#/plans/advisor', 'compass', 'ระบบแนะนำ', 'แพ็กเกจ + เหตุผล'],
     ['#/tools/profile', 'user', 'โปรไฟล์ตัวแทน', 'ชื่อ รหัส ใบอนุญาต'],
@@ -149,6 +150,11 @@ export function renderDisplay() {
       h('button.btn.primary.sm', { onclick: () => forceUpdate() }, icon('sync'), 'อัปเดตแอปตอนนี้')))),
     h('div.section', h('h2', 'ขนาดตัวอักษร'), h('div.card', choices('ts', getTextSize(), [['m', 'ปกติ'], ['l', 'ใหญ่'], ['xl', 'ใหญ่มาก']], { onChange: setTextSize }),
       h('p.small.muted', { style: { marginTop: '10px' } }, 'ใช้ "ใหญ่" ตอนเปิดให้ลูกค้าดู จะอ่านง่ายขึ้น'))),
+    h('div.section', h('h2', 'การเข้าถึง'), h('div.card',
+      h('div.q', h('span.ql', 'ระยะบรรทัด'), choices('ld', getLeading(), [['normal', 'ปกติ'], ['relaxed', 'กว้าง'], ['loose', 'กว้างมาก']], { onChange: setLeading }), h('span.qh', 'อักษรไทยมีสระบน-ล่าง ระยะบรรทัดกว้างช่วยให้อ่านง่ายขึ้น')),
+      h('div.q', h('span.ql', 'ภาพเคลื่อนไหว'), choices('mo', getMotion(), [['auto', 'ตามมือถือ'], ['reduce', 'ลดให้น้อยที่สุด']], { onChange: setMotion })),
+      h('a.btn.sm', { href: '#/tools/glossary' }, icon('book'), 'คำศัพท์ภาษาง่าย'), ' ',
+      h('button.btn.sm', { onclick: () => import('../app.js').then((m) => m.showShortcuts()) }, icon('key'), 'ปุ่มลัดคีย์บอร์ด'))),
     h('div.section', h('h2', 'สีธีม'), h('div.card', palettePicker())),
     h('div.section', h('h2', 'โหมดสว่าง / มืด'), h('div.card', choices('th', getTheme(), [['auto', 'ตามมือถือ'], ['light', 'สว่าง'], ['dark', 'มืด']], { onChange: setTheme }))),
     h('div.section', h('h2', 'การนับอายุประกัน'), h('div.card', choices('ar', store.getSettings().ageRule || 'nearest', [['nearest', 'เศษเกิน 6 เดือน นับเป็น 1 ปี'], ['last', 'นับตามวันเกิดล่าสุด']], { onChange: (v) => store.saveSettings({ ageRule: v }) }),

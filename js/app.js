@@ -4,6 +4,9 @@ import * as store from './store.js';
 import { DEFAULT_PROFILE } from '../data/profile.js';
 import { setBadge, hideSplash } from './pwa.js';
 import { coach } from './engine/work.js';
+import { setTextHook } from './ui.js';
+import { glossify } from './glossary.js';
+setTextHook(glossify);
 
 const NAV = [
   { id: 'today', label: 'วันนี้', icon: 'today', href: '#/' },
@@ -13,12 +16,12 @@ const NAV = [
   { id: 'tools', label: 'เครื่องมือ', icon: 'tools', href: '#/tools' },
 ];
 const SIDE_SUB = {
-  plans: [['#/plans', 'คลังแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
+  plans: [['#/plans', 'คลังแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
   tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '4.0 · 15 พ.ย. 69';
+export const APP_VERSION = '5.0 · 15 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -58,6 +61,16 @@ const routes = [
   [/^\/check$/, 'clients', () => import('./views/fhc.js').then((m) => m.renderCheck(null))],
   [/^\/client\/([\w-]+)$/, 'clients', (q, id) => import('./views/clients.js').then((m) => m.renderDetail(id))],
   [/^\/work\/?$/, 'work', () => import('./views/work.js').then((m) => m.renderPipeline())],
+  [/^\/plans\/tools$/, 'plans', () => import('./views/plantools.js').then((m) => m.renderPlanTools())],
+  [/^\/plans\/attach$/, 'plans', () => import('./views/plantools.js').then((m) => m.renderAttach())],
+  [/^\/plans\/copay$/, 'plans', () => import('./views/plantools.js').then((m) => m.renderCopay())],
+  [/^\/plans\/waiting$/, 'plans', (q) => import('./views/plantools.js').then((m) => m.renderWaiting(q))],
+  [/^\/tools\/premiums$/, 'tools', () => import('./views/plantools.js').then((m) => m.renderPremiums())],
+  [/^\/tools\/benefits$/, 'tools', () => import('./views/plantools.js').then((m) => m.renderBenefits(null))],
+  [/^\/client\/([\w-]+)\/benefits$/, 'clients', (q, id) => import('./views/plantools.js').then((m) => m.renderBenefits(id))],
+  [/^\/tools\/glossary$/, 'tools', (q) => import('./views/plantools.js').then((m) => m.renderGlossary(q))],
+  [/^\/sheet\/([\w,-]+)$/, 'plans', (q, ids) => import('./views/plantools.js').then((m) => m.renderSheet(ids, q))],
+  [/^\/share$/, 'clients', () => import('./views/share.js').then((m) => m.renderShare())],
   [/^\/work\/calendar$/, 'work', () => import('./views/calendar.js').then((m) => m.renderCalendar())],
   [/^\/tools\/train$/, 'tools', (q) => import('./views/train.js').then((m) => m.renderTrain(q))],
   [/^\/work\/call$/, 'work', () => import('./views/work.js').then((m) => m.renderCall())],
@@ -89,7 +102,11 @@ export async function route() {
       try {
         const node = await fn(q, ...m.slice(1));
         if (node) { const v = $('#view'); v.replaceChildren(node); }
-        if (!samePage && !/^\/plan\//.test(path)) window.scrollTo(0, 0);
+        if (!samePage && !/^\/plan\//.test(path)) {
+          window.scrollTo(0, 0);
+          // ย้ายโฟกัสไปที่หัวเรื่องของหน้าใหม่ (โปรแกรมอ่านหน้าจอรู้ว่าเปลี่ยนหน้าแล้ว)
+          setTimeout(() => { const v = $('#view'); if (v.contains(document.activeElement) || isSheetOpen()) return; const hd = v.querySelector('h1'); if (hd) { hd.setAttribute('tabindex', '-1'); hd.focus({ preventScroll: true }); } }, 60);
+        }
         document.title = (node?.dataset?.title ? node.dataset.title + ' · ' : '') + 'Advisor Desk';
         hideSplash(); updateBadge();
       } catch (e) {
@@ -106,12 +123,27 @@ export function rerender() { route(); }
 /** ตัวเลขบนไอคอนแอป = งานสำคัญวันนี้ */
 function updateBadge() {
   try {
-    const items = coach({ clients: store.all('clients'), appts: store.all('appts'), activities: store.all('activities'), settings: store.getSettings(), closingPlans: [] });
+    const items = coach({ clients: store.all('clients'), appts: store.all('appts'), activities: store.all('activities'), settings: store.getSettings(), closingPlans: [], policies: store.all('policies') });
     setBadge(items.filter((i) => i.pri >= 60).length);
   } catch {}
 }
 setTimeout(hideSplash, 2500);
 
+// ── ปุ่มลัดคีย์บอร์ด ──
+const SHORTCUTS = [['/', 'ค้นหา / สั่งงาน'], ['Ctrl + K', 'ค้นหา / สั่งงาน'], ['N', 'เพิ่มลูกค้าใหม่'], ['A', 'ลงนัดใหม่'], ['T', 'หน้าวันนี้'], ['C', 'ปฏิทิน'], ['P', 'โหมดโทรรวด'], ['L', 'รายชื่อลูกค้า'], ['?', 'ดูปุ่มลัดทั้งหมด'], ['Esc', 'ปิดหน้าต่าง']];
+export function showShortcuts() {
+  import('./ui.js').then(({ sheet }) => sheet({ title: 'ปุ่มลัดคีย์บอร์ด', body: h('dl.keys', SHORTCUTS.map(([k, v]) => [h('dt', h('kbd', k)), h('dd', v)])) }));
+}
+document.addEventListener('keydown', (e) => {
+  const tgt = e.target; const typing = tgt && (/INPUT|TEXTAREA|SELECT/.test(tgt.tagName) || tgt.isContentEditable);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); location.hash = '#/search'; return; }
+  if (typing || e.ctrlKey || e.metaKey || e.altKey || isSheetOpen()) return;
+  const k = e.key;
+  const go = { '/': '#/search', n: '#/client/new', N: '#/client/new', t: '#/', T: '#/', c: '#/work/calendar', C: '#/work/calendar', p: '#/work/call', P: '#/work/call', l: '#/clients', L: '#/clients' }[k];
+  if (go) { e.preventDefault(); location.hash = go; return; }
+  if (k === 'a' || k === 'A') { e.preventDefault(); import('./views/common.js').then((m) => m.apptSheet()); return; }
+  if (k === '?') { e.preventDefault(); showShortcuts(); }
+});
 // ปุ่ม + ลอย (บันทึกด่วน) อยู่ทุกหน้า
 document.body.append(h('button.fab', { 'aria-label': 'บันทึกด่วน', onclick: () => import('./views/common.js').then((m) => m.quickSheet()) }, icon('plus')));
 
@@ -125,6 +157,12 @@ store.onChange(() => {
 });
 store.onSync(() => { const raw = location.hash.slice(1) || '/'; const p = raw.split('?')[0]; const nav = (routes.find(([re]) => re.test(p)) || [])[1] || 'today'; renderNav(nav, p); });
 
+// รับข้อความที่แชร์มาจากแอปอื่น (Web Share Target: ./?title=&text=&url=)
+{ const sp = new URLSearchParams(location.search);
+  if (sp.has('text') || sp.has('title') || sp.has('url')) {
+    sessionStorage.setItem('shared', JSON.stringify({ title: sp.get('title') || '', text: sp.get('text') || '', url: sp.get('url') || '' }));
+    history.replaceState(null, '', location.pathname + '#/share');
+  } }
 route();
 if (store.sync.config.url) store.syncNow().catch(() => {});
 

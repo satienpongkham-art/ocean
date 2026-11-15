@@ -1,4 +1,5 @@
 // ─── โหมดนำเสนอลูกค้า + ภาพสรุปแผนส่ง LINE ───
+import { copyText } from '../ui.js';
 import { h, icon, toast, ageFrom, choices, fmt } from '../ui.js';
 import * as store from '../store.js';
 import { PLAN, CAT } from '../../data/plans.js';
@@ -24,7 +25,7 @@ export function renderPresent(id, qs = {}) {
   };
   paint();
   return h('div.present', { 'data-title': 'นำเสนอ ' + c.nick },
-    h('div.ptop', h('a.btn.ghost', { href: '#/client/' + id }, icon('close'), 'ออก'), h('button.btn.primary', { onclick: () => shareImage(p, r, tier) }, icon('upload'), 'ส่งเป็นภาพ')),
+    h('div.ptop', h('a.btn.ghost', { href: '#/client/' + id }, icon('close'), 'ออก'), h('div.row', { style: { gap: '6px' } }, h('button.btn', { onclick: () => copyText(shareText(p, r, tier)), 'aria-label': 'คัดลอกข้อความสรุป' }, icon('copy'), 'ข้อความ'), h('button.btn.primary', { onclick: () => shareImage(p, r, tier) }, icon('upload'), 'ส่งเป็นภาพ'))),
     h('div.small.muted', 'แผนความคุ้มครองที่ออกแบบสำหรับ'),
     h('h1', 'คุณ' + c.nick),
     h('p.lead', { style: { marginTop: '6px' } }, r.pkg.goal),
@@ -47,6 +48,16 @@ function wrap(ctx, text, maxW) {
   return lines;
 }
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#333';
+
+/** ข้อความสรุปคู่กับภาพ — คนที่ใช้โปรแกรมอ่านหน้าจอ หรือโหลดภาพไม่ขึ้นก็อ่านได้ */
+export function shareText(p, r, tier) {
+  const pr = profile();
+  const t = resolveTier(r.pkg, tier, isClosed);
+  return [`แผนความคุ้มครองสำหรับคุณ${p.nick || ''}`, `${r.pkg.name} · ระดับ${TIER_LABEL[tier]}`,
+    ...t.items.filter((it) => PLAN[it.plan]).map((it) => `• ${PLAN[it.plan].short} — ${it.sa} (${CAT[PLAN[it.plan].cat].name})`),
+    '', 'ทำไมถึงเหมาะกับคุณ', ...r.reasons.slice(0, 3).map((x) => '✓ ' + x), '',
+    `${pr.name} · ${pr.title} · รหัสตัวแทน ${pr.agentCode}${pr.phone ? ' · โทร ' + pr.phone : ''}`, 'เบี้ยจริงตามใบเสนอจากระบบ AIA · ' + DISCLAIMER].join('\n');
+}
 
 export async function shareImage(p, r, tier) {
   await document.fonts.ready;
@@ -100,7 +111,7 @@ export async function shareImage(p, r, tier) {
   const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
   const file = new File([blob], `แผน-${p.nick || 'ลูกค้า'}.png`, { type: 'image/png' });
   try {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'แผนความคุ้มครอง' }); return; }
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'แผนความคุ้มครอง', text: shareText(p, r, tier) }); return; }
   } catch (e) { if (e && e.name === 'AbortError') return; }
   const a = h('a', { href: URL.createObjectURL(blob), download: file.name }); document.body.append(a); a.click(); a.remove();
   toast('บันทึกภาพแล้ว — ส่งต่อทาง LINE ได้เลย');

@@ -6,7 +6,7 @@
 // ไม่มีข้อมูลลูกค้าใน repo — อยู่ในเครื่องและใน Google Sheet ของผู้ใช้เท่านั้น
 // ─────────────────────────────────────────────────────────────
 const NS = 'advdesk.v1.';
-export const COLLECTIONS = ['clients', 'appts', 'logs', 'activities', 'goals', 'settings', 'policies', 'checks'];
+export const COLLECTIONS = ['clients', 'appts', 'logs', 'activities', 'goals', 'settings', 'policies', 'checks', 'premiums'];
 
 const mem = {};
 const listeners = new Set();
