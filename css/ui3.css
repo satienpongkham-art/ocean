@@ -67,3 +67,46 @@ body.presenting .main { padding-bottom: 32px; }
 .set-row:first-child { border-top: 0; }
 .set-row b { font-size: 15px; }
 .set-row small { display: block; color: var(--ink-3); font-size: 13px; }
+
+/* ── v4: ฟอนต์ Kanit (หัวเรื่อง) + Sarabun (เนื้อหา) ── */
+body { font-size: 16.5px; letter-spacing: .005em; }
+h1, h2, h3, .topbar h1, .plan-head h2, .sheet-head h2, .pkg-head h2, .wiz-title, .client-head h1, .present h1, .big-num, .stat b, .kpi b, .mini-stats b, .countdown .big { font-family: var(--serif); font-weight: 500; letter-spacing: 0; }
+.topbar h1 { font-size: 26px; }
+.prow .pt b, .tier-item .nm, .mini-plan b, .cat-tile b, .task .tt b, .set-row b, .tier-h b { font-family: var(--serif); font-weight: 500; }
+.tabs button, .seg button, .chip, .choice, .btn { font-family: var(--font); }
+.btn { font-weight: 600; }
+.tabbar a { font-family: var(--serif); font-weight: 400; }
+.tabbar a.on { font-weight: 500; }
+.mcell .mt, .mcell .mv { font-family: var(--serif); font-weight: 500; }
+.lead, .plan-head .tl { line-height: 1.65; }
+
+/* ── v4: ตรวจสุขภาพการเงินแบบเร็ว ── */
+.htiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 640px) { .htiles { grid-template-columns: repeat(3, 1fr); } }
+.htile { border: 1.5px solid var(--line); background: var(--card); border-radius: 16px; padding: 12px; min-height: 92px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; text-align: left; font-size: 15px; color: var(--ink-2); cursor: pointer; font-family: var(--font); transition: transform .1s ease; }
+.htile:active { transform: scale(.97); }
+.htile .hi { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff; }
+.htile .hi svg { width: 19px; height: 19px; }
+.htile.on { border-color: var(--primary); background: var(--primary-soft); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--primary) inset; }
+.sr-card { display: flex; gap: 16px; align-items: center; }
+.score-ring { position: relative; width: 104px; height: 104px; flex: none; }
+.score-ring svg { transform: rotate(-90deg); }
+.sr-num { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.sr-num b { font-family: var(--serif); font-size: 32px; font-weight: 600; line-height: 1; }
+.sr-num small { font-size: 11.5px; color: var(--ink-3); }
+.sr-level { font-family: var(--serif); font-size: 21px; font-weight: 500; line-height: 1.3; margin: 2px 0; }
+.sr-delta { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 3px 10px; }
+.sr-delta.up { background: var(--good-soft); color: var(--good); }
+.sr-delta.down { background: var(--bad-soft); color: var(--bad); }
+.gap-list { display: grid; gap: 8px; }
+.gap { display: flex; gap: 12px; align-items: center; border: 0; background: var(--card); border-radius: 16px; padding: 12px 14px; text-align: left; cursor: pointer; color: var(--ink); box-shadow: 0 1px 2px rgba(29,36,34,.05), 0 8px 24px -16px rgba(29,36,34,.25); font-family: var(--font); }
+.gap .gn { width: 28px; height: 28px; border-radius: 9px; background: var(--bad-soft); color: var(--bad); display: grid; place-items: center; font-weight: 700; flex: none; }
+.gap .gt { flex: 1; min-width: 0; }
+.gap .gt b { display: block; font-family: var(--serif); font-weight: 500; font-size: 16px; }
+.gap .gt span { font-size: 14px; color: var(--ink-2); }
+.gap .gs { font-family: var(--serif); font-size: 18px; font-weight: 600; flex: none; }
+.gap .gs.bad { color: var(--bad); } .gap .gs.warn { color: var(--warn); }
+.fhc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
+.fhc-actions .btn { min-height: 50px; }
+.fhc-actions .btn.primary:only-child, .fhc-actions > .btn.ghost:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.btn.line-btn { background: #06c755; border-color: #06c755; color: #fff; }

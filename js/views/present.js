@@ -51,7 +51,7 @@ const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v
 export async function shareImage(p, r, tier) {
   await document.fonts.ready;
   const W = 1080, M = 72;
-  const F = (w, s, serif) => `${w} ${s}px ${serif ? '"Noto Serif Thai"' : '"IBM Plex Sans Thai"'}, sans-serif`;
+  const F = (w, s, serif) => `${serif ? Math.min(+w, 600) : w} ${s}px ${serif ? '"Kanit"' : '"Sarabun"'}, sans-serif`;
   const pr = profile();
   // วัดความสูงก่อน เพื่อให้ภาพยาวพอดีเนื้อหา (อย่างน้อย 1350)
   const mctx = document.createElement('canvas').getContext('2d'); mctx.font = F(400, 31);
