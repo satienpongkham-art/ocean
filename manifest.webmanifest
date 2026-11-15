@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "Advisor Desk — ที่ปรึกษาการเงิน",
   "short_name": "Advisor Desk",
   "description": "คลังแผน แพ็กเกจ ระบบแนะนำ ลูกค้า และงานขาย สำหรับที่ปรึกษาการเงิน",
@@ -6,18 +7,19 @@
   "start_url": "./#/",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#f5f2ec",
+  "background_color": "#1f4e46",
   "theme_color": "#f5f2ec",
   "icons": [
     { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "คลังแผน", "url": "./#/plans" },
-    { "name": "ลูกค้า", "url": "./#/clients" },
-    { "name": "โทรนัด", "url": "./#/work/call" }
+    { "name": "เพิ่มลูกค้า", "short_name": "เพิ่มลูกค้า", "url": "./#/client/new", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "โทรนัด", "short_name": "โทรนัด", "url": "./#/work/call", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "คลังแผน", "short_name": "แผน", "url": "./#/plans", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "ค้นหา", "short_name": "ค้นหา", "url": "./#/search", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] }
   ]
 }

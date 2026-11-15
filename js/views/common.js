@@ -2,6 +2,7 @@
 import { h, icon, sheet, closeSheet, field, inputEl, selectEl, readForm, toast, todayISO, dateTH } from '../ui.js';
 import * as store from '../store.js';
 import { ACTIVITIES, ACT, STAGE } from '../engine/work.js';
+import { haptic } from '../pwa.js';
 
 export function gcalLink({ title, date, time, minutes = 60, place, details }) {
   const d = (date || todayISO()).replace(/-/g, '');
@@ -23,6 +24,7 @@ export function gcalLink({ title, date, time, minutes = 60, place, details }) {
 
 /** บันทึกกิจกรรม (นับคะแนน) + log ในประวัติลูกค้า */
 export function logActivity(type, clientId, note = '') {
+  haptic();
   store.put('activities', { type, clientId: clientId || null, date: todayISO(), count: 1 });
   if (clientId) {
     store.put('logs', { clientId, date: todayISO(), type, text: note || ACT[type]?.name || type });
@@ -113,4 +115,57 @@ export function apptResultSheet(a) {
 export function activityButtons(clientId) {
   return h('div.row.wrap', { style: { gap: '6px' } }, ACTIVITIES.filter((a) => a.id !== 'appt').map((a) =>
     h('button.btn.sm', { onclick: () => logActivity(a.id, clientId) }, a.name, h('span.muted.xs', '+' + a.pts))));
+}
+
+// ── กรมธรรม์ / ยอดขาย ──────────────────────────────────────
+import { PLANS, PLAN, CATEGORIES } from '../../data/plans.js';
+import { choices, readControls, q, fmt } from '../ui.js';
+
+export const POLICY_STATUS = [['proposed', 'เสนอแล้ว'], ['submitted', 'ยื่นใบคำขอ'], ['issued', 'อนุมัติ/ออกกรมธรรม์'], ['lapsed', 'ขาดอายุ/ยกเลิก']];
+export const STATUS_COLOR = { proposed: 'var(--warn)', submitted: 'var(--c-life)', issued: 'var(--good)', lapsed: 'var(--na)' };
+export const PAY_MODE = [['year', 'รายปี'], ['half', 'ราย 6 เดือน'], ['quarter', 'ราย 3 เดือน'], ['month', 'รายเดือน']];
+export const policyName = (p) => (p.planId && PLAN[p.planId] ? PLAN[p.planId].short : p.name || 'กรมธรรม์');
+
+export function policySheet({ clientId, policy } = {}) {
+  const pol = policy || { clientId, status: 'proposed', mode: 'year', submitDate: todayISO() };
+  const clients = store.all('clients').sort((a, b) => (a.nick || '').localeCompare(b.nick || '', 'th'));
+  const planSel = h('select.input', { name: 'planId' }, h('option', { value: '' }, '— อื่น ๆ (พิมพ์ชื่อด้านล่าง) —'),
+    CATEGORIES.map((c) => h('optgroup', { label: c.name }, PLANS.filter((p) => p.cat === c.id).map((p) => h('option', { value: p.id, selected: pol.planId === p.id }, p.short)))));
+  const body = h('div',
+    !clientId ? q('ลูกค้า', h('select.input', { name: 'clientId' }, h('option', { value: '' }, '—'), clients.map((c) => h('option', { value: c.id, selected: pol.clientId === c.id }, c.nick)))) : null,
+    q('แผน', planSel),
+    q('ชื่อแผน (ถ้าไม่มีในรายการ)', h('input.input', { name: 'name', value: pol.name || '', placeholder: 'เช่น กรมธรรม์บริษัทอื่น' })),
+    q('ทุนประกัน', h('input.input', { name: 'sa', type: 'number', inputmode: 'numeric', value: pol.sa ?? '' })),
+    q('เบี้ยต่อปี (บาท)', h('input.input', { name: 'premium', type: 'number', inputmode: 'numeric', value: pol.premium ?? '' }), 'จากใบเสนอในระบบ AIA'),
+    q('งวดชำระ', choices('mode', pol.mode || 'year', PAY_MODE)),
+    q('สถานะ', choices('status', pol.status || 'proposed', POLICY_STATUS)),
+    q('วันที่ยื่น / เสนอ', h('input.input', { name: 'submitDate', type: 'date', value: pol.submitDate || '' })),
+    q('ครบกำหนดชำระงวดถัดไป', h('input.input', { name: 'nextDue', type: 'date', value: pol.nextDue || '' }), 'แอปจะเตือนล่วงหน้า 14 วัน'),
+    q('บันทึก', h('input.input', { name: 'note', value: pol.note || '' })));
+  const save = () => {
+    const d = readControls(body);
+    const cid = clientId || d.clientId;
+    const wasSold = ['submitted', 'issued'].includes(pol.status);
+    const saved = store.put('policies', { ...pol, ...d, clientId: cid });
+    const sold = ['submitted', 'issued'].includes(saved.status);
+    if (sold && !wasSold && cid) {
+      store.put('activities', { type: 'close', clientId: cid, date: todayISO(), count: 1 });
+      const c = store.get('clients', cid); if (c && !['closed', 'delivered'].includes(c.stage)) setStage(c, 'closed');
+      haptic(30); toast('ยินดีด้วย! บันทึกการปิดการขาย +5 คะแนน');
+    } else toast('บันทึกแล้ว');
+    closeSheet(true);
+  };
+  sheet({ title: policy ? 'แก้ไขกรมธรรม์' : 'เพิ่มกรมธรรม์ / ยอดขาย', body: h('div', body,
+    h('div.row', { style: { gap: '8px' } }, h('button.btn.primary', { style: { flex: 1 }, onclick: save }, icon('check'), 'บันทึก'),
+      policy ? h('button.btn.danger', { onclick: () => { if (confirm('ลบรายการนี้?')) { store.remove('policies', pol.id); closeSheet(true); } } }, icon('trash')) : null)) });
+}
+
+export function policyRow(p, { showClient = false } = {}) {
+  const c = showClient && p.clientId ? store.get('clients', p.clientId) : null;
+  const plan = p.planId && PLAN[p.planId];
+  return h('button.prow' + (plan ? '.cat-' + plan.cat : ''), { onclick: () => policySheet({ clientId: p.clientId, policy: p }) },
+    h('span.pi', icon(plan ? 'cat-' + plan.cat : 'doc')),
+    h('span.pt', h('b', (c ? c.nick + ' · ' : '') + policyName(p)),
+      h('span', h('i.status-dot', { style: { background: STATUS_COLOR[p.status] || 'var(--na)' } }), [Object.fromEntries(POLICY_STATUS)[p.status], p.premium ? fmt(p.premium) + '/ปี' : null, p.nextDue ? 'ครบชำระ ' + dateTH(p.nextDue) : null].filter(Boolean).join(' · '))),
+    h('span.pr', icon('next')));
 }

@@ -13,15 +13,22 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Advisor Desk">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="icon" href="assets/favicon-64.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/ui2.css">
+  <link rel="stylesheet" href="css/ui3.css">
+  <script>
+    // ตั้งค่าธีม/ขนาดตัวอักษรก่อนแสดงผล (ไม่ให้จอกระพริบ)
+    try { var t = localStorage.getItem('advdesk.v1.theme'); if (t && t !== 'auto') document.documentElement.dataset.theme = t;
+      var z = localStorage.getItem('advdesk.v1.textsize'); if (z) document.documentElement.dataset.text = z; } catch (e) {}
+  </script>
 </head>
 <body>
+  <div id="splash" aria-hidden="true"><img src="assets/icon-192.png" alt="" width="88" height="88"><div>Advisor Desk</div></div>
   <div class="app">
     <aside class="sidebar" id="sidebar"></aside>
     <main class="main"><div class="page" id="view" aria-live="polite"></div></main>

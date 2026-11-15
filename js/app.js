@@ -2,6 +2,8 @@
 import { h, icon, $, closeSheet, isSheetOpen, initials } from './ui.js';
 import * as store from './store.js';
 import { DEFAULT_PROFILE } from '../data/profile.js';
+import { setBadge, hideSplash } from './pwa.js';
+import { coach } from './engine/work.js';
 
 const NAV = [
   { id: 'today', label: 'วันนี้', icon: 'today', href: '#/' },
@@ -11,9 +13,9 @@ const NAV = [
   { id: 'tools', label: 'เครื่องมือ', icon: 'tools', href: '#/tools' },
 ];
 const SIDE_SUB = {
-  plans: [['#/plans', 'คลังแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'ระบบแนะนำ'], ['#/plans/cases', 'Case study']],
-  work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'ชั่วโมงโทรนัด'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
+  plans: [['#/plans', 'คลังแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
+  work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'ชั่วโมงโทรนัด'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
+  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
@@ -25,6 +27,7 @@ function renderNav(active, path) {
   const syncDot = h('span.sync-dot', { class: store.sync.state === 'ok' ? 'ok' : store.sync.state === 'busy' ? 'busy' : store.sync.state === 'err' ? 'err' : '' });
   sb.replaceChildren(
     h('div.brand', h('div.mark', initials(p.name || 'A')), h('div', h('b', p.name), h('span', p.title + ' · ' + (p.company || '')))),
+    h('a.side-link', { href: '#/search', class: active === 'search' ? 'on' : '' }, icon('search'), 'ค้นหา'),
     ...NAV.flatMap((n) => [
       h('a.side-link', { href: n.href, class: n.id === active ? 'on' : '' }, icon(n.icon), n.label),
       ...(n.id === active && SIDE_SUB[n.id] ? SIDE_SUB[n.id].map(([href, lab]) => h('a.side-link', { href, style: { paddingLeft: '38px', fontSize: '13.5px' }, class: '#' + path === href ? 'on' : '' }, lab)) : []),
@@ -39,6 +42,11 @@ const routes = [
   [/^\/plans\/packages$/, 'plans', (q) => import('./views/packages.js').then((m) => m.renderPackages(q))],
   [/^\/plans\/advisor$/, 'plans', (q) => import('./views/advisor.js').then((m) => m.renderAdvisor(q))],
   [/^\/plans\/cases$/, 'plans', () => import('./views/advisor.js').then((m) => m.renderCases())],
+  [/^\/plans\/compare$/, 'plans', () => import('./views/compare.js').then((m) => m.renderCompare())],
+  [/^\/search$/, 'search', (q) => import('./views/search.js').then((m) => m.renderSearch(q))],
+  [/^\/present\/([\w-]+)$/, 'clients', (q, id) => import('./views/present.js').then((m) => m.renderPresent(id, q))],
+  [/^\/work\/sales$/, 'work', () => import('./views/sales.js').then((m) => m.renderSales())],
+  [/^\/tools\/display$/, 'tools', () => import('./views/tools.js').then((m) => m.renderDisplay())],
   [/^\/plan\/([\w-]+)$/, 'plans', (q, id) => import('./views/plans.js').then((m) => m.renderCatalog(q, id))],
   [/^\/clients\/?$/, 'clients', (q) => import('./views/clients.js').then((m) => m.renderList(q))],
   [/^\/client\/new$/, 'clients', (q) => import('./views/clients.js').then((m) => m.renderForm(null, q))],
@@ -68,6 +76,7 @@ export async function route() {
     const m = path.match(re);
     if (m) {
       renderNav(nav, path);
+      document.body.classList.toggle('presenting', /^\/present\//.test(path));
       const samePage = current.split('?')[0] === path;
       current = raw;
       try {
@@ -75,6 +84,7 @@ export async function route() {
         if (node) { const v = $('#view'); v.replaceChildren(node); }
         if (!samePage && !/^\/plan\//.test(path)) window.scrollTo(0, 0);
         document.title = (node?.dataset?.title ? node.dataset.title + ' · ' : '') + 'Advisor Desk';
+        hideSplash(); updateBadge();
       } catch (e) {
         console.error(e);
         $('#view').replaceChildren(h('div.card', h('b', 'เกิดข้อผิดพลาด'), h('p.muted.small', String(e.message || e))));
@@ -85,6 +95,15 @@ export async function route() {
   location.hash = '#/';
 }
 export function rerender() { route(); }
+
+/** ตัวเลขบนไอคอนแอป = งานสำคัญวันนี้ */
+function updateBadge() {
+  try {
+    const items = coach({ clients: store.all('clients'), appts: store.all('appts'), activities: store.all('activities'), settings: store.getSettings(), closingPlans: [] });
+    setBadge(items.filter((i) => i.pri >= 60).length);
+  } catch {}
+}
+setTimeout(hideSplash, 2500);
 
 window.addEventListener('hashchange', route);
 store.onChange(() => {
