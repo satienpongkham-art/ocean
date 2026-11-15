@@ -7,6 +7,7 @@ import { ageRange } from './plans.js';
 import { rerender } from '../app.js';
 import { clientAge } from './clients.js';
 import { haptic } from '../pwa.js';
+import { getBasket, setBasket } from '../basket.js';
 
 const back = (href, title, sub) => h('div.back-row', h('a.icon-btn', { href, 'aria-label': 'กลับ' }, icon('back')), h('div', h('h1.serif', { style: { fontSize: '22px' } }, title), sub ? h('div.small.muted', sub) : null));
 const HOW = { health: 'จ่ายค่ารักษาตามจริงตามวงเงินของแผน', ci: 'จ่ายเงินก้อนตามทุน เมื่อตรวจพบตามนิยามโรคในกรมธรรม์', hb: 'จ่ายเงินชดเชยรายวัน (และเพิ่มเมื่อผ่าตัด/ICU)', accident: 'ค่ารักษาจากอุบัติเหตุ + เงินกรณีทุพพลภาพ/เสียชีวิต', life: 'ทุนประกันให้ครอบครัว', saving: 'ทุนประกันให้ครอบครัว + เงินคืนตามสัญญา', senior: 'ทุนประกันให้ครอบครัว', annuity: '—' };
@@ -50,7 +51,7 @@ export function renderBody() {
         h('div.small.muted', s.name), h('h2', s.event),
         s.wait ? h('div.callout.warn', { style: { marginTop: '8px' } }, h('b', 'ระยะรอคอย 120 วัน '), `(${s.wait}) ตามประกันสุขภาพแบบมาตรฐาน`) : null,
         ...s.cats.map((cat) => h('div.bp-cat.cat-' + cat, h('div.bp-h', icon('cat-' + cat), h('b', CAT[cat].name), h('span', T(HOW[cat]))),
-          h('div.bp-plans', list(cat).map((p) => h('a.chip', { href: '#/plan/' + p.id }, p.short))))),
+          h('div.bp-plans', list(cat).map((p) => h('span.bp-pl', h('a.chip', { href: '#/plan/' + p.id }, p.short), h('button.bp-add', { 'aria-label': 'ใส่ ' + p.short + ' ในชุดแผน', 'aria-pressed': String(getBasket().ids.includes(p.id)), onclick: (e) => { import('../basket.js').then((m) => { const on = m.toggleBasket(p.id); e.currentTarget?.setAttribute?.('aria-pressed', String(on)); rerender(); }); } }, icon(getBasket().ids.includes(p.id) ? 'check' : 'plus'))))))),
         h('p.source', 'ความคุ้มครองจริงขึ้นกับนิยามโรค เงื่อนไข และระยะรอคอยในกรมธรรม์แต่ละแบบ'))));
 }
 
@@ -87,6 +88,7 @@ export function fitBudget({ budgetYear, pri, age, g }) {
 }
 
 export function renderBuilder(qs = {}) {
+  if (qs.basket) { const b = getBasket(); if (b.ids.length) bld.ids = [...b.ids]; history.replaceState(null, '', '#/plans/build' + (qs.c ? '?c=' + qs.c : '')); }
   const c = qs.c ? store.get('clients', qs.c) : null;
   if (c && bld.client !== c.id) { bld.client = c.id; bld.age = clientAge(c) ?? bld.age; bld.g = c.gender || bld.g; bld.income = +c.incomeMonthly || bld.income; }
   const cov = coverage(bld.ids);
@@ -143,7 +145,8 @@ export function renderBuilder(qs = {}) {
         empty.length && bld.ids.length ? h('p.small.muted', { style: { marginTop: '6px' } }, 'ยังว่าง: ' + empty.map((a) => a[1]).join(' · ')) : null,
         h('div.row', { style: { gap: '8px', marginTop: '10px' } },
           h('a.btn', { style: { flex: 1 }, href: '#/sheet/' + bld.ids.join(',') + (c ? '?c=' + c.id : '') }, icon('doc'), 'สรุปหน้าเดียว'),
-          h('button.btn.ghost', { onclick: () => { bld.ids = []; bld.lastFit = null; rerender(); } }, 'ล้าง'))),
+          h('button.btn.ghost', { onclick: () => { bld.ids = []; bld.lastFit = null; rerender(); } }, 'ล้าง')),
+        bld.ids.length ? h('button.btn.block.sm', { style: { marginTop: '8px' }, onclick: () => { setBasket(bld.ids, c ? c.id : undefined); import('../ui.js').then((u) => u.toast(`เก็บเป็นชุดแผนที่กำลังคุยแล้ว (${bld.ids.length} แผน)`)); } }, icon('plans'), 'เก็บเป็นชุดแผนที่กำลังคุย') : null),
       h('div', palette, budgetBox)));
 }
 

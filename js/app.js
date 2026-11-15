@@ -10,6 +10,7 @@ setTextHook(glossify);
 import { setEmptyArt } from './ui.js';
 import { illus } from './illus.js';
 setEmptyArt(() => illus('empty', { size: 96 }));
+import { initBasket } from './basket.js';
 
 const NAV = [
   { id: 'today', label: 'วันนี้', icon: 'today', href: '#/' },
@@ -21,7 +22,7 @@ const NAV = [
 const SIDE_SUB = {
   plans: [['#/plans', 'คลังแผน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/studio', 'สตูดิโอคอนเทนต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์'], ['#/tools/tipcard', 'ภาพทิปการเงิน'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
+  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/studio', 'สตูดิโอคอนเทนต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/calc', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/content', 'ปฏิทินคอนเทนต์'], ['#/tools/tipcard', 'ภาพทิปการเงิน'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
 export const APP_VERSION = '5.4 · 16 พ.ย. 69';
@@ -58,6 +59,12 @@ const routes = [
   [/^\/plan\/([\w-]+)$/, 'plans', (q, id) => import('./views/planpage.js').then((m) => m.renderPlanPage(id))],
   [/^\/studio$/, 'tools', () => import('./views/studio.js').then((m) => m.renderStudio())],
   [/^\/studio\/([\w-]+)$/, 'tools', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
+  [/^\/p\/quiz$/, 'public', (q) => import('./views/public.js').then((m) => m.renderQuiz(q))],
+  [/^\/p\/calc$/, 'public', (q) => import('./views/public.js').then((m) => m.renderCalc(null, q))],
+  [/^\/p\/calc\/(\w+)$/, 'public', (q, t) => import('./views/public.js').then((m) => m.renderCalc(t, q))],
+  [/^\/tools\/calc$/, 'tools', () => import('./views/public.js').then((m) => m.renderCalc(null, {}, true))],
+  [/^\/tools\/calc\/(\w+)$/, 'tools', (q, t) => import('./views/public.js').then((m) => m.renderCalc(t, {}, true))],
+  [/^\/tools\/quiz$/, 'tools', () => import('./views/public.js').then((m) => m.renderQuiz({}, true))],
   [/^\/brand$/, 'tools', () => import('./views/brand.js').then((m) => m.renderBrand())],
   [/^\/plans\/body$/, 'plans', () => import('./views/planviz.js').then((m) => m.renderBody())],
   [/^\/plans\/build$/, 'plans', (q) => import('./views/planviz.js').then((m) => m.renderBuilder(q))],
@@ -105,7 +112,7 @@ const routes = [
 let current = '';
 let vtBusy = false;
 // ── โหมดลูกค้า: ซ่อนข้อมูลส่วนตัว ก่อนยื่นมือถือให้ลูกค้าดู ──
-const CLIENT_OK = [/^\/plans/, /^\/plans\/(body|build|path)/, /^\/plan\//, /^\/sheet\//, /^\/present\//, /^\/proposal\//, /^\/client\/[\w-]+\/simulate$/, /^\/tools\/(glossary|simulate)$/];
+const CLIENT_OK = [/^\/plans/, /^\/plans\/(body|build|path)/, /^\/plan\//, /^\/sheet\//, /^\/present\//, /^\/proposal\//, /^\/client\/[\w-]+\/simulate$/, /^\/tools\/(glossary|simulate|calc|quiz)/, /^\/p\//];
 export const clientMode = () => sessionStorage.getItem('clientMode') === '1';
 export function setClientMode(on) {
   sessionStorage.setItem('clientMode', on ? '1' : '0');
@@ -136,6 +143,7 @@ export async function route() {
     if (m) {
       renderNav(nav, path);
       document.body.classList.toggle('presenting', /^\/present\//.test(path));
+      document.body.classList.toggle('public', nav === 'public');
       document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call|studio\/)/.test(path));
       const samePage = current.split('?')[0] === path;
       current = raw;
@@ -194,7 +202,7 @@ export function showShortcuts() {
 document.addEventListener('keydown', (e) => {
   const tgt = e.target; const typing = tgt && (/INPUT|TEXTAREA|SELECT/.test(tgt.tagName) || tgt.isContentEditable);
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); location.hash = '#/search'; return; }
-  if (typing || e.ctrlKey || e.metaKey || e.altKey || isSheetOpen()) return;
+  if (typing || e.ctrlKey || e.metaKey || e.altKey || isSheetOpen() || document.body.classList.contains('public')) return;
   const k = e.key;
   const go = { '/': '#/search', n: '#/client/new', N: '#/client/new', t: '#/', T: '#/', c: '#/work/calendar', C: '#/work/calendar', p: '#/work/call', P: '#/work/call', l: '#/clients', L: '#/clients' }[k];
   if (go) { e.preventDefault(); location.hash = go; return; }
@@ -221,12 +229,13 @@ store.onSync(() => { const raw = location.hash.slice(1) || '/'; const p = raw.sp
     history.replaceState(null, '', location.pathname + '#/share');
   } }
 if (clientMode()) { document.body.classList.add('client-mode'); renderClientBar(); }
+initBasket();
 route();
 // แสดง "มีอะไรใหม่" ครั้งเดียวหลังอัปเดตเวอร์ชัน
 setTimeout(() => {
   const v = APP_VERSION.split(' ')[0];
   let seen = null; try { seen = localStorage.getItem('advdesk.v1.seenVersion'); localStorage.setItem('advdesk.v1.seenVersion', v); } catch {}
-  if (seen && seen !== v && !isSheetOpen()) showWhatsNew(v);
+  if (seen && seen !== v && !isSheetOpen() && !document.body.classList.contains('public')) showWhatsNew(v);
 }, 900);
 if (store.sync.config.url) store.syncNow().catch(() => {});
 

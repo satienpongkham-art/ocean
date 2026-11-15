@@ -1,4 +1,5 @@
 // ─── หน้าแผนแบบเต็มจอ: ภาพกดดูรายละเอียด · คิดเบี้ยสด · เส้นเวลาชีวิต · เคลมจริงจ่ายเท่าไร · เทียบแผนใกล้เคียง · คำถามบ่อย · ภาษาง่าย ───
+import { basketButton } from '../basket.js';
 import { h, icon, sheet, closeSheet, choices, fmt, toast, T, more } from '../ui.js';
 import * as store from '../store.js';
 import { PLANS, PLAN, CAT, TAX_LABEL, quickFacts, closingInfo } from '../../data/plans.js';
@@ -241,6 +242,7 @@ export function renderPlanPage(id) {
       h('div.row', { style: { gap: '8px', marginTop: '12px' } },
         h('button.btn.primary', { style: { flex: 1 }, onclick: () => import('./story.js').then((m) => m.openStory(p)) }, icon('play'), 'ดูแบบสตอรี่'),
         h('a.btn', { style: { flex: 1 }, href: '#/sheet/' + p.id }, icon('doc'), 'สรุปหน้าเดียว')),
+      basketButton(p.id, 'btn block pp-basket'),
       h('button.btn.block', { style: { marginTop: '8px' }, onclick: () => import('./studio.js').then((m) => { const x = m.createItem(m.GEN.plan(p.id), { pillar: 'protect', title: p.short + ' เหมาะกับใคร' }); location.hash = '#/studio/' + x.id; }) }, icon('pen'), 'ทำคอนเทนต์จากแผนนี้')),
     h('section#sec-cover.pp-sec', h('h2', 'รายละเอียดความคุ้มครอง'), coverDetail(p)),
     h('section#sec-prem.pp-sec', h('h2', 'คิดเบี้ยแบบสด'), livePremium(p)),

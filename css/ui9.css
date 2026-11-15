@@ -73,3 +73,79 @@ ol.mission b { display: block; font-size: var(--fs-sm); } ol.mission small { dis
 .st-ed > *, .st-left, .st-right { min-width: 0; }
 .ig-frame, .phone { width: 100%; }
 .ig-img { max-width: 100%; }
+
+/* ── v5.4B: วันหยุด · หน้าสาธารณะ (แบบทดสอบ/เครื่องคิด) ── */
+.cal-cell.hol .cd { color: var(--bad); font-weight: 700; }
+.cal-cell.today.hol .cd { color: var(--primary-ink); }
+body.public #sidebar, body.public #tabbar, body.public .fab, body.public .cm-bar { display: none !important; }
+body.public #view { max-width: 620px; margin: 0 auto; padding-bottom: 40px; }
+@media (min-width: 900px) { body.public .app, body.public main { margin-left: 0 !important; grid-template-columns: 1fr !important; } }
+.pub { display: grid; gap: 14px; }
+.pub-back { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); font-size: var(--fs-sm); text-decoration: none; }
+.pub-back svg { width: 18px; height: 18px; }
+.pub-head h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(24px, 6.4vw, 32px); line-height: 1.25; margin: 6px 0 6px; text-wrap: balance; }
+.pub-head p { color: var(--ink-2); margin: 0; font-size: var(--fs-md, 16px); line-height: 1.6; }
+.pub-card { background: var(--card); border-radius: 22px; padding: 18px; box-shadow: var(--shadow); display: grid; gap: 16px; border: 1px solid var(--line-2); }
+.pub-card h2 { font-family: var(--serif); font-weight: 500; font-size: clamp(20px, 5.4vw, 24px); line-height: 1.35; margin: 0; }
+.pub-q label { display: grid; gap: 2px; margin-bottom: 8px; }
+.pub-q label b { font-size: 17px; font-weight: 600; } .pub-q label small { color: var(--ink-3); font-size: 14px; line-height: 1.45; }
+.pub-num-row { display: grid; grid-template-columns: 52px 1fr auto 52px; align-items: center; gap: 6px; background: var(--paper-2); border-radius: 16px; padding: 6px; }
+.pub-num { font-size: 24px !important; font-weight: 600; text-align: center; border: 0 !important; background: var(--card) !important; min-height: 52px; border-radius: 12px !important; min-width: 0; width: 100%; font-variant-numeric: tabular-nums; }
+.pub-suf { color: var(--ink-3); font-size: 14px; padding: 0 2px; }
+.pub-step { width: 52px; height: 52px; border-radius: 12px; border: 0; background: var(--card); font-size: 26px; color: var(--primary); cursor: pointer; font-family: var(--font); line-height: 1; }
+.pub-step:active { transform: scale(.94); }
+.pub-q .chips { margin-top: 8px; }
+.pub-card.res { background: var(--primary); color: var(--primary-ink); border: 0; }
+.pub-res-h { font-size: 14px; letter-spacing: .04em; opacity: .8; }
+.pub-res { display: grid; gap: 12px; }
+.pub-res-i { display: grid; gap: 2px; }
+.pub-res-i span { font-size: 15px; opacity: .85; }
+.pub-big { font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 9vw, 44px); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.pub-big::after { content: ' บาท'; font-size: 16px; font-weight: 400; opacity: .75; }
+.pub-res-i:first-child .pub-big { font-size: clamp(36px, 11vw, 54px); }
+.pub-bar { height: 12px; border-radius: 99px; background: color-mix(in srgb, var(--primary-ink) 22%, transparent); overflow: hidden; }
+.pub-bar i { display: block; height: 100%; background: var(--primary-ink); border-radius: 99px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+.pub-when { margin: 0; font-size: 16px; }
+.pub-cmp { display: grid; gap: 8px; } .pub-cmp > div { display: grid; gap: 4px; font-size: 14px; }
+.pub-cmp i { display: block; height: 14px; border-radius: 99px; background: var(--primary-ink); transition: width .6s cubic-bezier(.2,.8,.2,1); }
+.pub-cmp i.late { opacity: .5; }
+.pub-send { display: grid; gap: 8px; margin-top: 4px; }
+.pub-card.res .btn { background: color-mix(in srgb, var(--primary-ink) 14%, transparent); color: var(--primary-ink); border-color: transparent; justify-content: center; min-height: 48px; }
+.pub-card.res .btn.pub-line, .pub-line { background: #06c755 !important; color: #fff !important; border-color: #06c755 !important; font-weight: 600; justify-content: center; min-height: 52px; }
+.pub-card.res .xs { color: inherit; opacity: .75; }
+.pub-card.res .more { color: inherit; }
+.pub-foot { display: grid; gap: 2px; text-align: center; color: var(--ink-3); font-size: 13px; padding: 10px 8px 0; }
+.pub-foot b { color: var(--ink); font-size: 15px; } .pub-foot small { font-size: 12px; margin-top: 4px; }
+.pub-hub { display: grid; gap: 10px; }
+@media (min-width: 560px) { .pub-hub { grid-template-columns: 1fr 1fr; } }
+.pub-tile { display: grid; grid-template-columns: 48px 1fr 20px; grid-template-rows: auto auto; column-gap: 12px; align-items: center; background: var(--card); border-radius: 20px; padding: 16px; text-decoration: none !important; color: var(--ink); box-shadow: var(--shadow); border: 1px solid var(--line-2); }
+.pub-tile .pt-ic { grid-row: span 2; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+.pub-tile .pt-ic svg { width: 24px; height: 24px; }
+.pub-tile b { font-size: 17px; font-weight: 600; } .pub-tile small { color: var(--ink-3); font-size: 14px; grid-column: 2; }
+.pub-tile > svg:last-child { grid-row: 1 / span 2; grid-column: 3; color: var(--ink-3); width: 18px; }
+.pub-tile.quiz { margin-top: 10px; background: var(--accent-soft); }
+.pub-tile.quiz .pt-ic { background: var(--card); color: var(--accent); }
+.pub-prog { display: flex; gap: 6px; } .pub-prog i { flex: 1; height: 6px; border-radius: 99px; background: var(--paper-2); }
+.pub-prog i.done { background: var(--primary); } .pub-prog i.on { background: color-mix(in srgb, var(--primary) 45%, var(--paper-2)); }
+.pub-opts { display: grid; gap: 10px; }
+.pub-opts button { text-align: left; font-family: var(--font); font-size: 17px; padding: 16px 18px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; min-height: 56px; transition: border-color .15s, background .15s; }
+.pub-opts button:hover { border-color: var(--primary); background: var(--primary-soft); }
+.pub-opts button:active { transform: scale(.99); }
+.pub-score { display: flex; align-items: baseline; justify-content: center; gap: 4px; color: var(--sc); }
+.pub-score b { font-family: var(--serif); font-size: 72px; font-weight: 600; line-height: 1; } .pub-score small { font-size: 20px; color: var(--ink-3); }
+.pub-card .illus { margin: 0 auto; }
+.pub-card > h2[style] { text-align: center; } .pub-card > p { margin: 0; line-height: 1.6; color: var(--ink-2); text-align: center; }
+.pub-tips { background: var(--paper-2); border-radius: 16px; padding: 14px 16px; } .pub-tips ol { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 6px; line-height: 1.55; }
+.basket-chip { position: fixed; left: 16px; bottom: calc(var(--nav-h) + 22px + env(safe-area-inset-bottom)); z-index: 43; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 8px 0 14px; border-radius: 99px; border: 0; background: var(--ink); color: var(--paper); font-family: var(--font); font-size: 15px; cursor: pointer; box-shadow: 0 10px 24px -10px rgba(0,0,0,.5); animation: bk-in .35s cubic-bezier(.2,.9,.3,1.3); }
+.basket-chip[hidden] { display: none; }
+.basket-chip svg { width: 20px; height: 20px; }
+.basket-chip b { min-width: 30px; height: 30px; border-radius: 99px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 14px; }
+@keyframes bk-in { from { transform: translateY(20px) scale(.8); opacity: 0; } }
+@media (min-width: 900px) { .basket-chip { left: 260px; bottom: 28px; } }
+body.public .basket-chip, body.presenting .basket-chip, body.no-fab .basket-chip, body:has(.compare-bar) .basket-chip, body:has(.main :is(input, textarea, select):focus) .basket-chip { display: none; }
+.bk-acts { display: grid; gap: 8px; } .bk-acts .btn { justify-content: center; }
+.pp-basket { margin-top: 8px; } .pp-basket[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+.bp-pl { display: inline-flex; align-items: center; gap: 2px; }
+.bp-add { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--primary); display: grid; place-items: center; cursor: pointer; }
+.bp-add svg { width: 16px; height: 16px; } .bp-add[aria-pressed="true"] { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.pub > *, .build-grid > *, .pub-card > * { min-width: 0; }
