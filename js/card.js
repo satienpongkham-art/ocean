@@ -25,7 +25,7 @@ export function cardManager(onChange) {
   const slot = (side, label) => {
     const data = getCard(side);
     const inp = h('input', { type: 'file', accept: 'image/*', class: 'sr-only', id: 'card-' + side, onchange: async (e) => { const f = e.target.files[0]; if (!f) return; try { await saveCardFile(side, f); toast('บันทึกภาพนามบัตรแล้ว'); onChange(); } catch { toast('บันทึกไม่ได้ — ภาพใหญ่เกินไป'); } } });
-    return h('div.card-slot', data ? h('img', { src: data, alt: 'นามบัตร' + label }) : h('div.card-ph', icon('upload'), 'ยังไม่มีภาพ'),
+    return h('div.card-slot.tilt.gyro', data ? h('img', { src: data, alt: 'นามบัตร' + label }) : h('div.card-ph', icon('upload'), 'ยังไม่มีภาพ'),
       h('div.row', { style: { gap: '6px', marginTop: '6px' } }, inp, h('label.btn.sm', { for: 'card-' + side }, icon('upload'), data ? 'เปลี่ยน' + label : 'อัปโหลด' + label),
         data ? h('button.btn.sm.ghost', { type: 'button', 'aria-label': 'ลบภาพ' + label, onclick: () => { localStorage.removeItem(K(side)); onChange(); } }, icon('trash')) : null));
   };

@@ -188,6 +188,7 @@ export function renderDetail(id) {
     c.notes || c.policies ? h('div.section', h('h2', 'บันทึก'), h('div.card', h('p.small', { style: { whiteSpace: 'pre-wrap' } }, [c.policies, c.notes].filter(Boolean).join('\n\n')))) : null,
     referrals(c),
     h('div.row', { style: { gap: '8px', marginTop: '18px' } }, h('a.btn', { href: `#/client/${id}/edit`, style: { flex: 1 } }, icon('pen'), 'แก้ไขข้อมูล'),
+      h('button.btn', { onclick: () => import('./timemachine.js').then((m) => m.historySheet('clients', id)), 'aria-label': 'ประวัติการแก้ไข' }, icon('clock'), 'ประวัติ'),
       h('button.btn.danger', { onclick: () => del(c) }, icon('trash'))));
 
   const mandala = () => { const hc = healthCheck(p); return h('div',

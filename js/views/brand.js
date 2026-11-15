@@ -36,7 +36,7 @@ export function renderBrand() {
   const box = (k, label, txt, limit) => h('div.bio', h('div.row.between', h('b', label), h('small.muted', limit ? `${txt.length}/${limit} ตัวอักษร` : '')), h('pre', txt), h('button.btn.sm', { onclick: () => copyText(txt) }, icon('copy'), 'คัดลอก'));
   return h('div', { 'data-title': 'แบรนด์ของฉัน' },
     h('div.topbar', h('div', h('h1', 'แบรนด์ของฉัน'), h('div.sub', 'ตั้งจุดยืน → ไบโอ → ทำตามภารกิจ 30 วัน · อ้างอิงหลักจากหนังสือที่คนสร้างแบรนด์นิยมใช้'))),
-    h('div.brand-hero', h('small', 'ประโยคจุดยืนของคุณ'), h('p', copy.statement), h('button.btn.sm', { onclick: () => copyText(copy.statement) }, icon('copy'), 'คัดลอก')),
+    h('div.brand-hero.tilt.gyro', h('small', 'ประโยคจุดยืนของคุณ'), h('p', copy.statement), h('button.btn.sm', { onclick: () => copyText(copy.statement) }, icon('copy'), 'คัดลอก')),
     h('div.section', h('h2', '1 · ตั้งจุดยืน (5 คำถาม)'), h('div.card',
       h('div.q', h('span.ql', 'คุณอยากช่วยใครมากที่สุด (เลือกได้ 2)'), multi('audience', AUDIENCES)),
       h('div.q', h('span.ql', 'ปัญหาที่เขาเจอ'), multi('problem', PROBLEMS)),

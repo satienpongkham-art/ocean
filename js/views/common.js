@@ -238,7 +238,7 @@ export function policySheet({ clientId, policy } = {}) {
     if (sold && !wasSold && cid) {
       store.put('activities', { type: 'close', clientId: cid, date: todayISO(), count: 1 });
       const c = store.get('clients', cid); if (c && !['closed', 'delivered'].includes(c.stage)) setStage(c, 'closed', { undo: false });
-      haptic(30); toast('ยินดีด้วย! บันทึกการปิดการขาย +5 คะแนน');
+      haptic(30); toast('ยินดีด้วย! บันทึกการปิดการขาย +5 คะแนน'); import('../fx.js').then((f) => f.celebrate()).catch(() => {});
     } else toast('บันทึกแล้ว');
     closeSheet(true);
   };

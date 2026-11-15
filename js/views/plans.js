@@ -96,7 +96,7 @@ export function renderCatalog(q = {}, openId) {
         h('div.cat-tiles', CATEGORIES.map((c) => h('button.cat-tile.cat-' + c.id, { onclick: () => { location.hash = '#/plans?cat=' + c.id; } },
           illus(c.id, { size: 72 }), h('div', h('b', c.name), h('span', `${PLANS.filter((p) => p.cat === c.id).length} แผน`)))))),
       h('div.section', h('h2', 'แผนที่แนะนำบ่อย'),
-        h('div.hscroll', PLANS.filter((p) => p.star).map((p) => h('button.mini-plan.cat-' + p.cat, { onclick: () => { location.hash = '#/plan/' + p.id; } },
+        h('div.hscroll', PLANS.filter((p) => p.star).map((p) => h('button.mini-plan.tilt.cat-' + p.cat, { onclick: () => { location.hash = '#/plan/' + p.id; } },
           h('small', CAT[p.cat].short), h('b', p.short), h('span', p.tagline))))),
       h('p.xs.muted', { style: { marginTop: '14px' } }, `ข้อมูลจาก aia.co.th · ตรวจเมื่อ ${thDate(DATA_CHECKED)}`));
   }
