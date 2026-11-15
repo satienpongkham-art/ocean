@@ -18,7 +18,7 @@ const SIDE_SUB = {
   tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '3.2 · 15 พ.ย. 69';
+export const APP_VERSION = '3.3 · 15 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -53,7 +53,9 @@ const routes = [
   [/^\/clients\/?$/, 'clients', (q) => import('./views/clients.js').then((m) => m.renderList(q))],
   [/^\/client\/new$/, 'clients', (q) => import('./views/clients.js').then((m) => m.renderForm(null, q))],
   [/^\/client\/([\w-]+)\/edit$/, 'clients', (q, id) => import('./views/clients.js').then((m) => m.renderForm(id, q))],
-  [/^\/client\/([\w-]+)\/fhc$/, 'clients', (q, id) => import('./views/fhc.js').then((m) => m.renderFHC(id))],
+  [/^\/client\/([\w-]+)\/fhc\/detail$/, 'clients', (q, id) => import('./views/fhc.js').then((m) => m.renderFHCDetail(id))],
+  [/^\/client\/([\w-]+)\/fhc$/, 'clients', (q, id) => import('./views/fhc.js').then((m) => m.renderCheck(id))],
+  [/^\/check$/, 'clients', () => import('./views/fhc.js').then((m) => m.renderCheck(null))],
   [/^\/client\/([\w-]+)$/, 'clients', (q, id) => import('./views/clients.js').then((m) => m.renderDetail(id))],
   [/^\/work\/?$/, 'work', () => import('./views/work.js').then((m) => m.renderPipeline())],
   [/^\/work\/call$/, 'work', () => import('./views/work.js').then((m) => m.renderCall())],

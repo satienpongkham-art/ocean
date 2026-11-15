@@ -77,7 +77,7 @@ export function render() {
       h('a', { href: '#/client/new' }, icon('plus'), 'รายชื่อใหม่'),
       h('a', { href: '#/plans' }, icon('plans'), 'ดูแผน'),
       h('a', { href: '#/tools/captions' }, icon('pen'), 'ทำโพสต์'),
-      h('a', { href: '#/tools/tax' }, icon('tax'), 'ภาษี'))),
+      h('a', { href: '#/check' }, icon('grid'), 'ตรวจการเงิน'))),
 
     !store.sync.config.url ? h('a.callout.warn', { href: '#/tools/sync', style: { display: 'block', marginTop: '16px', color: 'inherit', textDecoration: 'none' } }, 'ข้อมูลยังอยู่แค่เครื่องนี้ — แตะเพื่อตั้งค่าซิงก์กับคอม') : null);
 }

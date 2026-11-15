@@ -118,6 +118,14 @@ export function healthCheck(p) {
   const used = num(p.taxLifeUsed);
   areas.push({ key: 'tax', label: 'ภาษี', cat: 'annuity', score: taxable ? pct(used, 100000) : null, have: used, need: 100000, text: taxable ? `ใช้สิทธิประกันชีวิต/สุขภาพแล้ว ${fmtM(used)} จาก 100,000` : 'รายได้ยังไม่ถึงเกณฑ์เสียภาษี' });
 
+  // แบบเร็ว (แตะเลือก): ถ้ายังไม่ได้ใส่ตัวเลข ใช้คำตอบ "มี / ไม่มี" ประเมินแทน
+  const blank = (v) => v == null || v === '';
+  const ov = (key, score, text) => { const x = areas.find((a) => a.key === key); if (x && x.score != null) { x.score = score; x.text = text; x.quick = true; } };
+  if (blank(p.liquidSavings) && p.hasEmergency != null) ov('saving', p.hasEmergency ? 80 : 25, p.hasEmergency ? 'มีเงินสำรองฉุกเฉินแล้ว (ประมาณ 6 เดือน)' : 'ยังไม่มีเงินสำรองฉุกเฉิน 6 เดือน');
+  if (blank(p.retirementFund) && blank(p.monthlyRetireSaving) && p.hasRetire != null) ov('retire', p.hasRetire ? 55 : 10, p.hasRetire ? 'เริ่มออมเพื่อเกษียณแล้ว (ยังไม่ได้ใส่ตัวเลข)' : 'ยังไม่ได้เริ่มออมเพื่อเกษียณ');
+  if (blank(p.eduFund) && p.hasEdu != null) ov('edu', p.hasEdu ? 55 : 10, p.hasEdu ? 'เริ่มเก็บทุนการศึกษาลูกแล้ว' : 'ยังไม่ได้เตรียมทุนการศึกษาลูก');
+  if (blank(p.taxLifeUsed) && p.quick) { const has = num(p.lifeCover) > 0 || ['basic', 'good'].includes(p.healthLevel); ov('tax', has ? 50 : 10, has ? 'มีเบี้ยประกันลดหย่อนบางส่วน — ยังใช้สิทธิได้อีก' : 'ยังไม่ได้ใช้สิทธิลดหย่อนจากเบี้ยประกัน'); }
+
   for (const a of areas) a.status = status(a.score);
   const scored = areas.filter((a) => a.score != null);
   const overall = scored.length ? Math.round(scored.reduce((s, a) => s + a.score, 0) / scored.length) : 0;

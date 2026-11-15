@@ -5,7 +5,7 @@ import { STAGES, STAGE, SOURCES, ACTIVITIES, grade } from '../engine/work.js';
 import { HEALTH_LEVELS, healthCheck, fmtM } from '../engine/needs.js';
 import { resultView, needSteps } from './advisor.js';
 import { apptSheet, apptResultSheet, setStage, gcalLink, logActivity, policySheet, policyRow } from './common.js';
-import { mandalaGrid } from './fhc.js';
+import { mandalaGrid, historyView } from './fhc.js';
 
 export const clientAge = (c) => ageFrom(c.birthday) ?? (c.age != null && c.age !== '' ? +c.age : null);
 const SRC = Object.fromEntries(SOURCES);
@@ -132,7 +132,10 @@ export function renderDetail(id) {
     h('div.row', { style: { gap: '8px', marginTop: '18px' } }, h('a.btn', { href: `#/client/${id}/edit`, style: { flex: 1 } }, icon('pen'), 'แก้ไขข้อมูล'),
       h('button.btn.danger', { onclick: () => del(c) }, icon('trash'))));
 
-  const mandala = () => { const hc = healthCheck(p); return h('div', h('div.card', mandalaGrid(c.nick, hc)), h('a.btn.primary.block', { href: `#/client/${id}/fhc`, style: { marginTop: '12px' } }, icon('grid'), 'กรอกตรวจสุขภาพการเงิน')); };
+  const mandala = () => { const hc = healthCheck(p); return h('div',
+    h('div.row', { style: { gap: '8px', marginBottom: '12px' } }, h('a.btn.primary', { href: `#/client/${id}/fhc`, style: { flex: 1 } }, icon('grid'), 'ตรวจแบบเร็ว'), h('a.btn', { href: `#/client/${id}/fhc/detail`, style: { flex: 1 } }, icon('pen'), 'แบบละเอียด')),
+    h('div.card', mandalaGrid(c.nick, hc)),
+    h('div.section', h('h2', 'ประวัติการตรวจ (ก่อน–หลัง)'), historyView(id))); };
   const appts = () => {
     const list = store.all('appts').filter((a) => a.clientId === id).sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
     const logs = store.all('logs').filter((l) => l.clientId === id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
