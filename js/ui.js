@@ -82,6 +82,8 @@ const P = {
   'cat-senior': '<circle cx="10" cy="5" r="2"/><path d="M10 8v6l-2 6M10 14l3 6M10 10l4 2"/><path d="M16 12v8"/>',
   note: '<path d="M5 4h14v12l-4 4H5z"/><path d="M15 20v-4h4M8.5 9h7M8.5 13h5"/>',
   minus: '<path d="M5 12h14"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
+  redo: '<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>',
   more: '<circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/>',
   pause: '<path d="M9 5v14M15 5v14"/>',
   play: '<path d="M7 5l12 7-12 7z"/>',

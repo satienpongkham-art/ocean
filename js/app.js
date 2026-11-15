@@ -21,10 +21,10 @@ const NAV = [
 const SIDE_SUB = {
   plans: [['#/plans', 'คลังแผน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/tools/content', 'ปฏิทินคอนเทนต์'], ['#/tools/tipcard', 'ภาพทิปการเงิน'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
+  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/studio', 'สตูดิโอคอนเทนต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์'], ['#/tools/tipcard', 'ภาพทิปการเงิน'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.3 · 15 พ.ย. 69';
+export const APP_VERSION = '5.4 · 16 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -56,6 +56,9 @@ const routes = [
   [/^\/work\/sales$/, 'work', () => import('./views/sales.js').then((m) => m.renderSales())],
   [/^\/tools\/display$/, 'tools', () => import('./views/tools.js').then((m) => m.renderDisplay())],
   [/^\/plan\/([\w-]+)$/, 'plans', (q, id) => import('./views/planpage.js').then((m) => m.renderPlanPage(id))],
+  [/^\/studio$/, 'tools', () => import('./views/studio.js').then((m) => m.renderStudio())],
+  [/^\/studio\/([\w-]+)$/, 'tools', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
+  [/^\/brand$/, 'tools', () => import('./views/brand.js').then((m) => m.renderBrand())],
   [/^\/plans\/body$/, 'plans', () => import('./views/planviz.js').then((m) => m.renderBody())],
   [/^\/plans\/build$/, 'plans', (q) => import('./views/planviz.js').then((m) => m.renderBuilder(q))],
   [/^\/plans\/path$/, 'plans', (q) => import('./views/planviz.js').then((m) => m.renderPath(q))],
@@ -133,7 +136,7 @@ export async function route() {
     if (m) {
       renderNav(nav, path);
       document.body.classList.toggle('presenting', /^\/present\//.test(path));
-      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call)/.test(path));
+      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call|studio\/)/.test(path));
       const samePage = current.split('?')[0] === path;
       current = raw;
       try {
@@ -205,7 +208,7 @@ window.addEventListener('hashchange', route);
 store.onChange(() => {
   // อัปเดตหน้าปัจจุบันเมื่อข้อมูลเปลี่ยน (ยกเว้นตอนกำลังพิมพ์ฟอร์ม)
   const a = document.activeElement;
-  if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return;
+  if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && !['checkbox', 'radio', 'range', 'button', 'file'].includes(a.type)) return;
   if (isSheetOpen()) return;
   route();
 });

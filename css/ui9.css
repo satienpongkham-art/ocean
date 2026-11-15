@@ -1,0 +1,75 @@
+/* ── v5.4: สตูดิโอคอนเทนต์ · กรอบ IG · แบรนด์ · ภารกิจ 30 วัน · เอฟเฟกต์ ── */
+.studio-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+.sb-col { background: var(--paper-2); border-radius: 18px; padding: 10px; min-height: 160px; scroll-snap-align: start; }
+.sb-h { display: flex; align-items: center; gap: 6px; padding: 2px 4px 10px; font-size: var(--fs-sm); }
+.sb-h b { flex: 1; } .sb-h svg { width: 17px; height: 17px; color: var(--primary); }
+.sb-empty { padding: 8px 4px; }
+.sc-card { background: var(--card); border-radius: 14px; margin-bottom: 8px; border-left: 4px solid var(--pc); overflow: hidden; box-shadow: var(--shadow); }
+.sc-main { display: flex; gap: 10px; padding: 10px; color: var(--ink); text-decoration: none !important; }
+.sc-th { width: 56px; height: 70px; border-radius: 8px; object-fit: cover; background: var(--paper-2); flex: none; }
+.sc-main b { display: block; font-size: var(--fs-sm); line-height: 1.35; }
+.sc-main small { color: var(--ink-3); font-size: var(--fs-xs); }
+.sc-acts { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 4px; }
+.sc-acts .icon-btn { min-width: 36px; min-height: 36px; }
+.gen-list .gen { background: var(--paper-2); border-radius: 16px; padding: 12px; display: grid; gap: 8px; }
+.gen-h b { display: block; font-family: var(--serif); font-weight: 500; } .gen-h small { color: var(--ink-3); }
+.idea-list { display: grid; gap: 6px; max-height: 320px; overflow: auto; }
+.idea-i { text-align: left; border: 0; border-left: 4px solid var(--pc); background: var(--card); border-radius: 10px; padding: 8px 10px; cursor: pointer; font-family: var(--font); color: var(--ink); }
+.idea-i small { display: block; color: var(--pc); font-weight: 600; font-size: 12px; } .idea-i b { font-weight: 500; font-size: var(--fs-sm); }
+
+.st-ed-head { display: flex; align-items: center; gap: 6px; }
+.st-title { flex: 1; font-family: var(--serif); font-size: var(--fs-lg); font-weight: 500; }
+.st-ed { display: grid; gap: 14px; }
+@media (min-width: 900px) { .st-ed { grid-template-columns: minmax(320px, 440px) 1fr; align-items: start; } .st-left { position: sticky; top: 16px; } }
+.ig-frame { background: var(--card); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 40px -24px rgba(0,0,0,.45); max-width: 440px; margin: 0 auto; border: 1px solid var(--line-2); }
+.ig-top { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 14px; }
+.ig-top b { flex: 1; }
+.ig-av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af); color: #fff; font-weight: 700; font-size: 13px; box-shadow: 0 0 0 2px var(--card), 0 0 0 4px #dd2a7b; }
+.ig-stage { position: relative; aspect-ratio: 4 / 5; background: #111; }
+.ig-stage.story { aspect-ratio: 9 / 16; }
+.ig-img { display: block; width: 100%; height: 100%; object-fit: cover; cursor: text; }
+.ig-stage::after { content: ''; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+.ig-bar { display: flex; align-items: center; gap: 14px; padding: 10px 12px; }
+.ig-bar svg { width: 22px; height: 22px; }
+.ig-dots { margin-left: auto; display: flex; gap: 4px; } .ig-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); } .ig-dots i.on { background: #3a8ef6; }
+.phone { max-width: 300px; margin: 0 auto; border-radius: 32px; padding: 10px; background: #111; box-shadow: 0 18px 40px -20px rgba(0,0,0,.6); }
+.phone .ig-stage { border-radius: 24px; overflow: hidden; }
+.ig-edit { position: absolute; z-index: 3; resize: none; border: 2px solid #3a8ef6; border-radius: 8px; background: rgba(10,14,24,.78); color: #fff; padding: 2px 4px; line-height: 1.2; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.st-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; }
+.st-th { flex: none; width: 64px; border: 2px solid transparent; border-radius: 10px; padding: 0; background: none; cursor: pointer; position: relative; }
+.st-th img { width: 100%; aspect-ratio: 4/5; object-fit: cover; border-radius: 8px; display: block; background: var(--paper-2); }
+.st-th small { position: absolute; left: 4px; top: 2px; font-size: 11px; color: #fff; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.st-th.on { border-color: var(--primary); }
+.st-th.add { display: grid; place-items: center; aspect-ratio: 4/5; background: var(--paper-2); border: 2px dashed var(--line); color: var(--ink-3); }
+.st-tools { background: var(--card); border-radius: 16px; padding: 12px; }
+.sm-sel { width: auto; min-height: 36px; padding: 4px 10px; }
+.st-export { position: sticky; bottom: calc(var(--nav-h) + 10px + env(safe-area-inset-bottom)); display: flex; gap: 8px; margin-top: 14px; background: color-mix(in srgb, var(--paper) 90%, transparent); backdrop-filter: blur(8px); padding: 8px; border-radius: 16px; z-index: 5; }
+.st-export .btn.primary { flex: 1; }
+@media (min-width: 900px) { .st-export { bottom: 16px; } }
+.st-text { font-family: var(--font); font-size: 15px; line-height: 1.7; }
+
+.prompter { position: fixed; inset: 0; z-index: 600; background: #0b0f17; color: #fff; display: flex; flex-direction: column; outline: none; }
+.tp-bar { display: flex; gap: 8px; justify-content: center; padding: calc(10px + env(safe-area-inset-top)) 10px 10px; }
+.tp-view { flex: 1; overflow: hidden; padding: 30vh 8vw; mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent); }
+.tp-text { white-space: pre-wrap; font-family: var(--serif); font-size: clamp(28px, 6vw, 46px); line-height: 1.5; }
+
+.brand-hero { background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 60%, #000)); color: var(--primary-ink); border-radius: 22px; padding: 18px; }
+.brand-hero small { opacity: .8; } .brand-hero p { font-family: var(--serif); font-size: var(--fs-xl); line-height: 1.4; margin: 6px 0 10px; }
+.brand-hero .btn { background: rgba(255,255,255,.16); color: inherit; border: 0; }
+.bios { display: grid; gap: 10px; } @media (min-width: 760px) { .bios { grid-template-columns: 1fr 1fr; } }
+.bio { background: var(--card); border-radius: 16px; padding: 12px; } .bio pre { white-space: pre-wrap; font-family: var(--font); font-size: 15px; background: var(--paper-2); padding: 10px; border-radius: 10px; margin: 8px 0; }
+.mission-stat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.mission-stat b { font-family: var(--serif); font-size: 28px; font-weight: 600; color: var(--primary); } .mission-stat small { display: block; color: var(--ink-3); }
+.mission-bar { height: 8px; border-radius: 8px; background: var(--paper-2); margin: 10px 0; overflow: hidden; } .mission-bar i { display: block; height: 100%; background: var(--primary); border-radius: inherit; transition: width .5s; }
+ol.mission { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+ol.mission li label { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 12px; cursor: pointer; }
+ol.mission li.today label { background: var(--primary-soft); box-shadow: 0 0 0 1.5px var(--primary) inset; }
+ol.mission li.done b { text-decoration: line-through; color: var(--ink-3); }
+ol.mission li.later { opacity: .55; }
+ol.mission b { display: block; font-size: var(--fs-sm); } ol.mission small { display: block; color: var(--ink-2); font-size: var(--fs-sm); } ol.mission em { font-style: normal; font-size: 12px; color: var(--primary); }
+.books { display: grid; gap: 10px; } @media (min-width: 760px) { .books { grid-template-columns: repeat(3, 1fr); } }
+.book { background: var(--card); border-radius: 16px; padding: 12px; border-top: 4px solid var(--accent); } .book b { font-family: var(--serif); font-weight: 500; } .book small { display: block; color: var(--ink-3); } .book p { font-size: var(--fs-sm); margin-top: 6px; }
+.confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 900; }
+.st-ed > *, .st-left, .st-right { min-width: 0; }
+.ig-frame, .phone { width: 100%; }
+.ig-img { max-width: 100%; }
