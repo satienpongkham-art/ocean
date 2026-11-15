@@ -23,12 +23,14 @@
   <link rel="stylesheet" href="css/ui3.css">
   <link rel="stylesheet" href="css/ui4.css">
   <link rel="stylesheet" href="css/ui5.css">
+  <link rel="stylesheet" href="css/ui6.css">
   <script>
     // ตั้งค่าธีม/ขนาดตัวอักษรก่อนแสดงผล (ไม่ให้จอกระพริบ)
     try { var t = localStorage.getItem('advdesk.v1.theme'); if (t && t !== 'auto') document.documentElement.dataset.theme = t;
       var z = localStorage.getItem('advdesk.v1.textsize'); if (z) document.documentElement.dataset.text = z;
       var c = localStorage.getItem('advdesk.v1.palette'); if (c && c !== 'ink') document.documentElement.dataset.palette = c;
       var ld = localStorage.getItem('advdesk.v1.leading'); if (ld) document.documentElement.dataset.leading = ld;
+      var hc = localStorage.getItem('advdesk.v1.contrast'); if (hc && hc !== 'normal') document.documentElement.dataset.contrast = hc;
       var rm = localStorage.getItem('advdesk.v1.motion'); if (rm) document.documentElement.dataset.motion = rm; } catch (e) {}
   </script>
 </head>

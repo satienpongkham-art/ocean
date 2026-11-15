@@ -21,7 +21,7 @@ const SIDE_SUB = {
   tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.0 · 15 พ.ย. 69';
+export const APP_VERSION = '5.1 · 15 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -70,6 +70,10 @@ const routes = [
   [/^\/client\/([\w-]+)\/benefits$/, 'clients', (q, id) => import('./views/plantools.js').then((m) => m.renderBenefits(id))],
   [/^\/tools\/glossary$/, 'tools', (q) => import('./views/plantools.js').then((m) => m.renderGlossary(q))],
   [/^\/sheet\/([\w,-]+)$/, 'plans', (q, ids) => import('./views/plantools.js').then((m) => m.renderSheet(ids, q))],
+  [/^\/clients\/lists$/, 'clients', () => import('./views/lists.js').then((m) => m.renderLists())],
+  [/^\/clients\/list\/([\w-]+)$/, 'clients', (q, id) => import('./views/lists.js').then((m) => m.renderSmartList(id))],
+  [/^\/client\/([\w-]+)\/simulate$/, 'clients', (q, id) => import('./views/simulate.js').then((m) => m.renderSimulate(id))],
+  [/^\/tools\/simulate$/, 'tools', () => import('./views/simulate.js').then((m) => m.renderSimulate(null))],
   [/^\/share$/, 'clients', () => import('./views/share.js').then((m) => m.renderShare())],
   [/^\/work\/calendar$/, 'work', () => import('./views/calendar.js').then((m) => m.renderCalendar())],
   [/^\/tools\/train$/, 'tools', (q) => import('./views/train.js').then((m) => m.renderTrain(q))],
@@ -129,6 +133,13 @@ function updateBadge() {
 }
 setTimeout(hideSplash, 2500);
 
+export function showWhatsNew(v) {
+  import('./changelog.js').then(({ CHANGELOG }) => import('./ui.js').then(({ sheet, closeSheet }) => {
+    const cur = CHANGELOG.find((x) => x.v === v) || CHANGELOG[0];
+    sheet({ title: `อัปเดตเป็นเวอร์ชัน ${cur.v} แล้ว`, sub: 'มีอะไรใหม่', body: h('div.stack', h('ul.whatsnew', cur.items.map((t) => h('li', t))), h('button.btn.primary.block', { onclick: () => closeSheet(true) }, 'เข้าใจแล้ว')) });
+  }));
+}
+
 // ── ปุ่มลัดคีย์บอร์ด ──
 const SHORTCUTS = [['/', 'ค้นหา / สั่งงาน'], ['Ctrl + K', 'ค้นหา / สั่งงาน'], ['N', 'เพิ่มลูกค้าใหม่'], ['A', 'ลงนัดใหม่'], ['T', 'หน้าวันนี้'], ['C', 'ปฏิทิน'], ['P', 'โหมดโทรรวด'], ['L', 'รายชื่อลูกค้า'], ['?', 'ดูปุ่มลัดทั้งหมด'], ['Esc', 'ปิดหน้าต่าง']];
 export function showShortcuts() {
@@ -164,6 +175,12 @@ store.onSync(() => { const raw = location.hash.slice(1) || '/'; const p = raw.sp
     history.replaceState(null, '', location.pathname + '#/share');
   } }
 route();
+// แสดง "มีอะไรใหม่" ครั้งเดียวหลังอัปเดตเวอร์ชัน
+setTimeout(() => {
+  const v = APP_VERSION.split(' ')[0];
+  let seen = null; try { seen = localStorage.getItem('advdesk.v1.seenVersion'); localStorage.setItem('advdesk.v1.seenVersion', v); } catch {}
+  if (seen && seen !== v && !isSheetOpen()) showWhatsNew(v);
+}, 900);
 if (store.sync.config.url) store.syncNow().catch(() => {});
 
 // ติดตั้งเป็นแอป (PWA) + ใช้ออฟไลน์
@@ -172,6 +189,9 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   const hadController = !!navigator.serviceWorker.controller;
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (!hadController || reloading) return; reloading = true; location.reload(); });
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {}));
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => {
+    r.addEventListener('updatefound', () => { if (hadController) import('./ui.js').then(({ toast }) => toast('กำลังอัปเดตแอปเป็นเวอร์ชันล่าสุด…')); });
+    r.update();
+  }).catch(() => {}));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') navigator.serviceWorker.getRegistration().then((r) => r && r.update()).catch(() => {}); });
 }

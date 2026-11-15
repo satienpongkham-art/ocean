@@ -1,0 +1,116 @@
+/* ── v5.1: เลิกทำ · จำลองเหตุการณ์ · รายชื่ออัจฉริยะ · จอคอม 2 ช่อง · เช็กลิสต์ · ผู้สูงวัย · คอนทราสต์สูง ── */
+
+/* แถบแจ้งพร้อมปุ่มเลิกทำ */
+.toast { display: flex; align-items: center; gap: 12px; }
+.toast.has-act { padding-right: 8px; }
+.toast-act { background: transparent; border: 0; color: var(--primary-soft); font: inherit; font-weight: 700; padding: 6px 10px; min-height: 36px; border-radius: 9px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.toast-act:hover, .toast-act:focus-visible { background: rgba(255,255,255,.12); }
+
+/* จำลองเหตุการณ์ */
+.sim-tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 10px -16px 0; padding: 2px 16px 4px; }
+.sim-tabs::-webkit-scrollbar { display: none; }
+.sim-tabs button { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 120px; min-height: 84px; border: 1.5px solid var(--line); background: var(--card); border-radius: 16px; padding: 10px; text-align: left; cursor: pointer; font-family: var(--font); font-size: 14px; color: var(--ink-2); }
+.sim-tabs button svg { width: 22px; height: 22px; color: var(--primary); }
+.sim-tabs button.on { border-color: var(--primary); background: var(--primary-soft); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--primary) inset; }
+@media (min-width: 900px) { .sim-tabs { margin: 10px 0 0; padding: 2px 0 4px; } .sim-tabs button { flex: 1; width: auto; } }
+.sim-headline { margin: 14px 0 10px; }
+.sim-headline span { display: block; color: var(--ink-2); font-size: 15px; }
+.sim-headline b { display: block; font-family: var(--serif); font-weight: 600; font-size: 34px; line-height: 1.2; color: var(--bad); }
+.sim-headline small { color: var(--ink-3); font-size: 14px; }
+.sim-card { display: grid; gap: 14px; }
+.sim-row { display: grid; grid-template-columns: 96px 1fr auto; gap: 12px; align-items: center; }
+.sim-lab b { display: block; font-family: var(--serif); font-weight: 500; font-size: 15px; }
+.sim-lab span { font-size: 12px; color: var(--ink-3); }
+.sim-bar { height: 22px; border-radius: 8px; background: var(--paper-2); display: flex; overflow: hidden; }
+.sim-bar i { display: block; height: 100%; transition: width .4s ease; }
+.sim-bar i.paid, .sim-legend i.paid { background: var(--good); }
+.sim-bar i.own, .sim-legend i.own { background: repeating-linear-gradient(135deg, var(--bad) 0 6px, color-mix(in srgb, var(--bad) 75%, white) 6px 10px); }
+.sim-own { text-align: right; min-width: 84px; }
+.sim-own span { display: block; font-family: var(--serif); font-weight: 600; font-size: 17px; }
+.sim-own .bad { color: var(--bad); } .sim-own .good { color: var(--good); }
+.sim-own small { font-size: 11.5px; color: var(--ink-3); }
+.sim-legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); }
+.sim-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sim-legend i { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+@media (max-width: 420px) { .sim-row { grid-template-columns: 1fr auto; } .sim-row .sim-bar { grid-column: 1 / -1; grid-row: 2; } }
+.present .sim-link { display: flex; gap: 14px; align-items: center; color: inherit; text-decoration: none; }
+.present .sim-link > svg:first-child { width: 28px; height: 28px; color: var(--accent); flex: none; }
+.present .sim-link div { flex: 1; }
+.present .sim-link b { display: block; font-size: 17px; }
+.present .sim-link span { font-size: 14px; color: var(--ink-3); }
+
+/* รายชื่ออัจฉริยะ */
+.smart-entry { display: flex; gap: 12px; align-items: center; margin-top: 12px; padding: 12px 14px; border-radius: 16px; background: var(--primary-soft); color: var(--ink); text-decoration: none !important; }
+.smart-entry > svg:first-child { color: var(--primary); flex: none; }
+.smart-entry span { flex: 1; }
+.smart-entry b { display: block; font-family: var(--serif); font-weight: 500; }
+.smart-entry small { color: var(--ink-2); font-size: 13px; }
+
+/* จอคอม: รายชื่อ + รายละเอียด */
+.split { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+.split-side { position: sticky; top: 20px; max-height: calc(100dvh - 40px); display: flex; flex-direction: column; background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 1px 2px rgba(29,36,34,.05), 0 8px 24px -16px rgba(29,36,34,.25); }
+.pane-list { overflow-y: auto; margin: 8px -6px 0; padding: 0 6px; flex: 1; }
+.pane-row { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 12px; color: inherit; text-decoration: none !important; }
+.pane-row:hover { background: var(--paper-2); }
+.pane-row.on { background: var(--primary-soft); box-shadow: 0 0 0 1.5px var(--primary) inset; }
+.pane-row .avatar { width: 34px; height: 34px; border-radius: 10px; font-size: 14px; }
+.pane-row .pt { min-width: 0; }
+.pane-row b { display: block; font-size: 14.5px; }
+.pane-row .pt > span { display: block; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* เช็กลิสต์ตั้งค่า */
+.setup { margin-top: 12px; }
+.setup-bar { height: 7px; border-radius: 9px; background: var(--paper-2); margin: 10px 0 6px; overflow: hidden; }
+.setup-bar i { display: block; height: 100%; background: var(--primary); border-radius: inherit; }
+.setup-list { list-style: none; margin: 0; padding: 0; }
+.setup-list a { display: flex; gap: 10px; align-items: center; min-height: 44px; color: var(--ink); text-decoration: none !important; border-top: 1px solid var(--line-2); }
+.setup-list li:first-child a { border-top: 0; }
+.setup-list .sl-ic { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; flex: none; }
+.setup-list li.ok .sl-ic { background: var(--good); border-color: var(--good); color: #fff; }
+.setup-list li.ok .sl-ic svg { width: 15px; height: 15px; }
+.setup-list li.ok a > span:nth-child(2) { color: var(--ink-3); text-decoration: line-through; }
+.setup-list a > span:nth-child(2) { flex: 1; }
+.setup-list a > svg:last-child { color: var(--ink-3); }
+
+/* มีอะไรใหม่ */
+.whatsnew { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.6; }
+
+/* โหมดผู้สูงวัยในหน้านำเสนอ */
+.present.senior { font-size: 1.32em; }
+.present.senior h1 { font-size: 44px; }
+.present.senior .lead { font-size: 23px; line-height: 1.6; }
+.present.senior .pcard { border: 2px solid var(--ink); box-shadow: none; padding: 24px; }
+.present.senior .pitem b { font-size: 25px; }
+.present.senior .pitem span { font-size: 19px; color: var(--ink); }
+.present.senior .pitem .pi { width: 60px; height: 60px; }
+.present.senior .pitem .pi svg { width: 32px; height: 32px; }
+.present.senior .pcard > b { font-size: 24px !important; }
+.present.senior ul.ticks { font-size: 21px !important; line-height: 1.7; }
+.present.senior .sign { font-size: 16px; color: var(--ink-2); }
+.present.senior .choice { font-size: 18px; min-height: 48px; }
+
+/* คอนทราสต์สูง */
+:root[data-contrast="high"] {
+  --paper: #ffffff; --paper-2: #f0f0f0; --card: #ffffff; --ink: #000000; --ink-2: #1a1a1a; --ink-3: #333333;
+  --line: #000000; --line-2: #555555; --primary: #003d33; --primary-soft: #d9efe9; --accent: #a5000f; --accent-soft: #ffe5e7;
+  --good: #00522f; --good-soft: #dcf3e6; --warn: #6b4400; --warn-soft: #ffefc9; --bad: #9e0000; --bad-soft: #ffe1dc;
+  --c-life: #002d5c; --c-ci: #5c0036; --c-health: #00522f; --c-hb: #6b4400; --c-accident: #7a1f00; --c-saving: #004a4e; --c-annuity: #2a2a70; --c-senior: #3d2c1d;
+}
+:root[data-contrast="high"][data-theme="dark"] {
+  --paper: #000000; --paper-2: #141414; --card: #0a0a0a; --ink: #ffffff; --ink-2: #f0f0f0; --ink-3: #d6d6d6;
+  --line: #ffffff; --line-2: #9a9a9a; --primary: #7dffd8; --primary-ink: #000; --primary-soft: #0c3329; --accent: #ff8a96; --accent-soft: #3a0a10;
+  --good: #7dffb0; --good-soft: #0a2f1c; --warn: #ffd166; --warn-soft: #3a2b00; --bad: #ff8a80; --bad-soft: #3a0c08;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-contrast="high"]:not([data-theme="light"]) {
+    --paper: #000000; --paper-2: #141414; --card: #0a0a0a; --ink: #ffffff; --ink-2: #f0f0f0; --ink-3: #d6d6d6;
+    --line: #ffffff; --line-2: #9a9a9a; --primary: #7dffd8; --primary-ink: #000; --primary-soft: #0c3329; --accent: #ff8a96; --accent-soft: #3a0a10;
+    --good: #7dffb0; --good-soft: #0a2f1c; --warn: #ffd166; --warn-soft: #3a2b00; --bad: #ff8a80; --bad-soft: #3a0c08;
+  }
+}
+:root[data-contrast="high"] .card, :root[data-contrast="high"] .prow, :root[data-contrast="high"] .task, :root[data-contrast="high"] .kpi, :root[data-contrast="high"] .stat,
+:root[data-contrast="high"] .input, :root[data-contrast="high"] .chip, :root[data-contrast="high"] .choice, :root[data-contrast="high"] .btn:not(.primary), :root[data-contrast="high"] .pcard { border: 2px solid var(--line) !important; box-shadow: none !important; }
+:root[data-contrast="high"] .muted, :root[data-contrast="high"] .small.muted, :root[data-contrast="high"] .xs.muted { color: var(--ink-2) !important; }
+:root[data-contrast="high"] a { text-decoration: underline; text-underline-offset: 3px; }
+:root[data-contrast="high"] .btn, :root[data-contrast="high"] .tabbar a, :root[data-contrast="high"] .prow, :root[data-contrast="high"] .task, :root[data-contrast="high"] .quick a, :root[data-contrast="high"] .hero a, :root[data-contrast="high"] .tool-tile { text-decoration: none; }
+:root[data-contrast="high"] :focus-visible { outline: 4px solid var(--accent); outline-offset: 2px; }

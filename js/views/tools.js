@@ -5,7 +5,7 @@ import { OBJECTIONS } from '../../data/objections.js';
 import { DEFAULT_PROFILE } from '../../data/profile.js';
 import { profile } from '../app.js';
 import { choices } from '../ui.js';
-import { canInstall, install, isStandalone, isIOS, iosGuide, getTheme, setTheme, getPalette, setPalette, getLeading, setLeading, getMotion, setMotion, getTextSize, setTextSize, getHaptic, setHaptic, forceUpdate } from '../pwa.js';
+import { canInstall, install, isStandalone, isIOS, iosGuide, getTheme, setTheme, getPalette, setPalette, getLeading, setLeading, getMotion, setMotion, getContrast, setContrast, getTextSize, setTextSize, getHaptic, setHaptic, forceUpdate } from '../pwa.js';
 import { APP_VERSION } from '../app.js';
 
 export function renderTools() {
@@ -146,12 +146,14 @@ export function renderDisplay() {
     h('div.card', installRow,
       h('div.set-row', h('div', h('b', 'ตัวเลขบนไอคอน'), h('small', 'แสดงจำนวนงานสำคัญวันนี้บนไอคอนแอป (Android / iPhone iOS 16.4+ ที่ติดตั้งแล้ว)')), h('span.tag', 'อัตโนมัติ')),
       h('div.set-row', h('div', h('b', 'กดค้างที่ไอคอน'), h('small', 'เมนูลัด: เพิ่มลูกค้า · โทรนัด · คลังแผน · ค้นหา (Android)')), h('span.tag', 'พร้อมใช้'))),
-    h('div.section', h('h2', 'เวอร์ชันแอป'), h('div.card', h('div.set-row', h('div', h('b', 'เวอร์ชัน ' + APP_VERSION), h('small', 'ถ้าหน้าตาไม่เปลี่ยนหลังอัปเดต กดปุ่มนี้ (ข้อมูลลูกค้าไม่หาย)')),
-      h('button.btn.primary.sm', { onclick: () => forceUpdate() }, icon('sync'), 'อัปเดตแอปตอนนี้')))),
+    h('div.section', h('h2', 'เวอร์ชันแอป'), h('div.card', h('div.set-row', h('div', h('b', 'เวอร์ชัน ' + APP_VERSION), h('small', 'แอปอัปเดตเองเมื่อเปิด · ถ้าหน้าตาไม่เปลี่ยน กดปุ่มนี้ (ข้อมูลลูกค้าไม่หาย)')),
+      h('button.btn.primary.sm', { onclick: () => forceUpdate() }, icon('sync'), 'อัปเดตแอปตอนนี้')),
+      h('div.set-row', h('div', h('b', 'มีอะไรใหม่'), h('small', 'ดูรายการอัปเดตล่าสุด')), h('button.btn.sm', { onclick: () => import('../app.js').then((m) => m.showWhatsNew(APP_VERSION.split(' ')[0])) }, 'ดู')))),
     h('div.section', h('h2', 'ขนาดตัวอักษร'), h('div.card', choices('ts', getTextSize(), [['m', 'ปกติ'], ['l', 'ใหญ่'], ['xl', 'ใหญ่มาก']], { onChange: setTextSize }),
       h('p.small.muted', { style: { marginTop: '10px' } }, 'ใช้ "ใหญ่" ตอนเปิดให้ลูกค้าดู จะอ่านง่ายขึ้น'))),
     h('div.section', h('h2', 'การเข้าถึง'), h('div.card',
       h('div.q', h('span.ql', 'ระยะบรรทัด'), choices('ld', getLeading(), [['normal', 'ปกติ'], ['relaxed', 'กว้าง'], ['loose', 'กว้างมาก']], { onChange: setLeading }), h('span.qh', 'อักษรไทยมีสระบน-ล่าง ระยะบรรทัดกว้างช่วยให้อ่านง่ายขึ้น')),
+      h('div.q', h('span.ql', 'ความคมชัดของสี'), choices('hc', getContrast(), [['normal', 'ปกติ'], ['high', 'คอนทราสต์สูง']], { onChange: setContrast }), h('span.qh', 'ขาว–ดำชัด เส้นขอบหนา อ่านกลางแดดได้ (ใช้คู่กับโหมดมืดได้)')),
       h('div.q', h('span.ql', 'ภาพเคลื่อนไหว'), choices('mo', getMotion(), [['auto', 'ตามมือถือ'], ['reduce', 'ลดให้น้อยที่สุด']], { onChange: setMotion })),
       h('a.btn.sm', { href: '#/tools/glossary' }, icon('book'), 'คำศัพท์ภาษาง่าย'), ' ',
       h('button.btn.sm', { onclick: () => import('../app.js').then((m) => m.showShortcuts()) }, icon('key'), 'ปุ่มลัดคีย์บอร์ด'))),

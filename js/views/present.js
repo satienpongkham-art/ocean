@@ -24,15 +24,19 @@ export function renderPresent(id, qs = {}) {
     listWrap.replaceChildren(...t.items.map((it) => { const pl = PLAN[it.plan]; return pl ? h('div.pitem.cat-' + pl.cat, h('span.pi', icon('cat-' + pl.cat)), h('div', h('b', pl.short), h('span', it.sa + ' · ' + pl.tagline))) : null; }));
   };
   paint();
-  return h('div.present', { 'data-title': 'นำเสนอ ' + c.nick },
-    h('div.ptop', h('a.btn.ghost', { href: '#/client/' + id }, icon('close'), 'ออก'), h('div.row', { style: { gap: '6px' } }, h('button.btn', { onclick: () => copyText(shareText(p, r, tier)), 'aria-label': 'คัดลอกข้อความสรุป' }, icon('copy'), 'ข้อความ'), h('button.btn.primary', { onclick: () => shareImage(p, r, tier) }, icon('upload'), 'ส่งเป็นภาพ'))),
+  const senior = sessionStorage.getItem('senior') === '1';
+  const toggleSenior = () => { sessionStorage.setItem('senior', senior ? '0' : '1'); import('../app.js').then((m) => m.rerender()); };
+  return h('div.present', { class: senior ? 'senior' : '', 'data-title': 'นำเสนอ ' + c.nick },
+    h('div.ptop', h('a.btn.ghost', { href: '#/client/' + id }, icon('close'), 'ออก'), h('div.row', { style: { gap: '6px' } },
+      h('button.btn', { 'aria-pressed': String(senior), onclick: toggleSenior, title: 'โหมดผู้สูงวัย: ตัวใหญ่ สีชัด เหลือเรื่องสำคัญ' }, h('b', { style: { fontSize: '18px' } }, 'ก'), senior ? 'ปกติ' : 'ตัวใหญ่'), h('button.btn', { onclick: () => copyText(shareText(p, r, tier)), 'aria-label': 'คัดลอกข้อความสรุป' }, icon('copy'), 'ข้อความ'), h('button.btn.primary', { onclick: () => shareImage(p, r, tier) }, icon('upload'), 'ส่งเป็นภาพ'))),
     h('div.small.muted', 'แผนความคุ้มครองที่ออกแบบสำหรับ'),
     h('h1', 'คุณ' + c.nick),
     h('p.lead', { style: { marginTop: '6px' } }, r.pkg.goal),
     h('div.pcard', h('div.row.between.wrap', { style: { gap: '8px', marginBottom: '6px' } }, h('b', { style: { fontSize: '18px' } }, r.pkg.name),
       choices('tier', tier, ['basic', 'mid', 'max'].map((k) => [k, TIER_LABEL[k]]), { onChange: (v) => { tier = v; paint(); } })), listWrap),
-    h('div.pcard', h('b', { style: { fontSize: '18px' } }, 'ทำไมถึงเหมาะกับคุณ'), h('ul.ticks', { style: { marginTop: '8px', fontSize: '16px' } }, r.reasons.slice(0, 3).map((x) => h('li', x)))),
-    h('div.pcard', h('b', { style: { fontSize: '18px' } }, 'ภาพรวมความคุ้มครอง 8 ด้าน'), h('div', { style: { marginTop: '10px' } }, mandalaGrid(c.nick, healthCheck(p), { onCell: () => {} }))),
+    h('div.pcard', h('b', { style: { fontSize: '18px' } }, 'ทำไมถึงเหมาะกับคุณ'), h('ul.ticks', { style: { marginTop: '8px', fontSize: '16px' } }, r.reasons.slice(0, senior ? 2 : 3).map((x) => h('li', x)))),
+    senior ? null : h('div.pcard', h('b', { style: { fontSize: '18px' } }, 'ภาพรวมความคุ้มครอง 8 ด้าน'), h('div', { style: { marginTop: '10px' } }, mandalaGrid(c.nick, healthCheck(p), { onCell: () => {} }))),
+    h('a.pcard.sim-link', { href: `#/client/${id}/simulate` }, icon('flame'), h('div', h('b', 'ถ้าเกิดเรื่องไม่คาดฝันวันนี้ ต้องจ่ายเองเท่าไร?'), h('span', 'ดูจำลองเหตุการณ์')), icon('next')),
     h('div.sign', `${pr.name} · ${pr.title} ${pr.company} · รหัสตัวแทน ${pr.agentCode}${pr.licenseLife ? ' · ใบอนุญาต ' + pr.licenseLife : ''}`, h('br'), 'เบี้ยประกันจริงตามใบเสนอจากระบบ AIA · ' + DISCLAIMER));
 }
 
