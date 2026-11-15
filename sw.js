@@ -1,6 +1,6 @@
 // Service worker: ใช้งานออฟไลน์ (เก็บไฟล์แอปไว้ในเครื่อง)
 // เปลี่ยนเลข VERSION ทุกครั้งที่แก้ไฟล์ข้อมูล/โค้ด เพื่อให้เครื่องโหลดของใหม่
-const VERSION = 'advdesk-2026-11-15-4';
+const VERSION = 'advdesk-2026-11-15-5';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css', 'css/ui2.css', 'css/ui3.css', 'js/pwa.js', 'js/views/sales.js', 'js/views/compare.js', 'js/views/present.js', 'js/views/search.js', 'assets/icon-192.png', 'assets/favicon-64.png', 
   'js/app.js', 'js/ui.js', 'js/store.js', 'js/charts.js',

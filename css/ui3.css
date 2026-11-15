@@ -1,6 +1,6 @@
 /* ── v3: หน้าเปิดแอป · ขนาดตัวอักษร · โหมดนำเสนอ · เทียบแผน · ค้นหา · ยอดขาย ── */
-#splash { position: fixed; inset: 0; z-index: 200; background: #1f4e46; color: #f5f2ec; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: var(--serif); font-size: 20px; transition: opacity .35s ease; }
-#splash img { border-radius: 22px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+#splash { position: fixed; inset: 0; z-index: 200; background: #f5f2ec; color: #1d2422; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-family: var(--serif); font-size: 20px; transition: opacity .35s ease; }
+#splash img { border-radius: 22px; box-shadow: 0 10px 30px rgba(29,36,34,.18); }
 #splash.hide { opacity: 0; pointer-events: none; }
 
 /* ขนาดตัวอักษร (ตั้งค่าที่ เครื่องมือ › การแสดงผล) */
