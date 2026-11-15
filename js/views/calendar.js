@@ -2,6 +2,7 @@
 import { h, icon, todayISO, isoDate, dateTH, empty } from '../ui.js';
 import * as store from '../store.js';
 import { anniversariesIn, milestones } from '../engine/work.js';
+import { HOLIDAYS } from '../../data/holidays.js';
 import { apptSheet, apptResultSheet, policyName } from './common.js';
 
 const MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
@@ -13,6 +14,7 @@ export const KINDS = {
   bday: { name: 'วันเกิด', color: 'var(--warn)', icon: 'cake' },
   due: { name: 'ครบชำระเบี้ย', color: 'var(--c-saving)', icon: 'doc' },
   care: { name: 'ดูแลหลังขาย', color: 'var(--good)', icon: 'heart' },
+  holiday: { name: 'วันหยุด', color: 'var(--bad)', icon: 'star' },
 };
 
 let view = null; // { y, m, sel }
@@ -42,6 +44,7 @@ export function monthEvents(y, m) {
     const c = cById[p.clientId];
     add(p.nextDue, { kind: 'due', title: `${c ? c.nick + ' · ' : ''}${policyName(p)}`, sub: 'ครบกำหนดชำระเบี้ย', go: c ? '#/client/' + c.id : '#/work/sales' });
   }
+  for (const [d, name] of Object.entries(HOLIDAYS)) if (d.startsWith(ym)) add(d, { kind: 'holiday', title: name, sub: 'วันหยุดราชการ — เลี่ยงนัดสำคัญ / ใช้ทำคอนเทนต์ตามเทศกาล', go: '#/tools/content' });
   for (const k in out) out[k].sort((a, b) => (a.kind === 'appt' ? 0 : 1) - (b.kind === 'appt' ? 0 : 1) || (a.sort || '').localeCompare(b.sort || ''));
   return out;
 }
@@ -74,7 +77,7 @@ export function renderCalendar() {
     const iso = isoDate(new Date(y, m, d));
     const list = ev[iso] || [];
     const kinds = [...new Set(list.map((e) => e.kind))];
-    cells.push(h('button.cal-cell', { class: [iso === today ? 'today' : '', iso === view.sel ? 'sel' : '', list.length ? 'has' : ''].join(' '), onclick: () => { view.sel = iso; rerender(); }, 'aria-label': dateTH(iso) + (list.length ? ` มี ${list.length} รายการ` : '') },
+    cells.push(h('button.cal-cell', { class: [iso === today ? 'today' : '', iso === view.sel ? 'sel' : '', list.length ? 'has' : '', HOLIDAYS[iso] ? 'hol' : ''].join(' '), title: HOLIDAYS[iso] || null, onclick: () => { view.sel = iso; rerender(); }, 'aria-label': dateTH(iso) + (list.length ? ` มี ${list.length} รายการ` : '') },
       h('span.cd', d),
       h('span.cal-dots', kinds.slice(0, 4).map((k) => h('i', { style: { background: KINDS[k].color } }))),
       h('span.cal-lab', list.slice(0, 2).map((e) => h('em', { style: { '--kc': KINDS[e.kind].color } }, e.title.replace(/^ทั้งวัน · /, ''))))));
