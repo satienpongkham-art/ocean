@@ -5,7 +5,7 @@ import { PLANS, closingInfo } from '../../data/plans.js';
 import { coach, pointsOn, countBy, weekRange, level, totalPoints, callQueue } from '../engine/work.js';
 import { apptSheet, apptResultSheet } from './common.js';
 import { profile } from '../app.js';
-import { installCard } from '../pwa.js';
+import { installCard, isStandalone } from '../pwa.js';
 import { duePolicies } from './sales.js';
 import { policyName } from './common.js';
 
@@ -74,9 +74,26 @@ export function render() {
       h('a.hero-chip', { href: '#/work/calendar' }, icon('cal'), 'ปฏิทิน'),
       h('button.hero-chip', { onclick: () => apptSheet() }, icon('plus'), 'นัด')));
 
+  // เช็กลิสต์ตั้งค่าครั้งแรก
+  const steps = [
+    ['โปรไฟล์: เลขใบอนุญาต / LINE ID', !!(p.licenseLife && p.line), '#/tools/profile'],
+    ['ตั้งเป้ารายได้', !!settings.goal, '#/work/goals'],
+    ['ซิงก์กับคอม (Google Sheets)', !!store.sync.config.url, '#/tools/sync'],
+    ['ติดตั้งแอปบนมือถือ', isStandalone() || !!settings.installed, '#/tools/display'],
+    ['เพิ่มลูกค้าคนแรก', clients.length > 0, '#/client/new'],
+    ['ตรวจสุขภาพการเงินครั้งแรก', store.all('checks').length > 0, '#/check'],
+  ];
+  const doneN = steps.filter((x) => x[1]).length;
+  if (isStandalone() && !settings.installed) setTimeout(() => store.saveSettings({ installed: true }), 0);
+  const setup = settings.setupHidden || doneN === steps.length ? null : h('div.card.setup',
+    h('div.row.between', h('div', h('b', `ตั้งค่าแอปให้พร้อม ${doneN}/${steps.length}`), h('div.small.muted', 'ทำครบแล้วการ์ดนี้จะหายไปเอง')), h('button.icon-btn', { 'aria-label': 'ซ่อนเช็กลิสต์', onclick: () => store.saveSettings({ setupHidden: true }) }, icon('close'))),
+    h('div.setup-bar', { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': steps.length, 'aria-valuenow': doneN }, h('i', { style: { width: (doneN / steps.length) * 100 + '%' } })),
+    h('ul.setup-list', steps.map(([t, ok, href]) => h('li', { class: ok ? 'ok' : '' }, h('a', { href }, h('span.sl-ic', { 'aria-hidden': 'true' }, ok ? icon('check') : ''), h('span', t), h('span.sr-only', ok ? ' (ทำแล้ว)' : ' (ยังไม่ได้ทำ)'), ok ? null : icon('next'))))));
+
   return h('div', { 'data-title': 'วันนี้' },
     installCard(),
     hero,
+    setup,
 
     ...closingPlans.map((x) => h('a.countdown', { href: '#/plan/' + x.plan.id, style: { textDecoration: 'none', color: 'inherit', marginTop: '12px' } },
       h('div.big', x.days), h('div', { style: { flex: 1 } }, h('b', `วัน ${x.plan.short} ปิดรับ`), h('div.small.muted', noHealth ? `ลูกค้า ${noHealth} คนยังไม่มีประกันสุขภาพของตัวเอง` : 'แตะเพื่อดูแผน')), icon('next'))),
@@ -93,7 +110,7 @@ export function render() {
       h('a', { href: '#/check' }, icon('grid'), 'ตรวจการเงิน'),
       h('a', { href: '#/plans/advisor' }, icon('compass'), 'แนะนำแผน'),
       h('a', { href: '#/plans' }, icon('plans'), 'ดูแผน'),
-      h('a', { href: '#/tools/captions' }, icon('pen'), 'ทำโพสต์'))),
+      h('a', { href: '#/clients/lists' }, icon('filter'), 'รายชื่ออัจฉริยะ'))),
 
     !store.sync.config.url ? h('a.callout.warn', { href: '#/tools/sync', style: { display: 'block', marginTop: '16px', color: 'inherit', textDecoration: 'none' } }, 'ข้อมูลยังอยู่แค่เครื่องนี้ — แตะเพื่อตั้งค่าซิงก์กับคอม') : null);
 }

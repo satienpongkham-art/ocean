@@ -3,6 +3,7 @@ import { h, icon, dateTH, todayISO, isoDate, initials, empty, field, inputEl, re
 import * as store from '../store.js';
 import { STAGES, STAGE, ACTIVITIES, ACT, grade, ratios, reverseGoal, countBy, weekRange, pointsOn, ageUp, callQueue } from '../engine/work.js';
 import { haptic } from '../pwa.js';
+import { snap, restore } from '../undo.js';
 import { rerender } from '../app.js';
 import { apptSheet, logActivity, setStage } from './common.js';
 import { lineChart, legend } from '../charts.js';
@@ -39,7 +40,7 @@ export function renderPipeline() {
 /** ทางเลือกแทนการลาก: เลือกขั้นจากรายการ (WCAG 2.5.7) */
 function moveSheet(c) {
   const cur = c.stage || 'lead';
-  sheet({ title: `ย้าย ${c.nick} ไปขั้น…`, body: h('div.plist', { role: 'list' }, STAGES.map((st) => h('button.prow', { role: 'listitem', 'aria-current': st.id === cur ? 'true' : null, class: st.id === cur ? 'on' : '', onclick: () => { closeSheet(true); if (st.id !== cur) { setStage(store.get('clients', c.id), st.id); toast(`${c.nick} → ${st.name}`); } } },
+  sheet({ title: `ย้าย ${c.nick} ไปขั้น…`, body: h('div.plist', { role: 'list' }, STAGES.map((st) => h('button.prow', { role: 'listitem', 'aria-current': st.id === cur ? 'true' : null, class: st.id === cur ? 'on' : '', onclick: () => { closeSheet(true); if (st.id !== cur) setStage(store.get('clients', c.id), st.id); } },
     h('span.pi', icon(st.id === cur ? 'check' : 'next')), h('span.pt', h('b', st.name), h('span', st.id === cur ? 'ขั้นปัจจุบัน' : st.hint))))) });
 }
 
@@ -82,7 +83,7 @@ function enableDrag(board) {
       const id = st.card.dataset.id;
       board.dataset.justDragged = '1'; setTimeout(() => delete board.dataset.justDragged, 50);
       cancel();
-      if (col && col.dataset.stage) { const c = store.get('clients', id); if (c && (c.stage || 'lead') !== col.dataset.stage) { setStage(c, col.dataset.stage); toast(`${c.nick} → ${STAGE[col.dataset.stage].name}`); } }
+      if (col && col.dataset.stage) { const c = store.get('clients', id); if (c && (c.stage || 'lead') !== col.dataset.stage) setStage(c, col.dataset.stage); }
     } else cancel();
   };
   board.addEventListener('pointerdown', (e) => {
@@ -158,6 +159,12 @@ export function renderCall() {
   return root;
 }
 
+/** เริ่มโทรรวดกับรายชื่อที่กำหนด (จากรายชื่ออัจฉริยะ) */
+export function startPowerHour(ids, name) {
+  ph = { running: true, start: Date.now(), minutes: ph.minutes || 60, script: ph.script || 'warm', ids, idx: 0, results: [], called: {}, listName: name || '' };
+  savePH(); location.hash = '#/work/call';
+}
+
 function phIntro() {
   const queue = callQueue(store.all('clients'));
   const hist = store.all('goals').filter((g) => g.type === 'powerhour').sort((a, b) => (b.start || 0) - (a.start || 0)).slice(0, 5);
@@ -190,14 +197,18 @@ function phRunning() {
   const au = ageUp(c.birthday, store.getSettings().ageRule);
   const nb = nextBirthday(c.birthday);
   const count = (k) => ph.results.filter((r) => r.r === k).length;
-  const ensureCall = () => { if (!ph.called[c.id]) { logActivity('call', c.id); ph.called[c.id] = 1; } };
+  const ensureCall = () => { if (!ph.called[c.id]) { ph.callSnaps = logActivity('call', c.id, '', { silent: true }); ph.called[c.id] = 1; } };
   const result = (r, extra) => {
+    const before = snap([['clients', c.id]]);
+    const wasCalled = !!ph.called[c.id];
     if (r !== 'skip') ensureCall();
-    if (['callback', 'appt', 'no'].includes(r)) store.put('activities', { type: 'talk', clientId: c.id, date: todayISO(), count: 1 });
+    const made = r !== 'skip' && !wasCalled ? (ph.callSnaps || []).filter((x) => x.coll !== 'clients') : [];
+    if (['callback', 'appt', 'no'].includes(r)) { const t = store.put('activities', { type: 'talk', clientId: c.id, date: todayISO(), count: 1 }); made.push({ coll: 'activities', id: t.id, before: null }); }
     const cur = store.get('clients', c.id);
     if (r === 'noans') store.put('clients', { ...cur, nextDate: addDays(2), nextText: 'โทรอีกครั้ง (ไม่รับสาย)' });
     if (r === 'callback') { store.put('clients', { ...cur, nextDate: addDays(extra), nextText: 'โทรกลับตามที่ขอ', stage: ['lead', '', undefined].includes(cur.stage) ? 'contacted' : cur.stage }); }
-    if (r === 'no') setStage(cur, 'paused');
+    if (r === 'no') { const sn = setStage(cur, 'paused', { undo: false }); if (sn) made.push(...sn.filter((x) => x.coll === 'logs')); }
+    ph.last = { snaps: [...made, ...before], id: c.id, wasCalled };
     ph.results.push({ id: c.id, nick: c.nick, r });
     ph.idx++; ph.pending = null; savePH(); haptic(15);
     if (r === 'appt') { rerender(); apptSheet({ clientId: c.id }); return; }
@@ -236,7 +247,9 @@ function phRunning() {
         h('button', { style: { '--rc': RESULT.callback[1] }, onclick: () => { ph.pending = 'callback'; savePH(); rerender(); } }, h('b', 'ขอโทรกลับ'), h('span', 'เลือกวัน')),
         h('button', { style: { '--rc': RESULT.appt[1] }, onclick: () => result('appt') }, h('b', 'ได้นัด'), h('span', 'ลงนัดทันที')),
         h('button', { style: { '--rc': RESULT.no[1] }, onclick: () => result('no') }, h('b', 'ไม่สนใจ'), h('span', 'พักรายชื่อไว้'))),
-    h('button.btn.ghost.block', { style: { marginTop: '6px' }, onclick: () => result('skip') }, 'ข้ามคนนี้', icon('next')),
+    h('div.row', { style: { gap: '8px', marginTop: '6px' } },
+      ph.last && ph.idx > 0 ? h('button.btn.ghost', { style: { flex: 1 }, onclick: () => { restore(ph.last.snaps); if (!ph.last.wasCalled) delete ph.called[ph.last.id]; ph.idx--; ph.results.pop(); ph.last = null; savePH(); toast('ย้อนกลับไปคนก่อนหน้าแล้ว'); rerender(); } }, icon('back'), 'ย้อนคนล่าสุด') : null,
+      h('button.btn.ghost', { style: { flex: 1 }, onclick: () => result('skip') }, 'ข้ามคนนี้', icon('next'))),
     h('div.card', { style: { marginTop: '10px' } }, scriptBox));
   if (!phTimer) phTimer = setInterval(tick, 1000);
   setTimeout(() => { if (ph.pausedAt) { const el = document.getElementById('ph-time'); if (el) { const left = Math.round((ph.start + ph.minutes * 60000 - ph.pausedAt) / 1000); const a = Math.abs(left); el.textContent = String(Math.floor(a / 60)).padStart(2, '0') + ':' + String(a % 60).padStart(2, '0'); } } else tick(); }, 0);

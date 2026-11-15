@@ -6,6 +6,7 @@ import { HEALTH_LEVELS, healthCheck, fmtM } from '../engine/needs.js';
 import { resultView, needSteps } from './advisor.js';
 import { apptSheet, apptResultSheet, setStage, gcalLink, logActivity, policySheet, policyRow, nextStepSheet, nextStepPicker, applyNext } from './common.js';
 import { mandalaGrid, historyView } from './fhc.js';
+import { removeWithUndo } from '../undo.js';
 
 export const clientAge = (c) => ageFrom(c.birthday) ?? (c.age != null && c.age !== '' ? +c.age : null);
 const SRC = Object.fromEntries(SOURCES);
@@ -49,7 +50,8 @@ export function renderList(qs = {}) {
   };
   root.append(
     h('div.topbar', h('div', h('h1', 'ลูกค้า'), h('div.sub', `${all.length}/100 รายชื่อ`)), h('a.btn.primary', { href: '#/client/new' }, icon('plus'), 'เพิ่ม')),
-    h('div.search', icon('search'), h('input.input', { type: 'search', placeholder: 'ค้นหาชื่อเล่น เบอร์', value: filt.q, oninput: (e) => { filt.q = e.target.value; draw(); } })),
+    h('div.search', icon('search'), h('input.input', { type: 'search', placeholder: 'ค้นหาชื่อเล่น เบอร์', 'aria-label': 'ค้นหาลูกค้า', value: filt.q, oninput: (e) => { filt.q = e.target.value; draw(); } })),
+    h('a.smart-entry', { href: '#/clients/lists' }, icon('filter'), h('span', h('b', 'รายชื่ออัจฉริยะ'), h('small', 'กรองตามเงื่อนไข แล้วโทรรวดกับรายชื่อนั้น')), icon('next')),
     h('div.chips', { style: { margin: '12px -16px 12px' } }, [['all', 'ทั้งหมด'], ['follow', 'ต้องติดตาม'], ['nonext', 'ยังไม่มีขั้นต่อไป'], ['A', 'เกรด A'], ['nohealth', 'ยังไม่มีประกันสุขภาพ'], ['bday', 'วันเกิดใกล้นี้'], ['customers', 'ลูกค้าแล้ว']].map(([v, l]) =>
       h('button.chip', { class: filt.f === v ? 'on' : '', onclick: (e) => { filt.f = v; e.currentTarget.parentElement.querySelectorAll('.chip').forEach((x) => x.classList.remove('on')); e.currentTarget.classList.add('on'); draw(); } }, l))),
     list);
@@ -167,7 +169,9 @@ export function renderDetail(id) {
         h('div.erow', h('span', 'อายุ'), h('b', age != null ? age + ' ปี' : '—')),
         h('div.erow', h('span', 'ครอบครัว'), h('b', [c.marital === 'married' ? 'มีคู่' : 'โสด', c.kids ? `ลูก ${c.kids}` : null, c.parents ? `ดูแลพ่อแม่ ${c.parents}` : null].filter(Boolean).join(' · '))),
         h('div.erow', h('span', 'ที่มา'), h('b', SRC[c.source] || '—'))))),
-    h('a.btn.block', { href: `#/client/${id}/benefits`, style: { marginTop: '12px' } }, icon('shield'), 'เทียบกับสวัสดิการที่มี'),
+    h('div.row', { style: { gap: '8px', marginTop: '12px' } },
+      h('a.btn', { href: `#/client/${id}/simulate`, style: { flex: 1 } }, icon('flame'), 'จำลองเหตุการณ์'),
+      h('a.btn', { href: `#/client/${id}/benefits`, style: { flex: 1 } }, icon('shield'), 'เทียบสวัสดิการ')),
     c.notes || c.policies ? h('div.section', h('h2', 'บันทึก'), h('div.card', h('p.small', { style: { whiteSpace: 'pre-wrap' } }, [c.policies, c.notes].filter(Boolean).join('\n\n')))) : null,
     referrals(c),
     h('div.row', { style: { gap: '8px', marginTop: '18px' } }, h('a.btn', { href: `#/client/${id}/edit`, style: { flex: 1 } }, icon('pen'), 'แก้ไขข้อมูล'),
@@ -198,7 +202,7 @@ export function renderDetail(id) {
   const t = tabs([['ov', 'ภาพรวม'], ['md', 'แมนฮาร่า'], ['rec', 'แผนที่แนะนำ'], ['pol', 'กรมธรรม์'], ['ap', 'นัด & ประวัติ']], detailTab[id] || 'ov',
     (k) => ({ ov: overview, md: mandala, rec: () => resultView(p), pol: pols, ap: appts })[k](), { onChange: (k) => { detailTab[id] = k; } });
 
-  return h('div', { 'data-title': c.nick },
+  const detail = h('div', { 'data-title': c.nick },
     h('div.back-row', { style: { marginBottom: '6px' } }, h('a.icon-btn', { href: '#/clients', 'aria-label': 'กลับ' }, icon('back')), h('span.small.muted', { style: { flex: 1 } }, 'ลูกค้า'), h('a.btn.sm', { href: '#/present/' + id }, icon('compass'), 'นำเสนอลูกค้า')),
     h('div.client-head', h('div.avatar.lg', initials(c.nick)), h('div', h('h1', c.nick, g ? h('span.grade.' + g, { style: { marginLeft: '8px', verticalAlign: 'middle' } }, g) : null), h('div.meta', [age != null ? age + ' ปี' : null, c.occupation, STAGE[c.stage || 'lead']?.name].filter(Boolean).join(' · ')))),
     h('div.icon-actions',
@@ -207,6 +211,28 @@ export function renderDetail(id) {
       h('button', { onclick: () => apptSheet({ clientId: id }) }, h('span.ii', icon('cal')), 'นัด'),
       h('button', { onclick: () => noteSheet(id) }, h('span.ii', icon('note')), 'จด')),
     h('div', { style: { marginTop: '14px' } }, t.bar, t.panel));
+  if (!matchMedia('(min-width: 1100px)').matches) return detail;
+  // จอคอม: รายชื่อซ้าย · รายละเอียดขวา
+  return h('div.split', { 'data-title': c.nick }, listPane(id), h('div.split-main', detail));
+}
+
+let paneQ = '';
+function listPane(activeId) {
+  const listEl = h('div.pane-list', { role: 'list' });
+  const draw = () => {
+    const t = paneQ.trim().toLowerCase();
+    const items = store.all('clients').filter((x) => !t || [x.nick, x.phone, x.occupation].join(' ').toLowerCase().includes(t))
+      .sort((a, b) => (a.nextDate || '9999').localeCompare(b.nextDate || '9999') || (a.nick || '').localeCompare(b.nick || '', 'th'));
+    listEl.replaceChildren(...items.map((x) => { const g = grade(x);
+      return h('a.pane-row', { href: '#/client/' + x.id, role: 'listitem', class: x.id === activeId ? 'on' : '', 'aria-current': x.id === activeId ? 'page' : null },
+        h('span.avatar', initials(x.nick)), h('span.pt', h('b', x.nick, g ? h('span.grade.' + g, { style: { marginLeft: '6px' } }, g) : null), h('span', [STAGE[x.stage || 'lead']?.name, x.nextDate ? 'ติดตาม ' + dateTH(x.nextDate) : null].filter(Boolean).join(' · ')))); }));
+  };
+  draw();
+  return h('aside.split-side', { 'aria-label': 'รายชื่อลูกค้า' },
+    h('div.row.between', h('b', `ลูกค้า (${store.all('clients').length})`), h('a.btn.sm', { href: '#/client/new' }, icon('plus'), 'เพิ่ม')),
+    h('div.search', { style: { margin: '8px 0' } }, icon('search'), h('input.input', { type: 'search', value: paneQ, placeholder: 'ค้นหา', 'aria-label': 'ค้นหาลูกค้า', oninput: (e) => { paneQ = e.target.value; draw(); } })),
+    h('a.small', { href: '#/clients/lists' }, 'รายชื่ออัจฉริยะ →'),
+    listEl);
 }
 
 function referrals(c) {
@@ -220,7 +246,7 @@ function referrals(c) {
 
 function del(c) {
   if (!confirm(`ลบ ${c.nick} และประวัติทั้งหมด?`)) return;
-  for (const l of store.all('logs').filter((x) => x.clientId === c.id)) store.remove('logs', l.id);
-  for (const a of store.all('appts').filter((x) => x.clientId === c.id)) store.remove('appts', a.id);
-  store.remove('clients', c.id); location.hash = '#/clients';
+  const targets = [['clients', c.id], ...store.all('logs').filter((x) => x.clientId === c.id).map((l) => ['logs', l.id]), ...store.all('appts').filter((x) => x.clientId === c.id).map((a) => ['appts', a.id])];
+  location.hash = '#/clients';
+  removeWithUndo(`ลบ ${c.nick} แล้ว`, targets);
 }

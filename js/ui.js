@@ -143,9 +143,12 @@ export const initials = (s = '') => ((s.trim().replace(/^(น้อง|พี่
 // ── Toast ──────────────────────────────────────────────────
 let tt;
 /** ข้อความแจ้งสั้น ๆ: แสดงนานตามความยาวข้อความ (อย่างน้อย 3 วินาที) · แตะเพื่อปิด · ชี้ค้างไว้ = หยุดนับเวลา */
-export function toast(msg) {
-  const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show');
-  const ms = Math.min(7000, Math.max(3000, String(msg).length * 70));
+export function toast(msg, { action } = {}) {
+  const el = document.getElementById('toast'); el.replaceChildren(document.createTextNode(msg));
+  if (action) el.append(h('button.toast-act', { onclick: (e) => { e.stopPropagation(); clearTimeout(tt); el.classList.remove('show'); action.fn(); } }, action.label));
+  el.classList.toggle('has-act', !!action);
+  el.classList.add('show');
+  const ms = action ? 7000 : Math.min(7000, Math.max(3000, String(msg).length * 70));
   const hide = () => el.classList.remove('show');
   clearTimeout(tt); tt = setTimeout(hide, ms);
   if (!el.dataset.wired) {

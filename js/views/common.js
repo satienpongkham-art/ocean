@@ -3,6 +3,7 @@ import { h, icon, sheet, closeSheet, field, inputEl, selectEl, readForm, toast, 
 import * as store from '../store.js';
 import { ACTIVITIES, ACT, STAGE } from '../engine/work.js';
 import { haptic } from '../pwa.js';
+import { snap, offerUndo, removeWithUndo } from '../undo.js';
 
 export function gcalLink({ title, date, time, minutes = 60, place, details }) {
   const d = (date || todayISO()).replace(/-/g, '');
@@ -23,21 +24,31 @@ export function gcalLink({ title, date, time, minutes = 60, place, details }) {
 }
 
 /** บันทึกกิจกรรม (นับคะแนน) + log ในประวัติลูกค้า */
-export function logActivity(type, clientId, note = '') {
+export function logActivity(type, clientId, note = '', { silent = false } = {}) {
   haptic();
-  store.put('activities', { type, clientId: clientId || null, date: todayISO(), count: 1 });
+  const before = clientId ? snap([['clients', clientId]]) : [];
+  const act = store.put('activities', { type, clientId: clientId || null, date: todayISO(), count: 1 });
+  const made = [{ coll: 'activities', id: act.id, before: null }];
   if (clientId) {
-    store.put('logs', { clientId, date: todayISO(), type, text: note || ACT[type]?.name || type });
+    const lg = store.put('logs', { clientId, date: todayISO(), type, text: note || ACT[type]?.name || type });
+    made.push({ coll: 'logs', id: lg.id, before: null });
     const c = store.get('clients', clientId);
     if (c) store.put('clients', { ...c, lastContact: new Date().toISOString() });
   }
-  toast(`+${ACT[type]?.pts || 0} คะแนน · ${ACT[type]?.name || ''}`);
+  const snaps = [...made, ...before];
+  if (!silent) offerUndo(`+${ACT[type]?.pts || 0} คะแนน · ${ACT[type]?.name || ''}`, snaps);
+  return snaps;
 }
 
-export function setStage(c, stage) {
-  if (!c || c.stage === stage) return;
+/** ย้ายขั้นลูกค้า (มีปุ่มเลิกทำ) — undo: false เมื่อเป็นการย้ายอัตโนมัติ */
+export function setStage(c, stage, { undo = true } = {}) {
+  if (!c || c.stage === stage) return null;
+  const before = snap([['clients', c.id]]);
   store.put('clients', { ...c, stage, stageAt: new Date().toISOString() });
-  store.put('logs', { clientId: c.id, date: todayISO(), type: 'stage', text: `ย้ายไปขั้น "${STAGE[stage]?.name || stage}"` });
+  const lg = store.put('logs', { clientId: c.id, date: todayISO(), type: 'stage', text: `ย้ายไปขั้น "${STAGE[stage]?.name || stage}"` });
+  const snaps = [...before, { coll: 'logs', id: lg.id, before: null }];
+  if (undo) offerUndo(`${c.nick} → ${STAGE[stage]?.name || stage}`, snaps);
+  return snaps;
 }
 
 /** ฟอร์มนัดหมาย (ป๊อปอัป) */
@@ -59,7 +70,7 @@ export function apptSheet({ clientId, appt } = {}) {
         const c = d.clientId && store.get('clients', d.clientId);
         if (c) {
           store.put('activities', { type: 'appt', clientId: c.id, date: todayISO(), count: 1 });
-          if (['lead', 'contacted', undefined, ''].includes(c.stage)) setStage(store.get('clients', c.id), 'appt');
+          if (['lead', 'contacted', undefined, ''].includes(c.stage)) setStage(store.get('clients', c.id), 'appt', { undo: false });
         }
       }
       closeSheet(true);
@@ -80,7 +91,7 @@ export function apptSheet({ clientId, appt } = {}) {
     h('div.full', field('บันทึก', h('textarea.input', { name: 'note' }, a.note || ''))),
     h('div.full.row', { style: { gap: '8px' } },
       h('button.btn.primary', { type: 'submit', style: { flex: 1 } }, icon('check'), 'บันทึกนัด'),
-      a.id ? h('button.btn.danger', { type: 'button', onclick: () => { if (confirm('ลบนัดนี้?')) { store.remove('appts', a.id); closeSheet(true); } } }, icon('trash')) : null));
+      a.id ? h('button.btn.danger', { type: 'button', 'aria-label': 'ลบนัด', onclick: () => { closeSheet(true); removeWithUndo('ลบนัดแล้ว', [['appts', a.id]]); } }, icon('trash')) : null));
   sheet({ title: a.id ? 'แก้ไขนัด' : 'เพิ่มนัดหมาย', body: f });
 }
 
@@ -125,7 +136,7 @@ export function nextStepPicker(c, { required = true, allowPause = true } = {}) {
 /** บันทึกขั้นต่อไปลงลูกค้า */
 export function applyNext(clientId, r) {
   const c = store.get('clients', clientId); if (!c || !r) return;
-  if (r.pause) { store.put('clients', { ...c, nextDate: '', nextText: '' }); setStage(store.get('clients', clientId), 'paused'); return; }
+  if (r.pause) { store.put('clients', { ...c, nextDate: '', nextText: '' }); setStage(store.get('clients', clientId), 'paused', { undo: false }); return; }
   if (r.nextDate) store.put('clients', { ...c, nextDate: r.nextDate, nextText: r.nextText });
 }
 export function nextStepSheet(c, title = 'ขั้นต่อไปคืออะไร?') {
@@ -147,7 +158,7 @@ export function apptResultSheet(a) {
       if (d.status === 'done') {
         logActivity('meet', a.clientId, 'พบลูกค้า: ' + (d.result || a.purpose || ''));
         if (d.presented) store.put('activities', { type: 'present', clientId: a.clientId || null, date: todayISO(), count: 1 });
-          if (c && d.nextStage) setStage(store.get('clients', c.id), d.nextStage);
+          if (c && d.nextStage) setStage(store.get('clients', c.id), d.nextStage, { undo: false });
         if (c && nx) applyNext(c.id, nx);
       }
       closeSheet(true);
@@ -226,14 +237,14 @@ export function policySheet({ clientId, policy } = {}) {
     const sold = ['submitted', 'issued'].includes(saved.status);
     if (sold && !wasSold && cid) {
       store.put('activities', { type: 'close', clientId: cid, date: todayISO(), count: 1 });
-      const c = store.get('clients', cid); if (c && !['closed', 'delivered'].includes(c.stage)) setStage(c, 'closed');
+      const c = store.get('clients', cid); if (c && !['closed', 'delivered'].includes(c.stage)) setStage(c, 'closed', { undo: false });
       haptic(30); toast('ยินดีด้วย! บันทึกการปิดการขาย +5 คะแนน');
     } else toast('บันทึกแล้ว');
     closeSheet(true);
   };
   sheet({ title: policy ? 'แก้ไขกรมธรรม์' : 'เพิ่มกรมธรรม์ / ยอดขาย', body: h('div', body,
     h('div.row', { style: { gap: '8px' } }, h('button.btn.primary', { style: { flex: 1 }, onclick: save }, icon('check'), 'บันทึก'),
-      policy ? h('button.btn.danger', { onclick: () => { if (confirm('ลบรายการนี้?')) { store.remove('policies', pol.id); closeSheet(true); } } }, icon('trash')) : null)) });
+      policy ? h('button.btn.danger', { 'aria-label': 'ลบรายการ', onclick: () => { closeSheet(true); removeWithUndo('ลบรายการแล้ว', [['policies', pol.id]]); } }, icon('trash')) : null)) });
 }
 
 export function policyRow(p, { showClient = false } = {}) {

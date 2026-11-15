@@ -55,6 +55,8 @@ export function getLeading() { return ls.get('leading') || 'normal'; }
 export function setLeading(v) { ls.set('leading', v); if (v === 'normal') delete document.documentElement.dataset.leading; else document.documentElement.dataset.leading = v; }
 export function getMotion() { return ls.get('motion') || 'auto'; }
 export function setMotion(v) { ls.set('motion', v); if (v === 'auto') delete document.documentElement.dataset.motion; else document.documentElement.dataset.motion = v; }
+export function getContrast() { return ls.get('contrast') || 'normal'; }
+export function setContrast(v) { ls.set('contrast', v); if (v === 'normal') delete document.documentElement.dataset.contrast; else document.documentElement.dataset.contrast = v; }
 export function getTextSize() { return ls.get('textsize') || 'm'; }
 export function setTextSize(z) { ls.set('textsize', z); if (z === 'm') delete document.documentElement.dataset.text; else document.documentElement.dataset.text = z; }
 export function getHaptic() { return ls.get('haptic') !== '0'; }
