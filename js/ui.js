@@ -72,12 +72,22 @@ const P = {
   filter: '<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',
   line: '<path d="M4 18l5-6 4 3 7-9"/>',
   print: '<path d="M7 9V3h10v6M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/>',
+  'cat-life': '<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v6a2 2 0 0 0 4 0"/>',
+  'cat-health': '<rect x="4" y="4" width="16" height="16" rx="4.5"/><path d="M12 8.5v7M8.5 12h7"/>',
+  'cat-ci': '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M7.5 11.5h2.5l1.2-2 1.6 4 1.2-2h2.5"/>',
+  'cat-hb': '<path d="M3 18V7M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.6"/>',
+  'cat-accident': '<rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M10.5 10.5h.01M13.5 13.5h.01M13.5 10.5h.01M10.5 13.5h.01"/>',
+  'cat-saving': '<ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7"/><path d="M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/>',
+  'cat-annuity': '<path d="M4 18h16M7 14a5 5 0 0 1 10 0"/><path d="M12 4v3M5.6 7.6l1.6 1.6M18.4 7.6l-1.6 1.6M3 14h1.5M19.5 14H21"/>',
+  'cat-senior': '<circle cx="10" cy="5" r="2"/><path d="M10 8v6l-2 6M10 14l3 6M10 10l4 2"/><path d="M16 12v8"/>',
+  note: '<path d="M5 4h14v12l-4 4H5z"/><path d="M15 20v-4h4M8.5 9h7M8.5 13h5"/>',
+  minus: '<path d="M5 12h14"/>',
 };
 export function icon(name, cls = '') {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none'); s.setAttribute('stroke', 'currentColor');
   s.setAttribute('stroke-width', '1.75'); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round');
-  s.setAttribute('aria-hidden', 'true'); if (cls) s.setAttribute('class', cls);
+  s.setAttribute('aria-hidden', 'true'); s.setAttribute('width', '20'); s.setAttribute('height', '20'); if (cls) s.setAttribute('class', cls);
   s.innerHTML = P[name] || P.doc;
   return s;
 }
@@ -194,4 +204,106 @@ export function seg(options, value, onChange) {
 }
 export function empty(text, ic = 'doc', action) {
   return h('div.empty', icon(ic), h('div', text), action ? h('div', { style: { marginTop: '12px' } }, action) : null);
+}
+
+// ── v2 components ──────────────────────────────────────────
+
+/** แท็บ: tabs([['id','ชื่อ'],...], active, (id)=>node) → { el, panel } */
+export function tabs(list, active, render, { sticky = false, onChange } = {}) {
+  const bar = h('div.tabs' + (sticky ? '.sticky' : ''), { role: 'tablist' });
+  const panel = h('div.tabpanel', { role: 'tabpanel' });
+  const go = (id) => {
+    active = id;
+    [...bar.children].forEach((b) => { const on = b.dataset.id === id; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    panel.replaceChildren(render(id)); panel.style.animation = 'none'; void panel.offsetWidth; panel.style.animation = '';
+    if (onChange) onChange(id);
+  };
+  for (const [id, label] of list) bar.append(h('button', { 'data-id': id, role: 'tab', onclick: () => go(id) }, label));
+  go(active || list[0][0]);
+  return { bar, panel, go };
+}
+
+/** ปุ่มเลือกแทน select · multi = เลือกได้หลายอัน */
+export function choices(name, value, options, { multi = false, onChange } = {}) {
+  let cur = multi ? new Set(value || []) : value;
+  const wrap = h('div.choices', { 'data-name': name });
+  const paint = () => [...wrap.children].forEach((b) => b.classList.toggle('on', multi ? cur.has(b.dataset.v) : String(cur) === b.dataset.v));
+  for (const [v, l] of options) wrap.append(h('button.choice', { type: 'button', 'data-v': String(v), onclick: () => {
+    if (multi) { cur.has(String(v)) ? cur.delete(String(v)) : cur.add(String(v)); } else cur = String(v);
+    paint(); if (onChange) onChange(multi ? [...cur] : cur);
+  } }, l));
+  paint();
+  wrap.getValue = () => (multi ? [...cur] : cur);
+  return wrap;
+}
+
+/** ปุ่ม − ตัวเลข + */
+export function numStepper(name, value = 0, { min = 0, max = 10, onChange } = {}) {
+  let v = +value || 0;
+  const out = h('b', v);
+  const set = (n) => { v = Math.max(min, Math.min(max, n)); out.textContent = v; if (onChange) onChange(v); };
+  const el = h('div.stepper-num', h('button', { type: 'button', 'aria-label': 'ลด', onclick: () => set(v - 1) }, '−'), out, h('button', { type: 'button', 'aria-label': 'เพิ่ม', onclick: () => set(v + 1) }, '+'));
+  el.getValue = () => v; el.dataset.name = name;
+  return el;
+}
+
+/** คำถามหนึ่งข้อในตัวช่วยกรอก */
+export function q(label, control, hint) { return h('div.q', h('span.ql', label), hint ? h('span.qh', hint) : null, control); }
+
+/** ช่องเงินพร้อมปุ่มลัด */
+export function moneyInput(name, value, presets = []) {
+  const inp = h('input.input', { name, type: 'number', inputmode: 'numeric', min: 0, value: value ?? '', placeholder: '0' });
+  return h('div', inp, presets.length ? h('div.money-row', presets.map(([v, l]) => h('button', { type: 'button', onclick: () => { inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); } }, l))) : null);
+}
+
+/**
+ * ตัวช่วยกรอกทีละขั้น
+ * steps: [{ title, render: (data) => node, read?: (node, data) => void }]
+ */
+export function wizard(steps, data, { onDone, doneLabel = 'เสร็จ', onCancel } = {}) {
+  let i = 0;
+  const root = h('div.card');
+  const draw = () => {
+    const s = steps[i];
+    const body = s.render(data);
+    const collect = () => { if (s.read) s.read(body, data); };
+    root.replaceChildren(
+      h('div.wiz-top', h('div.wiz-dots', steps.map((_, k) => h('i', { class: k <= i ? 'on' : '' }))), h('span.wiz-step', `ขั้น ${i + 1}/${steps.length}`)),
+      h('div.wiz-title', s.title),
+      body,
+      h('div.wiz-nav',
+        i > 0 ? h('button.btn', { type: 'button', onclick: () => { collect(); i--; draw(); window.scrollTo({ top: 0 }); } }, icon('back'), 'ย้อนกลับ')
+          : (onCancel ? h('button.btn', { type: 'button', onclick: onCancel }, 'ยกเลิก') : null),
+        i < steps.length - 1
+          ? h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (s.valid && !s.valid(data)) return; i++; draw(); window.scrollTo({ top: 0 }); } }, 'ถัดไป', icon('next'))
+          : h('button.btn.primary', { type: 'button', onclick: () => { collect(); if (s.valid && !s.valid(data)) return; onDone && onDone(data); } }, icon('check'), doneLabel)));
+  };
+  draw();
+  return root;
+}
+
+/** รายการจุดเด่น/ข้อควรรู้ แบบอ่านง่าย + "ดูเพิ่ม" */
+export function points(items = [], { kind = 'good', limit = 0 } = {}) {
+  const ic = kind === 'warn' ? '!' : null;
+  const make = (list) => h('ul.pts.' + kind, list.map((t) => h('li', h('span.mk', ic ? h('b', { style: { fontSize: '13px' } }, '!') : icon('check')), h('span', t))));
+  if (!limit || items.length <= limit) return make(items);
+  const wrap = h('div');
+  const btn = h('button.more-btn', { onclick: () => { wrap.replaceChildren(make(items)); } }, `ดูเพิ่มอีก ${items.length - limit} ข้อ`);
+  wrap.append(make(items.slice(0, limit)), btn);
+  return wrap;
+}
+
+/** รายการ หัวข้อ–ค่า */
+export function kvlist(rows) { return h('div.kvlist', rows.map(([k, v]) => h('div', h('span', k), h('b', v)))); }
+
+/** ตัวอ่านค่าจาก choices / numStepper / input ภายในโหนด */
+export function readControls(node) {
+  const o = {};
+  node.querySelectorAll('[data-name]').forEach((el) => { if (el.getValue) o[el.dataset.name] = el.getValue(); });
+  node.querySelectorAll('input[name], select[name], textarea[name]').forEach((el) => {
+    if (el.type === 'checkbox') o[el.name] = el.checked;
+    else if (el.type === 'number') o[el.name] = el.value === '' ? null : Number(el.value);
+    else o[el.name] = el.value.trim();
+  });
+  return o;
 }
