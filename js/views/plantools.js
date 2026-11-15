@@ -20,6 +20,7 @@ const back = (href, title, subTxt) => h('div.back-row', h('a.icon-btn', { href, 
 export function renderPlanTools() {
   const n = store.all('premiums').length;
   const tiles = [
+    ['#/plans/finder', 'compass', 'ตัวช่วยเลือกแผน', '3 คำถาม ได้ 2–3 แผนพร้อมเหตุผล'],
     ['#/plans/attach', 'layers', 'แผนที่การแนบสัญญา', 'สัญญาหลักตัวไหน แนบอะไรได้ · จัดชุด'],
     ['#/plans/copay', 'info', 'Copayment มาตรฐานใหม่', '3 กรณีที่ต้องร่วมจ่าย + ตัวคำนวณ'],
     ['#/plans/waiting', 'clock', 'ระยะรอคอย & ข้อยกเว้น', 'พิมพ์ชื่อโรค รู้ว่ารอกี่วัน'],

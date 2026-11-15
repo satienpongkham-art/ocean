@@ -151,12 +151,9 @@ export function toast(msg, { action } = {}) {
   const ms = action ? 7000 : Math.min(7000, Math.max(3000, String(msg).length * 70));
   const hide = () => el.classList.remove('show');
   clearTimeout(tt); tt = setTimeout(hide, ms);
-  if (!el.dataset.wired) {
-    el.dataset.wired = '1'; el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer';
-    el.addEventListener('click', () => { clearTimeout(tt); hide(); });
-    el.addEventListener('mouseenter', () => clearTimeout(tt));
-    el.addEventListener('mouseleave', () => { tt = setTimeout(hide, 1500); });
-  }
+  // แถบแจ้งไม่บังการกด (กดได้เฉพาะปุ่มในแถบ) · ชี้ที่ปุ่มค้างไว้ = หยุดนับเวลา
+  const act = el.querySelector('.toast-act');
+  if (act) { act.addEventListener('mouseenter', () => clearTimeout(tt)); act.addEventListener('mouseleave', () => { tt = setTimeout(hide, 2000); }); act.addEventListener('focus', () => clearTimeout(tt)); }
 }
 export async function copyText(text) {
   try { await navigator.clipboard.writeText(text); toast('คัดลอกแล้ว'); }
@@ -287,8 +284,10 @@ export function seg(options, value, onChange) {
   for (const [v, l] of options) wrap.append(h('button', { class: v === value ? 'on' : '', role: 'tab', 'aria-selected': String(v === value), onclick: () => onChange(v) }, l));
   return wrap;
 }
+let emptyArt = null;
+export function setEmptyArt(fn) { emptyArt = fn; }
 export function empty(text, ic = 'doc', action, hint) {
-  return h('div.empty', h('span.empty-ic', icon(ic)), h('b.empty-t', text), hint ? h('p.empty-h', hint) : null, action ? h('div.empty-a', action) : null);
+  return h('div.empty', emptyArt && !['check', 'search'].includes(ic) ? h('span.empty-art', emptyArt(ic)) : h('span.empty-ic', icon(ic)), h('b.empty-t', text), hint ? h('p.empty-h', hint) : null, action ? h('div.empty-a', action) : null);
 }
 
 // ── v2 components ──────────────────────────────────────────

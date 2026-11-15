@@ -5,6 +5,7 @@ import { PACKAGES, TIER_LABEL } from '../../data/packages.js';
 import { timelineChart, lineChart, legend } from '../charts.js';
 import { compareBar, toggleCompare, getCompare } from './compare.js';
 import { premiumCalc } from './plantools.js';
+import { illus } from '../illus.js';
 import { attachInfo, COPAY, WAITING } from '../../data/rules.js';
 const AT = attachInfo(PLANS, PLAN);
 
@@ -23,6 +24,11 @@ export function ageRange(p) {
   return lo === Infinity ? null : { lo, hi };
 }
 const catIcon = (cat) => icon('cat-' + cat);
+function recentStrip() {
+  let ids = []; try { ids = JSON.parse(localStorage.getItem('advdesk.v1.recentPlans') || '[]').filter((x) => PLAN[x]); } catch {}
+  if (!ids.length) return null;
+  return h('div.recent-plans', h('span.small.muted', 'เพิ่งดู'), h('div.rp-row', ids.map((x) => h('a.rp.cat-' + PLAN[x].cat, { href: '#/plan/' + x }, h('i', icon('cat-' + PLAN[x].cat)), PLAN[x].short))));
+}
 
 function matches(p, cat) {
   if (cat && cat !== 'all' && p.cat !== cat) return false;
@@ -85,8 +91,10 @@ export function renderCatalog(q = {}, openId) {
         h('span.pi', { style: { background: 'var(--accent)', color: '#fff' } }, icon('clock')),
         h('span.pt', h('b', `${p.short} ปิดรับอีก ${c.days} วัน`), h('span', 'แตะเพื่อดูรายละเอียดก่อนแนะนำลูกค้า')), h('span.pr', icon('next')))),
       h('div.section', h('h2', 'เลือกหมวด'),
+        recentStrip(),
+        h('a.finder-entry', { href: '#/plans/finder' }, illus('finder', { size: 56 }), h('span', h('b', 'ไม่รู้จะเริ่มแผนไหน?'), h('small', 'ตัวช่วยเลือกแผน 3 คำถาม')), icon('next')),
         h('div.cat-tiles', CATEGORIES.map((c) => h('button.cat-tile.cat-' + c.id, { onclick: () => { location.hash = '#/plans?cat=' + c.id; } },
-          h('span.ci', catIcon(c.id)), h('div', h('b', c.name), h('span', `${PLANS.filter((p) => p.cat === c.id).length} แผน`)))))),
+          illus(c.id, { size: 72 }), h('div', h('b', c.name), h('span', `${PLANS.filter((p) => p.cat === c.id).length} แผน`)))))),
       h('div.section', h('h2', 'แผนที่แนะนำบ่อย'),
         h('div.hscroll', PLANS.filter((p) => p.star).map((p) => h('button.mini-plan.cat-' + p.cat, { onclick: () => { location.hash = '#/plan/' + p.id; } },
           h('small', CAT[p.cat].short), h('b', p.short), h('span', p.tagline))))),
