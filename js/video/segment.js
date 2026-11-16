@@ -31,3 +31,12 @@ export function update(el, cb) {
 }
 export const mask = () => last;
 export function reset() { last = null; }
+/** หา mask ของภาพนี้ 1 ครั้ง (รอผล) — ใช้วิเคราะห์ตำแหน่งคน */
+export async function maskOnce(el, fn = (m) => m) {
+  await load();
+  return new Promise((res) => {
+    const prev = onMask; const t = setTimeout(() => { onMask = prev; res(null); }, 3000);
+    onMask = (m) => { clearTimeout(t); onMask = prev; let v = null; try { v = fn(m); } catch {} res(v); };
+    busy = true; seg.send({ image: el }).catch(() => { busy = false; clearTimeout(t); onMask = prev; res(null); });
+  });
+}
