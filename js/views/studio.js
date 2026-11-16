@@ -164,7 +164,7 @@ export function renderStudio() {
   return h('div', { 'data-title': 'สตูดิโอ' },
     h('div.topbar', h('div', h('h1', 'สตูดิโอ'), h('div.sub', 'วันละเรื่อง เลือก แก้ โพสต์ แล้วกลับมาบันทึกผล')), h('button.btn.primary', { onclick: newSheet }, icon('plus'), 'สร้าง')),
     today,
-    h('div.sd-nav', h('a', { href: '#/studio/library' }, h('span', icon('book')), h('b', 'คลัง 365 เรื่อง')), h('a', { href: '#/studio/stats' }, h('span', icon('line')), h('b', 'ผลโพสต์'), noStat ? h('i', noStat) : null), h('a', { href: '#/studio/playbook' }, h('span', icon('bulb')), h('b', 'หลักที่ใช้')), h('a', { href: '#/studio/sign' }, h('span', icon('pen')), h('b', 'ลายเซ็น')), h('a', { href: '#/studio/covers' }, h('span', icon('target')), h('b', 'ปก IG')), h('a', { href: '#/brand' }, h('span', icon('star')), h('b', 'แบรนด์'))),
+    h('div.sd-nav', h('a', { href: '#/studio/library' }, h('span', icon('book')), h('b', 'คลัง 365 เรื่อง')), h('a', { href: '#/studio/video' }, h('span', icon('play')), h('b', 'ตัดต่อคลิป')), h('a', { href: '#/studio/stats' }, h('span', icon('line')), h('b', 'ผลโพสต์'), noStat ? h('i', noStat) : null), h('a', { href: '#/studio/playbook' }, h('span', icon('bulb')), h('b', 'หลักที่ใช้')), h('a', { href: '#/studio/sign' }, h('span', icon('pen')), h('b', 'ลายเซ็น')), h('a', { href: '#/studio/covers' }, h('span', icon('target')), h('b', 'ปก IG')), h('a', { href: '#/brand' }, h('span', icon('star')), h('b', 'แบรนด์'))),
     due.length ? h('div.callout', { style: { margin: '12px 0' } }, h('b', `ถึงกำหนดโพสต์ ${due.length} งาน: `), due.slice(0, 3).map((x, i) => [i ? ' · ' : '', h('a', { href: '#/studio/' + x.id }, x.title)])) : null,
     h('div.section', h('div.row.between', h('h2', { style: { margin: 0 } }, 'งานของฉัน'), h('div.seg.sm-seg', [['board', 'บอร์ด'], ['cal', 'ปฏิทิน']].map(([k, l]) => h('button', { class: sv.view === k ? 'on' : '', onclick: () => { sv.view = k; rerender(); } }, l)))),
       sv.view === 'cal' ? studioCal(items) : items.length ? h('div.studio-board', COLS.map(([id, name, ic]) => { const list = items.filter((x) => (x.status || 'idea') === id);
@@ -262,7 +262,8 @@ export function renderStudioItem(id) {
       ta, h('div.row.wrap', { style: { gap: '8px', marginTop: '10px' } },
         h('button.btn.primary', { onclick: () => copyText(ta.value) }, icon('copy'), 'คัดลอก'),
         h('button.btn', { onclick: () => { save({ [key]: '' }, { hist: false }); } }, icon('sync'), 'สร้างใหม่จากสไลด์'),
-        key === 'script' ? h('button.btn', { onclick: () => prompter(ta.value) }, icon('play'), 'โหมดอ่านบท') : null),
+        key === 'script' ? h('button.btn', { onclick: () => prompter(ta.value) }, icon('play'), 'โหมดอ่านบท') : null,
+        key === 'script' ? h('button.btn', { onclick: () => { save({ script: ta.value }, { hist: false }); location.hash = '#/studio/video?from=' + it.id; } }, icon('play'), 'ตัดต่อคลิปจากบทนี้') : null),
       h('p.small.muted', { style: { marginTop: '8px' } }, 'โทนภาษาปรับคำขึ้นต้น คำลงท้าย และคำชวนคุย · ใส่ชื่อและเลขใบอนุญาตให้แล้ว')), riskBox);
     return root;
   }
