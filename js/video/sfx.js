@@ -47,4 +47,21 @@ export const SFX = {
     o.connect(g).connect(out); o.start(t); o.stop(t + 0.5);
   },
 };
-export const SFX_NAMES = { whoosh: 'ฟิ้ว', pop: 'ป๊อป', ding: 'ติ๊ง', tick: 'ติ๊ก', boom: 'ตุ้บ' };
+SFX.boing = (ctx, out, t, v = 1) => { // ดึ๋ง (ตลก)
+  const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(620, t + 0.12); o.frequency.exponentialRampToValueAtTime(240, t + 0.42);
+  const lfo = ctx.createOscillator(); lfo.frequency.value = 18; const lg = ctx.createGain(); lg.gain.value = 40; lfo.connect(lg).connect(o.frequency);
+  const g = ctx.createGain(); env(ctx, g, t, 0.01, 0.5 * v, 0.45); o.connect(g).connect(out); o.start(t); lfo.start(t); o.stop(t + 0.5); lfo.stop(t + 0.5);
+};
+SFX.sad = (ctx, out, t, v = 1) => { // แตรเศร้า วา-วา-วา-วาาา
+  [[294, 0], [277, 0.32], [262, 0.64], [247, 0.96]].forEach(([f, d], i) => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t + d); if (i === 3) { const l = ctx.createOscillator(); l.frequency.value = 6; const lg = ctx.createGain(); lg.gain.value = 6; l.connect(lg).connect(o.frequency); l.start(t + d); l.stop(t + d + 1); }
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; const g = ctx.createGain(); env(ctx, g, t + d, 0.03, 0.22 * v, i === 3 ? 0.9 : 0.26); o.connect(lp).connect(g).connect(out); o.start(t + d); o.stop(t + d + (i === 3 ? 1 : 0.32)); });
+};
+SFX.scratch = (ctx, out, t, v = 1) => { // แผ่นเสียงสะดุด (ตกใจ)
+  const s = ctx.createBufferSource(); s.buffer = noise(ctx); const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 3;
+  bp.frequency.setValueAtTime(1800, t); bp.frequency.exponentialRampToValueAtTime(300, t + 0.12); bp.frequency.exponentialRampToValueAtTime(2400, t + 0.22); bp.frequency.exponentialRampToValueAtTime(200, t + 0.36);
+  const g = ctx.createGain(); env(ctx, g, t, 0.01, 0.6 * v, 0.34); s.connect(bp).connect(g).connect(out); s.start(t); s.stop(t + 0.4);
+};
+SFX.kaching = (ctx, out, t, v = 1) => { // กริ๊ง (ดีใจ/เงิน)
+  SFX.tick(ctx, out, t, v); [[2093, 0.05], [2637, 0.12], [3136, 0.12]].forEach(([f, d]) => { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; const g = ctx.createGain(); env(ctx, g, t + d, 0.003, 0.2 * v, 0.6); o.connect(g).connect(out); o.start(t + d); o.stop(t + d + 0.7); });
+};
+export const SFX_NAMES = { whoosh: 'ฟิ้ว', pop: 'ป๊อป', ding: 'ติ๊ง', tick: 'ติ๊ก', boom: 'ตุ้บ', boing: 'ดึ๋ง (ตลก)', sad: 'แตรเศร้า', scratch: 'แผ่นเสียงสะดุด', kaching: 'กริ๊ง (ดีใจ)' };

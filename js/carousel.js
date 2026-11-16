@@ -2,6 +2,15 @@
 // ตัวใหญ่ 1 ประเด็นต่อหน้า · กราฟ/ตาราง/ไทม์ไลน์ · ไฮไลต์คำ · สติกเกอร์ · ลายเซ็นเขียนมือ · ย่อข้อความให้พอดีอัตโนมัติ
 // คืนตำแหน่งกล่องข้อความ (blocks, key เป็นเส้นทางในข้อมูลสไลด์ เช่น "bars.0.l") เพื่อแตะบนภาพแล้วแก้ตรงนั้นได้
 import { profile } from './app.js';
+import { drawArt } from './art.js';
+
+/** เส้นโค้งต่อเนื่องข้ามทุกหน้า (ปัดดูแล้วเหมือนภาพเดียวกัน) */
+function flowRibbon(x, idx, W, H, T, story) {
+  const base = story ? H - 300 : H - 142, A = story ? 34 : 24; const yAt = (X) => base + A * Math.sin((X / (W * 1.55)) * Math.PI * 2 + 0.7);
+  const path = (dy) => { x.beginPath(); for (let X = idx * W - 30; X <= (idx + 1) * W + 30; X += 12) { const px = X - idx * W, py = yAt(X) + dy; X === idx * W - 30 ? x.moveTo(px, py) : x.lineTo(px, py); } };
+  x.save(); x.lineCap = 'round'; x.strokeStyle = T.accent; x.globalAlpha = 0.1; x.lineWidth = 30; path(0); x.stroke(); x.globalAlpha = 0.45; x.lineWidth = 4; path(-26); x.stroke();
+  x.globalAlpha = 0.6; x.fillStyle = T.accent; for (let X = Math.ceil((idx * W) / 360) * 360; X < (idx + 1) * W; X += 360) { x.beginPath(); x.arc(X - idx * W, yAt(X) - 26, 7, 0, 7); x.fill(); } x.restore();
+}
 
 export const THEMES = {
   aom: { name: 'แดง-ขาว', bg: '#fffdfb', bg2: '#f8eeee', ink: '#1b1717', sub: '#6b6161', accent: '#a6192e', accentInk: '#ffffff', hl: '#ffd9a8', look: 'clean' },
@@ -114,6 +123,7 @@ export async function renderSlide(slide, deck, idx, { story = false } = {}) {
     const g = x.createRadialGradient(W - 100, story ? 300 : 120, 20, W - 100, story ? 300 : 120, 620); g.addColorStop(0, T.accent + '55'); g.addColorStop(1, T.accent + '00'); x.fillStyle = g; x.fillRect(0, 0, W, H);
     x.fillStyle = T.sub; x.globalAlpha = .16; for (let i = 0; i < 16; i++) for (let j = 0; j < 4; j++) { x.beginPath(); x.arc(M + i * 60, H - (story ? 460 : 290) + j * 30, 2.5, 0, 7); x.fill(); } x.globalAlpha = 1;
   } else if (T.look === 'mini') { x.fillStyle = T.ink; x.fillRect(M, story ? 190 : 86, 64, 6); }
+  if (deck.flow !== false && !brutal) flowRibbon(x, idx, W, H, T, story);
   const CARD = brutal ? '#ffffff' : T.bg; // สีพื้นที่ตัวหนังสือวางอยู่
 
   // ── หัว: ป้ายซีรีส์ + เลขหน้า ──
@@ -151,7 +161,7 @@ export async function renderSlide(slide, deck, idx, { story = false } = {}) {
   };
   const squiggle = (sx, sy, sw, color, lw = 7) => { x.save(); x.strokeStyle = color; x.lineWidth = lw; x.lineCap = 'round'; x.beginPath(); x.moveTo(sx, sy); const n = Math.max(2, Math.round(sw / 46)); for (let i = 1; i <= n; i++) x.quadraticCurveTo(sx + (i - .5) * sw / n, sy + (i % 2 ? 12 : -10), sx + i * sw / n, sy + (R() - .5) * 4); x.stroke(); x.restore(); };
   const sticker = (text, cx, cy, rot) => { x.save(); x.translate(cx, cy); x.rotate(rot); x.font = F(600, 38); const tw = x.measureText(text).width + 56; x.fillStyle = brutal ? T.hl : T.accent; rr(x, -tw / 2, -40, tw, 80, 40); x.fill(); x.strokeStyle = brutal ? T.ink : CARD; x.lineWidth = brutal ? 6 : 8; x.stroke(); x.fillStyle = brutal ? T.ink : T.accentInk; x.fillText(text, -tw / 2 + 28, 14); x.restore(); };
-  const doodle = (type, cx, cy, sc = 1) => { x.save(); x.translate(cx, cy); x.scale(sc, sc); x.strokeStyle = T.accent; x.fillStyle = T.accent; x.lineWidth = 11; x.lineCap = 'round'; x.lineJoin = 'round';
+  const doodle = (type, cx, cy, sc = 1) => { if (String(type).startsWith('p-')) { drawArt(x, type, cx, cy, 300 * sc, T); return; } x.save(); x.translate(cx, cy); x.scale(sc, sc); x.strokeStyle = T.accent; x.fillStyle = T.accent; x.lineWidth = 11; x.lineCap = 'round'; x.lineJoin = 'round';
     if (type === 'bars') { [[-110, 70], [-40, 120], [30, 170], [100, 230]].forEach(([bx, bh], i) => { x.globalAlpha = i === 3 ? 1 : .35 + i * .18; rr(x, bx, 110 - bh, 50, bh, 14); x.fill(); }); x.globalAlpha = 1; x.beginPath(); x.moveTo(-120, 10); x.quadraticCurveTo(-10, -30, 110, -150); x.stroke(); x.beginPath(); x.moveTo(70, -150); x.lineTo(114, -154); x.lineTo(112, -110); x.stroke(); }
     else if (type === 'coins') { for (let i = 0; i < 4; i++) { x.beginPath(); x.ellipse(-30, 90 - i * 44, 100, 30, 0, 0, 7); x.fillStyle = T.bg; x.fill(); x.stroke(); } x.beginPath(); x.arc(105, -110, 52, 0, 7); x.stroke(); x.beginPath(); x.moveTo(105, -134); x.lineTo(105, -86); x.stroke(); }
     else if (type === 'shield') { x.beginPath(); x.moveTo(0, -150); x.lineTo(120, -100); x.lineTo(120, 0); x.quadraticCurveTo(110, 110, 0, 160); x.quadraticCurveTo(-110, 110, -120, 0); x.lineTo(-120, -100); x.closePath(); x.stroke(); x.beginPath(); x.moveTo(-50, 0); x.lineTo(-12, 40); x.lineTo(58, -44); x.stroke(); }
@@ -301,7 +311,9 @@ export async function renderSlide(slide, deck, idx, { story = false } = {}) {
   const free = (bottom - top) - (maxY - top);
   const off = ['cta', 'myth', 'versus'].includes(k) ? 0 : Math.max(0, Math.round(free * 0.46));
   main.drawImage(layer, 0, off); blocks.forEach((b) => { b.y += off; }); x = main;
-  if (k === 'cover' && (slide.art || deck.art)) { const free0 = bottom - (maxY + off); if (free0 > 150) doodle(slide.art || deck.art, W - M - 150, bottom - Math.min(150, free0 * .5), Math.min(.95, free0 / 330)); }
+  if (k === 'cover' && (slide.art || deck.art)) { const a = slide.art || deck.art; const free0 = bottom - (maxY + off);
+    if (String(a).startsWith('p-')) { if (free0 > 200) { const sz = Math.min(420, free0 * 0.95); drawArt(x, a, W - M - sz * 0.45, bottom - sz * 0.5 + 10, sz, T); } }
+    else if (free0 > 150) doodle(a, W - M - 150, bottom - Math.min(150, free0 * .5), Math.min(.95, free0 / 330)); }
 
   // ── ท้าย: แบรนด์ · ชื่อ · ใบอนุญาต · ปัดต่อ / ลายเซ็น ──
   const fy = story ? H - 210 : H - 78; const sig = getSig(); const last = idx === total - 1;

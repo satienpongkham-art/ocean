@@ -1,0 +1,43 @@
+/* ─── v6.0 จัดระเบียบ: ระยะ ขนาด หัวหน้า ให้เท่ากันทั้งแอป ─── */
+:root { --sp-1: 6px; --sp-2: 10px; --sp-3: 14px; --sp-4: 20px; --rad-card: 16px; --rad-item: 12px; }
+#view .card { border-radius: var(--rad-card); }
+#view .card + .card { margin-top: var(--sp-3); }
+.topbar { align-items: flex-start; gap: var(--sp-2); }
+.topbar h1 { font-size: 24px; line-height: 1.25; margin: 0; }
+.topbar .sub { font-size: 13.5px; color: var(--ink-3, #8a8484); margin-top: 2px; }
+@media (max-width: 600px) { .topbar .sub { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; } .topbar h1 { font-size: 22px; } }
+.topbar .crumb { display: inline-block; font-size: 12.5px; color: var(--ink-3, #8a8484); text-decoration: none; margin-bottom: 2px; }
+.vd-h3, #view h3 { font-size: 15px; }
+/* สตูดิโอ: 3 ปุ่มใหญ่ */
+.sd-create { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin: var(--sp-3) 0; }
+.sd-big { text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 14px 12px; border-radius: var(--rad-card); border: 1px solid var(--line); background: var(--card); color: inherit; text-decoration: none; cursor: pointer; font-family: var(--font); min-width: 0; }
+.sd-big span { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent, #a6192e) 12%, var(--card)); color: var(--accent, #a6192e); margin-bottom: 6px; }
+.sd-big b { font-size: 15px; }
+.sd-big small { color: var(--ink-3, #8a8484); font-size: 12px; line-height: 1.35; }
+.sd-big:first-child { background: linear-gradient(140deg, #c0213a, #8b1225); color: #fff; border: 0; }
+.sd-big:first-child span { background: rgba(255,255,255,.18); color: #fff; }
+.sd-big:first-child small { color: rgba(255,255,255,.8); }
+@media (max-width: 380px) { .sd-big small { display: none; } }
+details.sd-more, details.vd-adv { margin: 0 0 var(--sp-3); }
+details.sd-more > summary, details.vd-adv > summary { list-style: none; cursor: pointer; padding: 12px 14px; border-radius: var(--rad-item); background: var(--paper-2); font-size: 13.5px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+details.sd-more > summary::-webkit-details-marker, details.vd-adv > summary::-webkit-details-marker { display: none; }
+details.sd-more > summary::after, details.vd-adv > summary::after { content: '▾'; margin-left: auto; transition: transform .2s; }
+details[open].sd-more > summary::after, details[open].vd-adv > summary::after { transform: rotate(180deg); }
+details.sd-more > summary i { font-style: normal; background: var(--accent, #a6192e); color: #fff; border-radius: 999px; font-size: 11px; padding: 1px 7px; }
+details.sd-more .sd-nav { margin-top: var(--sp-2); }
+details.vd-adv > div { margin-top: var(--sp-2); }
+.vd-rows.clip { max-height: 420px; overflow: hidden; -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); }
+.vd-more { margin-top: 8px; }
+.vd-term { display: grid; grid-template-columns: 1fr 1.4fr; gap: 6px; }
+@media (max-width: 480px) { .vd-term { grid-template-columns: 1fr; } }
+/* ตรวจก่อนโพสต์ */
+.ck-row { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: var(--rad-item); background: var(--paper-2); font-size: 13.5px; flex-wrap: wrap; }
+.ck-row b { flex: none; }
+.ck-row span { flex: 1; min-width: 160px; }
+.ck-row.warn { background: color-mix(in srgb, #f59e0b 14%, var(--card)); }
+.ck-ok { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px; text-align: center; }
+.ck-ok svg { width: 34px; height: 34px; color: #1f9d55; }
+.ck-ok small { color: var(--ink-3, #8a8484); }
+.qr-box { display: grid; place-items: center; padding: 10px; background: #fff; border-radius: var(--rad-card); }
+.qr-box svg { width: min(240px, 70vw); height: auto; }
+.st-extra .btn[aria-pressed="true"] { border-color: var(--accent, #a6192e); }
