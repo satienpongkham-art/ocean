@@ -25,11 +25,11 @@ NAV.splice(1, 2, NAV[2], NAV[1]); // วันนี้ · ลูกค้า ·
 const SIDE_SUB = {
   plans: [['#/plans', 'คลังแผน'], ['#/plans/stages', 'ชุดแผนตามช่วงวัย'], ['#/plans/ww', 'มี vs ไม่มีประกัน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  studio: [['#/studio', 'งานของฉัน'], ['#/studio/library', 'คลัง 365 เรื่อง'], ['#/studio/stats', 'ผลโพสต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์']],
+  studio: [['#/studio', 'งานของฉัน'], ['#/studio/library', 'คลัง 365 เรื่อง'], ['#/studio/video', 'ตัดต่อคลิป'], ['#/studio/stats', 'ผลโพสต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์']],
   menu: [['#/menu', 'เมนูทั้งหมด'], ['#/settings', 'ตั้งค่า'], ['#/settings/look', 'สีจอและหน้าตา'], ['#/tools/calc', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/tax', 'คำนวณภาษี'], ['#/tools/profile', 'โปรไฟล์'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.5 · 17 พ.ย. 69';
+export const APP_VERSION = '5.6 · 18 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -46,7 +46,7 @@ function renderNav(active, path) {
     h('a.side-link', { href: '#/search', class: active === 'search' ? 'on' : '' }, icon('search'), 'ค้นหา'),
     ...[...NAV, { id: 'menu', label: 'เมนู & ตั้งค่า', icon: 'menu', href: '#/menu' }].flatMap((n) => [
       h('a.side-link', { href: n.href, class: n.id === active ? 'on' : '' }, icon(n.icon), n.label),
-      ...(n.id === active && SIDE_SUB[n.id] ? SIDE_SUB[n.id].map(([href, lab]) => h('a.side-link', { href, style: { paddingLeft: '38px', fontSize: '13.5px' }, class: '#' + path === href ? 'on' : '' }, lab)) : []),
+      ...(n.id === active && SIDE_SUB[n.id] ? SIDE_SUB[n.id].map(([href, lab]) => h('a.side-link', { href, style: { paddingLeft: '38px', fontSize: '13.5px' }, class: '#' + path === href || (href.split('/').length > 2 && ('#' + path).startsWith(href + '/')) ? 'on' : '' }, lab)) : []),
     ]),
     h('div.side-foot', h('div.row', syncDot, store.sync.config.url ? (store.sync.state === 'err' ? 'ซิงก์ไม่สำเร็จ' : 'ซิงก์กับ Google Sheets') : 'เก็บข้อมูลในเครื่องนี้'), h('div', 'รหัสตัวแทน ' + (p.agentCode || '—')), h('div', 'เวอร์ชัน ' + APP_VERSION)),
   );
@@ -79,6 +79,8 @@ const routes = [
   [/^\/studio\/playbook$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderPlaybook())],
   [/^\/studio\/sign$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderSign())],
   [/^\/studio\/covers$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderCovers())],
+  [/^\/studio\/video$/, 'studio', (q) => import('./views/video.js').then((m) => m.renderVideos(q))],
+  [/^\/studio\/video\/([\w-]+)$/, 'studio', (q, id) => import('./views/video.js').then((m) => m.renderVideoEditor(id))],
   [/^\/studio\/([\w-]+)$/, 'studio', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
   [/^\/p\/quiz$/, 'public', (q) => import('./views/public.js').then((m) => m.renderQuiz(q))],
   [/^\/p\/calc$/, 'public', (q) => import('./views/public.js').then((m) => m.renderCalc(null, q))],
