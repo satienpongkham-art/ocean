@@ -1,0 +1,61 @@
+/* ── v5.5 สตูดิโอ v2: เรื่องของวัน · คลัง 365 · ผลโพสต์ · หลักที่ใช้ · ลายเซ็น · ตัวแก้ไข ── */
+.sd-today { display: grid; grid-template-columns: 116px 1fr; gap: 14px; padding: 14px; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); border: 1px solid var(--line-2); align-items: center; }
+.sd-today .sd-load, .sd-today > p { grid-column: 1 / -1; color: var(--ink-3); padding: 20px 4px; }
+.sd-th img { width: 100%; aspect-ratio: 4 / 5; border-radius: 14px; object-fit: cover; display: block; background: var(--paper-2); box-shadow: 0 10px 22px -14px rgba(0,0,0,.5); }
+.sd-tx { min-width: 0; display: grid; gap: 4px; }
+.sd-k { font-size: 12.5px; font-weight: 600; color: var(--pc, var(--primary)); letter-spacing: .02em; }
+.sd-tx b { font-family: var(--serif); font-size: 18px; font-weight: 600; line-height: 1.35; text-wrap: balance; }
+.sd-tx small { color: var(--ink-3); font-size: 13px; line-height: 1.45; }
+.sd-tx .btn { min-height: 40px; padding: 0 12px; font-size: 14.5px; }
+@media (min-width: 700px) { .sd-today { grid-template-columns: 160px 1fr; padding: 18px; } .sd-tx b { font-size: 22px; } }
+.sd-nav { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+.sd-nav a { position: relative; display: grid; justify-items: center; gap: 6px; padding: 12px 4px; border-radius: 16px; background: var(--card); border: 1px solid var(--line-2); color: var(--ink); text-decoration: none !important; text-align: center; min-width: 0; }
+.sd-nav span { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+.sd-nav span svg { width: 19px; height: 19px; }
+.sd-nav b { font-size: 12px; font-weight: 500; line-height: 1.25; }
+.sd-nav i { position: absolute; top: 6px; right: 8px; min-width: 20px; height: 20px; border-radius: 99px; background: var(--primary); color: var(--primary-ink); font-style: normal; font-size: 11.5px; display: grid; place-items: center; font-weight: 700; }
+.lib-list { display: grid; gap: 8px; }
+@media (min-width: 760px) { .lib-list { grid-template-columns: 1fr 1fr; } }
+.lib-i { text-align: left; display: grid; gap: 4px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line-2); border-left: 5px solid var(--pc); background: var(--card); color: var(--ink); font-family: var(--font); cursor: pointer; min-width: 0; }
+.lib-i:active { transform: scale(.995); background: var(--paper-2); }
+.lib-c { font-size: 12px; font-weight: 600; color: var(--pc); }
+.lib-i b { font-family: var(--serif); font-weight: 500; font-size: 16.5px; line-height: 1.4; }
+.lib-m { display: flex; gap: 6px; flex-wrap: wrap; }
+.lib-m em { font-style: normal; font-size: 11.5px; padding: 2px 8px; border-radius: 99px; background: var(--paper-2); color: var(--ink-2); }
+.lib-m em.me { background: var(--primary-soft); color: var(--primary); } .lib-m em.used { background: var(--good-soft); color: var(--good); }
+.lib-prev { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
+.lib-prev img { flex: none; width: 62%; max-width: 280px; aspect-ratio: 4 / 5; border-radius: 12px; background: var(--paper-2); scroll-snap-align: start; border: 1px solid var(--line-2); }
+.st-win { background: linear-gradient(150deg, var(--primary), color-mix(in srgb, var(--primary) 78%, #000)); color: var(--primary-ink); border: 0; display: grid; gap: 4px; }
+.st-win small { opacity: .8; } .st-win b { font-family: var(--serif); font-size: 20px; font-weight: 600; line-height: 1.35; } .st-win p { margin: 0 0 6px; opacity: .9; }
+.st-win .btn { justify-self: start; background: color-mix(in srgb, var(--primary-ink) 16%, transparent); color: var(--primary-ink); border-color: transparent; }
+.pb-list { display: grid; gap: 10px; } @media (min-width: 760px) { .pb-list { grid-template-columns: 1fr 1fr; } }
+.pb-i { display: grid; gap: 6px; } .pb-i b { font-family: var(--serif); font-weight: 500; font-size: 17px; } .pb-i p { margin: 0; color: var(--ink-2); line-height: 1.6; font-size: 15px; } .pb-i small { color: var(--ink-3); }
+.pb-ev { justify-self: start; font-size: 11.5px; font-weight: 600; padding: 2px 10px; border-radius: 99px; color: var(--ec); background: color-mix(in srgb, var(--ec) 13%, var(--card)); }
+.sig-pad { width: 100%; aspect-ratio: 640 / 260; background: #fffdf9; border-radius: 16px; border: 1.5px dashed var(--line); touch-action: none; display: block; margin-top: 10px; cursor: crosshair; }
+.sig-pres { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.sig-pre { background: var(--card); border: 1px solid var(--line-2); border-radius: 18px; padding: 12px; display: grid; gap: 8px; justify-items: stretch; }
+.sig-pre canvas { width: 100%; height: auto; background: #fffdf9; border-radius: 12px; }
+.sig-pre small { color: var(--ink-3); }
+.sig-prev { width: 100%; max-width: 360px; border-radius: 14px; display: block; margin: 0 auto; border: 1px solid var(--line-2); }
+/* ตัวแก้ไข */
+.st-date { padding: 4px 8px 4px 10px; } .st-date input { border: 0; background: none; font-family: var(--font); font-size: 13px; color: var(--ink-2); min-width: 0; width: 118px; }
+.th-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; }
+.th-chip { flex: none; display: grid; justify-items: center; gap: 4px; border: 0; background: none; font-family: var(--font); font-size: 11.5px; color: var(--ink-2); cursor: pointer; width: 62px; padding: 0; }
+.th-chip i { width: 48px; height: 60px; border-radius: 10px; border: 2px solid var(--line); display: block; position: relative; overflow: hidden; box-shadow: 0 2px 6px -2px rgba(0,0,0,.25); }
+.th-chip i u { position: absolute; left: 8px; bottom: 8px; width: 22px; height: 6px; border-radius: 3px; }
+.th-chip.on i { outline: 3px solid var(--primary); outline-offset: 2px; } .th-chip.on { color: var(--primary); font-weight: 600; }
+.th-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.kind-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.kind-i { display: grid; justify-items: center; gap: 6px; padding: 14px 6px; border-radius: 16px; border: 1px solid var(--line-2); background: var(--card); font-family: var(--font); color: var(--ink); cursor: pointer; }
+.kind-i span { width: 40px; height: 40px; border-radius: 12px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; } .kind-i b { font-size: 13px; font-weight: 500; text-align: center; line-height: 1.3; }
+.hook-list { display: grid; gap: 12px; max-height: 52vh; overflow: auto; }
+.hook-g { background: var(--paper-2); border-radius: 16px; padding: 12px; display: grid; gap: 6px; } .hook-h { display: flex; justify-content: space-between; align-items: center; } .hook-g p { margin: 0; }
+.hook-o { text-align: left; font-family: var(--serif); font-size: 16px; line-height: 1.4; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--card); color: var(--ink); cursor: pointer; }
+.hook-o:active { background: var(--primary-soft); }
+.ds-rows { display: grid; gap: 6px; } .ds-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)) ; gap: 6px; align-items: center; } .ds-row .icon-btn { justify-self: end; }
+.ds-row { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 1fr; } .ds-row .icon-btn { width: 40px; }
+.ds-row2 { display: grid; gap: 6px; background: var(--paper-2); padding: 10px; border-radius: 12px; }
+.ds-grid { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 5px; } .ds-grid .input { min-height: 40px; padding: 6px 8px; font-size: 14px; min-width: 0; } .ds-grid .hd { font-weight: 600; background: var(--primary-soft); }
+.st-risk { margin-top: 12px; } .st-risk ul { margin: 6px 0; padding-left: 18px; display: grid; gap: 4px; }
+.st-right { min-width: 0; } .st-tools .more { margin-top: 10px; } .st-tools .f { margin-top: 8px; }
+.sd-acts { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .sd-acts .btn { justify-content: center; }

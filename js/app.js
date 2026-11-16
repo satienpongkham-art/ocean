@@ -74,6 +74,10 @@ const routes = [
   [/^\/settings\/app$/, 'menu', () => import('./views/menu.js').then((m) => m.renderApp())],
   [/^\/work\/report$/, 'work', (q) => import('./views/report.js').then((m) => m.renderReport(q))],
   [/^\/studio$/, 'studio', () => import('./views/studio.js').then((m) => m.renderStudio())],
+  [/^\/studio\/library$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderLibrary())],
+  [/^\/studio\/stats$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderStats())],
+  [/^\/studio\/playbook$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderPlaybook())],
+  [/^\/studio\/sign$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderSign())],
   [/^\/studio\/([\w-]+)$/, 'studio', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
   [/^\/p\/quiz$/, 'public', (q) => import('./views/public.js').then((m) => m.renderQuiz(q))],
   [/^\/p\/calc$/, 'public', (q) => import('./views/public.js').then((m) => m.renderCalc(null, q))],
@@ -160,7 +164,7 @@ export async function route() {
       renderNav(nav, path);
       document.body.classList.toggle('presenting', /^\/present\//.test(path));
       document.body.classList.toggle('public', nav === 'public');
-      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call|work\/report|studio\/|menu|tools\/?$|settings)/.test(path));
+      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call|work\/report|studio|brand|menu|tools\/?$|settings)/.test(path));
       const samePage = current.split('?')[0] === path;
       current = raw;
       try {
