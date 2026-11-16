@@ -83,7 +83,7 @@ export function snapshotNow(tag) {
   const counts = Object.fromEntries(['clients', 'policies', 'appts'].map((c) => [c, all(c).length]));
   list.unshift({ d, at: now(), size: txt.length, counts });
   const daily = list.filter((x) => /^\d{4}-/.test(x.d));
-  for (const old of daily.slice(7)) { try { localStorage.removeItem(NS + 'snap.' + old.d); } catch {} list = list.filter((x) => x !== old); }
+  for (const old of daily.slice(3)) { try { localStorage.removeItem(NS + 'snap.' + old.d); } catch {} list = list.filter((x) => x !== old); }
   safe.set('snaps', JSON.stringify(list)); return list[0];
 }
 export function snapshotDaily() { if (!snapshots().some((x) => x.d === dayKey())) snapshotNow(); }
@@ -205,3 +205,32 @@ export async function syncNow() {
 export function resetPull() { safe.set('pullSince', ''); }
 export function pendingCount() { return outbox().length; }
 window.addEventListener('online', () => scheduleSync());
+
+// ── พื้นที่เก็บในเครื่อง: ดูขนาด + ล้างของเก่า ──
+export function storageUsage() {
+  const out = { total: 0, data: 0, hist: 0, snaps: 0, videos: 0, other: 0 };
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i); const n = (k.length + (localStorage.getItem(k) || '').length) * 2; out.total += n;
+      if (!k.startsWith(NS) && !k.startsWith('advdesk')) { out.other += n; continue; }
+      const s = k.slice(NS.length);
+      if (s === 'hist') out.hist += n; else if (s.startsWith('snap')) out.snaps += n; else if (s === 'videos') out.videos += n; else if (COLLECTIONS.includes(s)) out.data += n; else out.other += n;
+    }
+  } catch {}
+  return out;
+}
+/** ล้างของเก่า: ประวัติของรายการที่ลบเกิน 14 วัน · ประวัติงานสตูดิโอเหลือ 3 รุ่น · สำเนารายวันเหลือ 3 วัน */
+export function compact({ keepSnaps = 3 } = {}) {
+  const before = storageUsage().total; const cut = Date.now() - 14 * 864e5;
+  const H = hist();
+  for (const [k, list] of Object.entries(H)) {
+    const [coll, id] = k.split('/'); const cur = load(coll)[id];
+    if (!cur || (cur.deleted && Date.parse(cur.updatedAt || 0) < cut)) { delete H[k]; continue; }
+    if (coll === 'content') H[k] = list.slice(0, 3);
+  }
+  safe.set('hist', JSON.stringify(H));
+  let list = snapshots(); const daily = list.filter((x) => /^\d{4}-/.test(x.d));
+  for (const old of daily.slice(keepSnaps)) { try { localStorage.removeItem(NS + 'snap.' + old.d); } catch {} list = list.filter((x) => x !== old); }
+  safe.set('snaps', JSON.stringify(list));
+  return Math.max(0, before - storageUsage().total);
+}

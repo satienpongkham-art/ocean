@@ -258,6 +258,7 @@ export function renderPlanPage(id) {
     claimModel(p) ? h('section#sec-claim.pp-sec', h('h2', 'เคลมจริง แผนนี้จ่ายเท่าไร'), claimCalc(p)) : null,
     h('section#sec-why.pp-sec', h('h2', 'ทำไมตัวนี้ ไม่ใช่ตัวนั้น'), whyThis(p)),
     h('section#sec-faq.pp-sec', h('h2', 'คำถามที่ลูกค้าถามบ่อย'), h('div.faq', faqs(p).map(([qq, a]) => h('details', h('summary', qq, icon('next')), h('p', T(a)))))),
+    clientMode() ? null : h('div.pp-tools', h('a.pp-tool', { href: '#/studio/poster?plan=' + p.id }, h('span', icon('star')), h('b', 'ทำโปสเตอร์'), h('small', 'โพสต์ได้ทันที')), h('button.pp-tool', { onclick: () => import('./poster.js').then((m) => m.clientShareSheet(p.id)) }, h('span', icon('share')), h('b', 'ส่งสรุปให้ลูกค้า'), h('small', 'ภาพสวย ส่ง LINE'))),
     clientMode() ? null : h('div.sticky-act.pp-sticky', basketButton(p.id, 'btn'), h('a.btn.primary', { href: '#/sheet/' + p.id }, icon('doc'), 'สรุปหน้าเดียว')),
     h('div.pp-actions',
       h('a.btn', { href: p.url, target: '_blank', rel: 'noopener' }, icon('ext'), 'AIA'),

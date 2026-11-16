@@ -25,11 +25,11 @@ NAV.splice(1, 2, NAV[2], NAV[1]); // วันนี้ · ลูกค้า ·
 const SIDE_SUB = {
   plans: [['#/plans', 'คลังแผน'], ['#/plans/stages', 'ชุดแผนตามช่วงวัย'], ['#/plans/ww', 'มี vs ไม่มีประกัน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  studio: [['#/studio', 'งานของฉัน'], ['#/studio/library', 'คลัง 365 เรื่อง'], ['#/studio/video', 'ตัดต่อคลิป'], ['#/studio/stats', 'ผลโพสต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์']],
+  studio: [['#/studio', 'งานของฉัน'], ['#/studio/library', 'คลัง 365 เรื่อง'], ['#/studio/poster', 'โปสเตอร์แผน'], ['#/studio/video', 'ตัดต่อคลิป'], ['#/studio/stats', 'ผลโพสต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์']],
   menu: [['#/menu', 'เมนูทั้งหมด'], ['#/settings', 'ตั้งค่า'], ['#/settings/look', 'สีจอและหน้าตา'], ['#/tools/calc', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/tax', 'คำนวณภาษี'], ['#/tools/profile', 'โปรไฟล์'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.8 · 18 พ.ย. 69';
+export const APP_VERSION = '5.9 · 18 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -79,6 +79,7 @@ const routes = [
   [/^\/studio\/playbook$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderPlaybook())],
   [/^\/studio\/sign$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderSign())],
   [/^\/studio\/covers$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderCovers())],
+  [/^\/studio\/poster$/, 'studio', (q) => import('./views/poster.js').then((m) => m.renderPosters(q))],
   [/^\/studio\/video$/, 'studio', (q) => import('./views/video.js').then((m) => m.renderVideos(q))],
   [/^\/studio\/video\/([\w-]+)$/, 'studio', (q, id) => import('./views/video.js').then((m) => m.renderVideoEditor(id, q))],
   [/^\/studio\/([\w-]+)$/, 'studio', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
@@ -285,7 +286,8 @@ import('./lock.js').then((m) => m.initLock());
 setTimeout(() => { if (document.body.classList.contains('public')) return; import('./morning.js').then((m) => { let fresh = false; try { fresh = !localStorage.getItem('advdesk.v1.seenVersion0'); localStorage.setItem('advdesk.v1.seenVersion0', '1'); } catch {} if (fresh && !store.all('clients').length) m.onboarding(); else m.morningBrief(); }); }, 1600);
 // การ์ดแผน → หน้าแผน: ขยายต่อเนื่อง (View Transition แบบตั้งชื่อ)
 document.addEventListener('click', (e) => { const a = e.target.closest?.('a[href^="#/plan/"], button.prow[class*="cat-"], button.mini-plan'); if (!a || document.querySelector('#view .pp-hero')) return; document.querySelectorAll('[data-morph]').forEach((x) => { x.style.viewTransitionName = ''; delete x.dataset.morph; }); a.style.viewTransitionName = 'pp-hero'; a.dataset.morph = '1'; }, true);
-setTimeout(() => { try { store.snapshotDaily(); } catch {} }, 4000);
+setTimeout(() => { try { if (store.storageUsage().total > 3.5 * 1048576) store.compact({ keepSnaps: 2 }); store.snapshotDaily(); } catch {} }, 4000);
+import('./gestures.js').then((m) => m.initGestures()).catch(() => {});
 route();
 // แสดง "มีอะไรใหม่" ครั้งเดียวหลังอัปเดตเวอร์ชัน
 setTimeout(() => {

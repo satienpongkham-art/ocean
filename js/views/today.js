@@ -127,8 +127,10 @@ export function render(q = {}) {
     h('div.setup-bar', { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': steps.length, 'aria-valuenow': doneN }, h('i', { style: { width: (doneN / steps.length) * 100 + '%' } }))),
     h('ul.setup-list', steps.map(([t, ok, href]) => h('li', { class: ok ? 'ok' : '' }, h('a', { href }, h('span.sl-ic', { 'aria-hidden': 'true' }, ok ? icon('check') : ''), h('span', t), h('span.sr-only', ok ? ' (ทำแล้ว)' : ' (ยังไม่ได้ทำ)'), ok ? null : icon('next'))))));
 
+  const sg = h('div'); import('../suggest.js').then((m) => sg.replaceWith(m.suggestCard())).catch(() => {});
   return h('div', { 'data-title': 'วันนี้' },
     installCard(),
+    sg,
     setup,
     ...closingPlans.map((x) => h('a.countdown', { href: '#/plan/' + x.plan.id, style: { textDecoration: 'none', color: 'inherit', marginBottom: '12px' } },
       h('div.big', x.days), h('div', { style: { flex: 1 } }, h('b', `วัน ${x.plan.short} ปิดรับ`), h('div.small.muted', noHealth ? `ลูกค้า ${noHealth} คนยังไม่มีประกันสุขภาพของตัวเอง` : 'แตะเพื่อดูแผน')), icon('next'))),

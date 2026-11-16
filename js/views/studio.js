@@ -10,6 +10,7 @@ import { split503020, compoundCompare } from '../engine/calc.js';
 import { profile, rerender } from '../app.js';
 import { headline } from './planpage.js';
 import { haptic } from '../pwa.js';
+import { longPress } from '../gestures.js';
 
 export const COLS = [['idea', 'ไอเดีย', 'bulb'], ['doing', 'กำลังทำ', 'pen'], ['ready', 'พร้อมโพสต์', 'check'], ['posted', 'โพสต์แล้ว', 'star']];
 const PIL = Object.fromEntries(PILLARS.map((p) => [p.id, p]));
@@ -143,15 +144,34 @@ export function hooksFor(topic) { const t = (topic || 'เรื่องนี�
 
 // ── หน้าแรกสตูดิโอ ──
 async function thumb(it, el, i = 0) { try { const r = await renderSlide(it.deck.slides[i], it.deck, i); el.src = r.canvas.toDataURL('image/jpeg', 0.6); } catch {} }
+/** เมนูงาน: เปิด / ทำสำเนา / ลบ */
+export function itemMenu(it) {
+  const del = () => { closeSheet(true); store.remove('content', it.id); toast('ลบงานแล้ว', { action: { label: 'เอาคืน', fn: () => store.put('content', { ...it }) } }); if (location.hash.startsWith('#/studio/' + it.id)) location.hash = '#/studio'; };
+  const dup = () => { const { id, createdAt, updatedAt, ...rest } = it; const n = store.put('content', { ...structuredClone(rest), title: it.title + ' (สำเนา)', status: 'doing', postedAt: null, stats: null }); closeSheet(true); location.hash = '#/studio/' + n.id; };
+  sheet({ title: it.title, sub: 'งานในสตูดิโอ', body: h('div.st-menu', h('a.btn.block', { href: '#/studio/' + it.id, onclick: () => closeSheet(true) }, icon('pen'), 'เปิดแก้ไข'), h('button.btn.block', { onclick: dup }, icon('copy'), 'ทำสำเนาเป็นงานใหม่'), h('button.btn.block.danger', { onclick: del }, icon('trash'), 'ลบงานนี้')) });
+}
+function cleanSheet(items) {
+  const old = items.filter((x) => x.status === 'posted' && x.postedAt && Date.now() - Date.parse(x.postedAt) > 60 * 864e5);
+  const idle = items.filter((x) => (x.status || 'idea') === 'idea' && Date.now() - Date.parse(x.updatedAt || 0) > 30 * 864e5);
+  const u = store.storageUsage(); const mb = (n) => (n / 1048576).toFixed(2) + ' MB';
+  const run = (list) => { closeSheet(true); list.forEach((x) => store.remove('content', x.id)); const freed = store.compact(); toast(`ลบ ${list.length} งาน · คืนพื้นที่ ${mb(freed)}`); };
+  sheet({ title: 'จัดการงานและพื้นที่', body: h('div.stack',
+    h('div.st-usage', h('div', h('small', 'ใช้พื้นที่ในเครื่อง'), h('b', mb(u.total) + ' / ~5 MB')), h('div.st-bar', h('i', { style: { width: Math.min(100, u.total / 5242880 * 100) + '%' } })), h('small.muted', `ข้อมูล ${mb(u.data)} · ประวัติแก้ไข ${mb(u.hist)} · สำเนารายวัน ${mb(u.snaps)}`)),
+    h('button.btn.block', { onclick: () => { const f = store.compact(); toast('ล้างประวัติเก่าแล้ว คืนพื้นที่ ' + mb(f)); closeSheet(true); } }, icon('sync'), 'ล้างประวัติเก่า (ไม่ลบงาน)'),
+    old.length ? h('button.btn.block', { onclick: () => run(old) }, icon('trash'), `ลบงานที่โพสต์ไปแล้วเกิน 60 วัน (${old.length})`) : null,
+    idle.length ? h('button.btn.block', { onclick: () => run(idle) }, icon('trash'), `ลบไอเดียที่ไม่ได้แตะเกิน 30 วัน (${idle.length})`) : null,
+    h('p.xs.muted', 'งานที่ลบดูย้อนได้ใน "ประวัติ/ถังขยะ" 14 วัน · ภาพไม่ได้เก็บเป็นไฟล์ในเครื่อง จึงใช้พื้นที่น้อย')) });
+}
+
 export function renderStudio() {
   const items = store.all('content').sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
   const move = (it, d) => { const i = COLS.findIndex((c) => c[0] === (it.status || 'idea')); const n = COLS[i + d]; if (!n) return; store.put('content', { ...it, status: n[0], ...(n[0] === 'posted' ? { postedAt: it.postedAt || todayISO() } : {}) }); haptic(10);
     if (n[0] === 'posted') import('../fx.js').then((m) => m.celebrate?.()).catch(() => {}); };
   const card = (it) => { const img = h('img.sc-th', { alt: '' }); thumb(it, img);
-    return h('div.sc-card', { style: { '--pc': catColor(it) } },
+    return longPress(h('div.sc-card', { style: { '--pc': catColor(it) } },
       h('a.sc-main', { href: '#/studio/' + it.id }, img, h('div', h('b', it.title), h('small', [CATS[it.deck?.cat]?.short || PIL[it.pillar]?.name, it.deck?.series ? `${it.deck.series} EP.${it.deck.ep}` : null, `${it.deck?.slides?.length || 0} หน้า`, it.date ? 'ตั้งโพสต์ ' + dateTH(it.date) : null].filter(Boolean).join(' · ')))),
       h('div.sc-acts', h('button.icon-btn', { 'aria-label': 'ย้ายไปช่องก่อนหน้า', disabled: (it.status || 'idea') === 'idea', onclick: () => move(it, -1) }, icon('back')),
-        h('span.small.muted', it.postedAt ? dateTH(it.postedAt) : ''), h('button.icon-btn', { 'aria-label': 'ย้ายไปช่องถัดไป', disabled: it.status === 'posted', onclick: () => move(it, 1) }, icon('next')))); };
+        h('span.small.muted', it.postedAt ? dateTH(it.postedAt) : ''), h('button.icon-btn', { 'aria-label': 'เมนูงานนี้', onclick: () => itemMenu(it) }, icon('more')), h('button.icon-btn', { 'aria-label': 'ย้ายไปช่องถัดไป', disabled: it.status === 'posted', onclick: () => move(it, 1) }, icon('next')))), () => itemMenu(it)); };
   // เรื่องของวัน (จากคลัง 365)
   const today = h('div.sd-today', h('div.sd-load', 'กำลังเปิดเรื่องของวันนี้…'));
   import('../library.js').then(async (L) => { const it = await L.itemOfDay(); if (!it) return; const C = CATS[it.c]; const deck = L.buildDeck(it, { theme: brandSet().theme });
@@ -159,12 +179,14 @@ export function renderStudio() {
     const used = items.some((x) => x.deck?.lib === it.id);
     today.replaceChildren(h('div.sd-th', im), h('div.sd-tx', h('span.sd-k', { style: { '--pc': C.color } }, 'เรื่องของวันนี้ · ' + C.short), h('b', it.h), h('small', `${deck.slides.length} หน้า · มีประโยคเปิด แคปชั่น และบทคลิปให้แล้ว${used ? ' · เคยเปิดทำแล้ว' : ''}`),
       ), h('div.sd-acts', h('button.btn.primary', { onclick: () => { const x = createItem(deck, { title: it.h, pillar: it.c, status: 'doing' }); location.hash = '#/studio/' + x.id; } }, icon('pen'), 'เปิดทำเลย'), h('a.btn', { href: '#/studio/library' }, 'เลือกเรื่องอื่น'))); }).catch(() => today.replaceChildren(h('p.small.muted', 'เปิดคลังไม่ได้ในตอนนี้ ลองใหม่อีกครั้ง')));
+  const sgCard = h('div'); import('../suggest.js').then((m) => sgCard.replaceWith(m.suggestCard())).catch(() => {});
   const due = items.filter((x) => x.date && x.date <= todayISO() && x.status !== 'posted');
   const noStat = items.filter((x) => x.status === 'posted' && !x.stats).length;
   return h('div', { 'data-title': 'สตูดิโอ' },
-    h('div.topbar', h('div', h('h1', 'สตูดิโอ'), h('div.sub', 'วันละเรื่อง เลือก แก้ โพสต์ แล้วกลับมาบันทึกผล')), h('button.btn.primary', { onclick: newSheet }, icon('plus'), 'สร้าง')),
+    h('div.topbar', h('div', h('h1', 'สตูดิโอ'), h('div.sub', 'วันละเรื่อง เลือก แก้ โพสต์ แล้วกลับมาบันทึกผล')), h('div.row', { style: { gap: '6px' } }, h('button.icon-btn', { 'aria-label': 'จัดการงานและพื้นที่', onclick: () => cleanSheet(items) }, icon('trash')), h('button.btn.primary', { onclick: newSheet }, icon('plus'), 'สร้าง'))),
+    sgCard,
     today,
-    h('div.sd-nav', h('a', { href: '#/studio/library' }, h('span', icon('book')), h('b', 'คลัง 365 เรื่อง')), h('a', { href: '#/studio/video' }, h('span', icon('play')), h('b', 'ตัดต่อคลิป')), h('a', { href: '#/studio/stats' }, h('span', icon('line')), h('b', 'ผลโพสต์'), noStat ? h('i', noStat) : null), h('a', { href: '#/studio/playbook' }, h('span', icon('bulb')), h('b', 'หลักที่ใช้')), h('a', { href: '#/studio/sign' }, h('span', icon('pen')), h('b', 'ลายเซ็น')), h('a', { href: '#/studio/covers' }, h('span', icon('target')), h('b', 'ปก IG')), h('a', { href: '#/brand' }, h('span', icon('star')), h('b', 'แบรนด์'))),
+    h('div.sd-nav', h('a', { href: '#/studio/library' }, h('span', icon('book')), h('b', 'คลัง 365 เรื่อง')), h('a', { href: '#/studio/poster' }, h('span', icon('doc')), h('b', 'โปสเตอร์แผน')), h('a', { href: '#/studio/video' }, h('span', icon('play')), h('b', 'ตัดต่อคลิป')), h('a', { href: '#/studio/stats' }, h('span', icon('line')), h('b', 'ผลโพสต์'), noStat ? h('i', noStat) : null), h('a', { href: '#/studio/playbook' }, h('span', icon('bulb')), h('b', 'หลักที่ใช้')), h('a', { href: '#/studio/sign' }, h('span', icon('pen')), h('b', 'ลายเซ็น')), h('a', { href: '#/studio/covers' }, h('span', icon('target')), h('b', 'ปก IG')), h('a', { href: '#/brand' }, h('span', icon('star')), h('b', 'แบรนด์'))),
     due.length ? h('div.callout', { style: { margin: '12px 0' } }, h('b', `ถึงกำหนดโพสต์ ${due.length} งาน: `), due.slice(0, 3).map((x, i) => [i ? ' · ' : '', h('a', { href: '#/studio/' + x.id }, x.title)])) : null,
     h('div.section', h('div.row.between', h('h2', { style: { margin: 0 } }, 'งานของฉัน'), h('div.seg.sm-seg', [['board', 'บอร์ด'], ['cal', 'ปฏิทิน']].map(([k, l]) => h('button', { class: sv.view === k ? 'on' : '', onclick: () => { sv.view = k; rerender(); } }, l)))),
       sv.view === 'cal' ? studioCal(items) : items.length ? h('div.studio-board', COLS.map(([id, name, ic]) => { const list = items.filter((x) => (x.status || 'idea') === id);
@@ -245,6 +267,7 @@ export function renderStudioItem(id) {
     h('a.icon-btn', { href: '#/studio', 'aria-label': 'กลับสตูดิโอ' }, icon('back')),
     h('input.input.st-title', { value: it.title, 'aria-label': 'ชื่องาน', onchange: (e) => save({ title: e.target.value }, { hist: false }) }),
     h('button.icon-btn', { 'aria-label': 'เลิกทำ', disabled: !ed.hist.length, onclick: () => { ed.fut.push(JSON.stringify(it.deck)); it = store.put('content', { ...it, deck: JSON.parse(ed.hist.pop()) }); } }, icon('undo')),
+    h('button.icon-btn', { 'aria-label': 'เมนูงาน (ลบ/ทำสำเนา)', onclick: () => itemMenu(it) }, icon('more')),
     h('button.icon-btn', { 'aria-label': 'ทำซ้ำ', disabled: !ed.fut.length, onclick: () => { ed.hist.push(JSON.stringify(it.deck)); it = store.put('content', { ...it, deck: JSON.parse(ed.fut.pop()) }); } }, icon('redo')));
   const setStatus = (s2) => { save({ status: s2, ...(s2 === 'posted' ? { postedAt: it.postedAt || todayISO() } : {}) }, { hist: false }); if (s2 === 'posted') { import('../fx.js').then((m) => m.celebrate?.()).catch(() => {}); toast('โพสต์แล้ว! อีก 2–3 วันกลับมาบันทึกผลในหน้า "ผลโพสต์"'); } };
   const statusRow = h('div.chips.wrap', { style: { margin: '6px 0' } }, COLS.map(([s2, n]) => h('button.chip', { class: (it.status || 'idea') === s2 ? 'on' : '', 'aria-pressed': String((it.status || 'idea') === s2), onclick: () => setStatus(s2) }, n)),
@@ -315,6 +338,10 @@ export function renderStudioItem(id) {
     h('div.row.wrap', { style: { gap: '6px' } },
       h('button.btn.sm', { 'aria-label': 'สไลด์ก่อนหน้า', disabled: ed.i === 0, onclick: () => { ed.i--; rerender(); } }, icon('back')),
       h('button.btn.sm', { 'aria-label': 'สไลด์ถัดไป', disabled: ed.i === deck.slides.length - 1, onclick: () => { ed.i++; rerender(); } }, icon('next')),
+      h('button.btn.sm', { 'aria-label': 'ย้ายสไลด์ไปซ้าย', disabled: ed.i === 0, onclick: () => { const d = structuredClone(deck); const [m] = d.slides.splice(ed.i, 1); d.slides.splice(ed.i - 1, 0, m); ed.i--; setDeck(d); } }, '⇠'),
+      h('button.btn.sm', { 'aria-label': 'ย้ายสไลด์ไปขวา', disabled: ed.i === deck.slides.length - 1, onclick: () => { const d = structuredClone(deck); const [m] = d.slides.splice(ed.i, 1); d.slides.splice(ed.i + 1, 0, m); ed.i++; setDeck(d); } }, '⇢'),
+      h('button.btn.sm', { 'aria-label': 'ทำสำเนาสไลด์นี้', onclick: () => { const d = structuredClone(deck); d.slides.splice(ed.i + 1, 0, structuredClone(d.slides[ed.i])); ed.i++; setDeck(d); } }, icon('copy')),
+      h('button.btn.sm', { 'aria-label': 'ลบสไลด์นี้', disabled: deck.slides.length <= 1, onclick: () => { const d = structuredClone(deck); d.slides.splice(ed.i, 1); ed.i = Math.max(0, ed.i - 1); setDeck(d); toast('ลบสไลด์แล้ว — กดเลิกทำด้านบนเพื่อเอาคืน'); } }, icon('trash')),
       h('select.input.sm-sel', { 'aria-label': 'รูปแบบสไลด์', onchange: (e) => upd((x, d) => { d.slides[ed.i] = convertSlide(x, e.target.value); }) }, Object.entries(KINDS).map(([k, l]) => h('option', { value: k, selected: s.kind === k }, l))),
       STRUCT.includes(s.kind) ? h('button.btn.sm.primary', { onclick: () => dataSheet(s, (ns) => upd((x, d) => { d.slides[ed.i] = ns; })) }, icon('grid'), 'แก้ข้อมูล') : null,
       ['list', 'check'].includes(s.kind) ? h('button.btn.sm', { onclick: () => upd((x) => { x.items = [...(x.items || []), 'ข้อใหม่']; }) }, icon('plus'), 'เพิ่มข้อ') : null),
