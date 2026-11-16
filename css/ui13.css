@@ -249,3 +249,56 @@
 .rc-rec { width: 78px; height: 78px; border-radius: 50%; border: 4px solid #fff; background: transparent; display: grid; place-items: center; cursor: pointer; padding: 0; }
 .rc-rec i { width: 60px; height: 60px; border-radius: 50%; background: #ff3b30; transition: all .2s; }
 .rc.recording .rc-rec i { width: 30px; height: 30px; border-radius: 8px; }
+
+/* ─── v5.9 โปสเตอร์แผน · วันนี้โพสต์อะไรดี · ท่าทางนิ้ว · ลูกเล่น ─── */
+.ps-search { width: 100%; }
+.ps-list { display: flex; flex-direction: column; gap: 8px; }
+.ps-item { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 12px 12px 14px; color: inherit; text-decoration: none; }
+.ps-item > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ps-item small { color: var(--ink-3, #8a8484); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-star, .ps-close { flex: none; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #fff3cd; color: #8a5a00; }
+.ps-close { background: #fde2e4; color: #a6192e; }
+.ps-grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .ps-grid { grid-template-columns: minmax(320px, 440px) 1fr; align-items: start; } .ps-prev { position: sticky; top: 14px; } }
+.ps-prev { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; }
+.ps-frame { width: 100%; max-width: 440px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.14); background: #fff; }
+.ps-frame.sm { max-width: 300px; margin: 0 auto; }
+.ps-cv { width: 100%; height: auto; display: block; }
+.ps-acts { gap: 8px; justify-content: center; }
+.ps-side { min-width: 0; }
+.ps-side .card { margin-bottom: 12px; }
+.ps-thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ps-th { border: 2px solid var(--line); background: var(--card); border-radius: 12px; padding: 4px; display: flex; flex-direction: column; gap: 3px; cursor: pointer; font-family: var(--font); color: var(--ink-2); }
+.ps-th img { width: 100%; border-radius: 8px; display: block; }
+.ps-th small { font-size: 11.5px; }
+.ps-th.on { border-color: var(--accent, #a6192e); color: var(--ink); }
+.ps-cap { white-space: pre-wrap; font: 400 13px/1.55 var(--font); background: var(--paper-2); border-radius: 10px; padding: 10px; margin: 0 0 8px; max-height: 220px; overflow: auto; }
+.sg-card { background: linear-gradient(135deg, color-mix(in srgb, var(--accent, #a6192e) 9%, var(--card)), var(--card)); border: 1px solid color-mix(in srgb, var(--accent, #a6192e) 18%, var(--line)); border-radius: 18px; padding: 12px; margin-bottom: 12px; }
+.sg-h { display: flex; justify-content: space-between; align-items: center; margin: 0 4px 8px; }
+.sg-h b { font-size: 15px; }
+.sg-list { display: flex; flex-direction: column; gap: 6px; }
+.sg-i { display: flex; align-items: center; gap: 10px; background: var(--card); border-radius: 12px; padding: 10px; color: inherit; text-decoration: none; }
+.sg-ic { flex: none; width: 38px; height: 38px; border-radius: 11px; background: color-mix(in srgb, var(--accent, #a6192e) 12%, var(--card)); color: var(--accent, #a6192e); display: grid; place-items: center; }
+.sg-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sg-t b { font-size: 14px; }
+.sg-t small { color: var(--ink-3, #8a8484); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.pp-tool { text-align: left; display: flex; flex-direction: column; gap: 2px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; color: inherit; text-decoration: none; cursor: pointer; font-family: var(--font); }
+.pp-tool span { width: 34px; height: 34px; border-radius: 10px; background: color-mix(in srgb, var(--accent, #a6192e) 12%, var(--card)); color: var(--accent, #a6192e); display: grid; place-items: center; margin-bottom: 4px; }
+.pp-tool small { color: var(--ink-3, #8a8484); font-size: 12px; }
+.st-menu { display: flex; flex-direction: column; gap: 8px; }
+.btn.danger { color: #b42318; border-color: color-mix(in srgb, #b42318 30%, var(--line)); }
+.st-usage { background: var(--paper-2); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.st-usage > div:first-child { display: flex; justify-content: space-between; align-items: baseline; }
+.st-bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.st-bar i { display: block; height: 100%; background: var(--accent, #a6192e); }
+/* ปัดขอบซ้ายเพื่อย้อนกลับ */
+.gs-back { position: fixed; left: 0; top: 50%; z-index: 700; width: 44px; height: 44px; margin-top: -22px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; transform: translateX(calc(-52px + var(--p, 0) * 64px)) scale(calc(.7 + var(--p, 0) * .3)); opacity: 0; transition: opacity .15s, background .15s; pointer-events: none; }
+.gs-back.show { opacity: .9; }
+.gs-back.ready { background: var(--accent, #a6192e); color: #fff; }
+/* ลูกเล่นเวลากด */
+:is(.btn, .chip, .card a, .sg-i, .ps-item, .pp-tool, .sc-card, .vd-item, .vd-big, .vd-tpl, .ps-th, .vd-style, .mn-row, .sd-nav a, .hl-card, .plan-card, .kind-i) { transition: transform .14s cubic-bezier(.2,.8,.2,1), box-shadow .2s, background-color .2s; }
+:is(.btn, .chip, .sg-i, .ps-item, .pp-tool, .vd-item, .vd-big, .vd-tpl, .ps-th, .vd-style, .mn-row, .sd-nav a, .hl-card, .plan-card, .kind-i):active { transform: scale(.97); }
+.sc-card:active { transform: scale(.985); }
+@media (hover: hover) { :is(.sg-i, .ps-item, .pp-tool, .vd-item, .vd-tpl, .hl-card, .plan-card):hover { box-shadow: 0 6px 18px rgba(0,0,0,.08); transform: translateY(-1px); } }
+@media (prefers-reduced-motion: reduce) { :is(.btn, .chip, .sg-i, .ps-item, .pp-tool, .vd-item, .sc-card):active { transform: none; } }
