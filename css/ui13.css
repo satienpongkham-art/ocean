@@ -54,6 +54,10 @@
 .vd-ok span { display: flex; flex-direction: column; min-width: 0; }
 .vd-ok b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vd-ok small { color: var(--ink-3, #8a8484); }
+.vd-bad { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, #d92d20 8%, var(--card)); border-radius: 12px; padding: 10px 12px; }
+.vd-bad > svg { color: #d92d20; flex: none; }
+.vd-bad span { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.vd-bad small { color: var(--ink-3, #8a8484); }
 .vd-script { font-size: 16px; line-height: 1.6; }
 .vd-chunks { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; align-items: center; }
 .vd-br { flex-basis: 100%; height: 0; }
