@@ -88,7 +88,9 @@ export async function renderVideoEditor(id) {
     if (M.url) URL.revokeObjectURL(M.url);
     M.media = null; M.url = null;
     if (blob) { M.url = URL.createObjectURL(blob); const el = document.createElement(P.mode === 'cam' ? 'video' : 'audio'); el.playsInline = true; el.preload = 'auto'; el.src = M.url; el.crossOrigin = 'anonymous';
-      await new Promise((r) => { el.onloadedmetadata = r; el.onerror = r; setTimeout(r, 6000); }); M.media = el; P.mediaDur = isFinite(el.duration) ? el.duration : 0; }
+      await new Promise((r) => { el.onloadedmetadata = r; el.onerror = r; setTimeout(r, 6000); }); M.media = el; P.mediaDur = isFinite(el.duration) ? el.duration : 0;
+      M.bad = !(P.mediaDur > 0) || (P.mode === 'cam' && !el.videoWidth); if (M.bad) { M.media = null; } }
+    else M.bad = false;
     M.player?.destroy();
     M.player = new Player(cv, P, M.media);
     M.player.onTime = (t) => { const [a, b] = M.player.win; tLabel.textContent = `${fmtT(t - a)} / ${fmtT(b - a)}`; if (document.activeElement !== scrub) scrub.value = Math.round(((t - a) / Math.max(0.01, b - a)) * 1000); onTick?.(t); };
@@ -120,13 +122,26 @@ export async function renderVideoEditor(id) {
     const box = h('div');
     const info = h('div.vd-media-info');
     const paintInfo = () => {
-      if (P.mode === 'cam') info.replaceChildren(M.media ? h('div.vd-ok', icon('check'), h('span', h('b', P.mediaName || 'คลิปของคุณ'), h('small', `ยาว ${fmtT(P.mediaDur)}${P.mediaDur > 90 ? ' · ยาวไป แนะนำไม่เกิน 60 วินาที' : ''}`))) : h('p.small.muted', 'ถ่ายแนวตั้ง แสงเข้าหน้า เสียงชัด · ยาว 15–30 วินาทีกำลังดี'));
+      if (M.bad) info.replaceChildren(h('div.vd-bad', icon('info'), h('span', h('b', (P.mediaName || 'ไฟล์นี้') + ' เปิดเล่นไม่ได้'), h('small', 'เบราว์เซอร์ไม่รองรับไฟล์แบบนี้ (เช่น .avi) กดแปลงเป็น MP4 ในเครื่องได้เลย')), h('button.btn.primary', { onclick: () => M.fixMedia?.() }, 'แปลงไฟล์')));
+      else if (P.mode === 'cam') info.replaceChildren(M.media ? h('div.vd-ok', icon('check'), h('span', h('b', P.mediaName || 'คลิปของคุณ'), h('small', `ยาว ${fmtT(P.mediaDur)}${P.mediaDur > 90 ? ' · ยาวไป แนะนำไม่เกิน 60 วินาที' : ''}`))) : h('p.small.muted', 'ถ่ายแนวตั้ง แสงเข้าหน้า เสียงชัด · ยาว 15–30 วินาทีกำลังดี'));
       else info.replaceChildren(P.audio === 'none' ? h('p.small.muted', 'ไม่มีเสียงพูด: ซับขึ้นตามความเร็วอ่าน แล้วไปเลือกเพลงใน TikTok ตอนโพสต์') : M.media ? h('div.vd-ok', icon('check'), h('span', h('b', P.audio === 'rec' ? 'เสียงที่อัดไว้' : (P.mediaName || 'ไฟล์เสียง')), h('small', `ยาว ${fmtT(P.mediaDur)}`))) : h('p.small.muted', P.audio === 'rec' ? 'กดอัด แล้วอ่านบทด้านล่าง' : 'เลือกไฟล์เสียงจากเครื่อง'));
     };
-    const fileIn = h('input', { type: 'file', accept: P.mode === 'cam' ? 'video/*' : 'audio/*', hidden: true, onchange: async (e) => { const f = e.target.files?.[0]; if (!f) return;
+    const kind = P.mode === 'cam' ? 'video' : 'audio';
+    const useFile = async (f) => {
       if (f.size > 300 * 1024 * 1024) { toast('ไฟล์ใหญ่เกิน 300MB ลองตัดให้สั้นลงก่อน'); return; }
+      const { probe, toMp4 } = await import('../video/convert.js');
+      if (!(await probe(f, kind))) {
+        if (f.size > 200 * 1024 * 1024) { toast('ไฟล์นี้เบราว์เซอร์เปิดไม่ได้ และใหญ่เกินกว่าจะแปลงในเครื่อง (เกิน 200MB)'); return; }
+        const stage = h('p.small', 'เตรียมแปลงไฟล์…'), bar = h('div.vd-bar.on', h('i'));
+        sheet({ title: 'แปลงไฟล์ให้เปิดได้', sub: f.name, body: h('div', h('p.small.muted', `ไฟล์ .${(f.name.split('.').pop() || '').toLowerCase()} นี้ Chrome เปิดเล่นไม่ได้ แอปจะแปลงเป็น MP4 ให้ในเครื่อง (ไม่อัปโหลดไปไหน) ใช้เวลาประมาณ 1–3 เท่าของความยาวคลิป อย่าปิดหน้านี้`), stage, bar) });
+        try { f = await toMp4(f, { kind, onStage: (t) => { stage.textContent = t; }, onProgress: (p) => { bar.firstChild.style.width = Math.round(p * 100) + '%'; stage.textContent = 'กำลังแปลงไฟล์ในเครื่อง… ' + Math.round(p * 100) + '%'; } }); closeSheet(true); toast('แปลงไฟล์เสร็จแล้ว'); }
+        catch (err) { closeSheet(true); toast('แปลงไฟล์ไม่สำเร็จ: ' + (err.message || err)); return; }
+      }
       try { await idb('put', P.id, f); } catch { toast('เก็บไฟล์ในเครื่องไม่ได้ (พื้นที่ไม่พอ?)'); return; }
-      P.hasMedia = true; P.mediaName = f.name; save(); await attachMedia(); save(); paintInfo(); toast('เพิ่มไฟล์แล้ว'); } });
+      P.hasMedia = true; P.mediaName = f.name; save(); await attachMedia(); save(); paintInfo(); toast('เพิ่มไฟล์แล้ว');
+    };
+    M.fixMedia = async () => { const b = await idb('get', P.id).catch(() => null); if (b) useFile(b instanceof File ? b : new File([b], P.mediaName || 'clip.avi', { type: b.type })); };
+    const fileIn = h('input', { type: 'file', accept: P.mode === 'cam' ? 'video/*,.avi,.mkv,.mov,.wmv,.3gp,.flv,.mts,.m4v' : 'audio/*,.m4a,.aac,.wav,.ogg,.amr,.wma', hidden: true, onchange: (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) useFile(f); } });
     if (P.mode === 'cam') box.append(h('div.card', h('h3.vd-h3', 'คลิปของคุณ'), info, h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, h('button.btn' + (M.media ? '' : '.primary'), { onclick: () => fileIn.click() }, icon('upload'), M.media ? 'เปลี่ยนคลิป' : 'เลือกคลิปจากเครื่อง')), fileIn));
     else {
       const recBox = h('div');
@@ -336,6 +351,6 @@ export async function renderVideoEditor(id) {
   paintSteps(); paintPanel();
   M.node = node;
   await attachMedia();
-  if (step === 'sync' || step === 'look') paintPanel();
+  if (M.bad && step !== 'media') go('media'); else paintPanel();
   return node;
 }
