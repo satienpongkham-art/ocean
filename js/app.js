@@ -25,11 +25,11 @@ NAV.splice(1, 2, NAV[2], NAV[1]); // วันนี้ · ลูกค้า ·
 const SIDE_SUB = {
   plans: [['#/plans', 'คลังแผน'], ['#/plans/stages', 'ชุดแผนตามช่วงวัย'], ['#/plans/ww', 'มี vs ไม่มีประกัน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  studio: [['#/studio', 'งานของฉัน'], ['#/studio/library', 'คลัง 365 เรื่อง'], ['#/studio/poster', 'โปสเตอร์แผน'], ['#/studio/video', 'ตัดต่อคลิป'], ['#/studio/stats', 'ผลโพสต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์']],
+  studio: [['#/studio', 'งานของฉัน'], ['#/studio/library', 'คลัง 365 เรื่อง'], ['#/studio/poster', 'โปสเตอร์แผน'], ['#/studio/video', 'ตัดต่อคลิป'], ['#/studio/stats', 'ผลโพสต์'], ['#/brand', 'แบรนด์ของฉัน']],
   menu: [['#/menu', 'เมนูทั้งหมด'], ['#/settings', 'ตั้งค่า'], ['#/settings/look', 'สีจอและหน้าตา'], ['#/tools/calc', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/tax', 'คำนวณภาษี'], ['#/tools/profile', 'โปรไฟล์'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.9 · 18 พ.ย. 69';
+export const APP_VERSION = '6.0 · 18 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 

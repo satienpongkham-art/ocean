@@ -1,6 +1,27 @@
 // ─── จัดให้อัตโนมัติ: เลือกสติกเกอร์ ฉาก ตัวหนังสือโค้ง เอฟเฟกต์เปิด เพลง ป้ายท้าย ให้เหมาะกับบท · แม่แบบคลิป ───
 import { suggestEmoji } from '../../data/emoji.js';
 import { visLen } from './engine.js';
+import { GLOSSARY } from '../../data/rules.js';
+import { PLANS } from '../../data/plans.js';
+
+const TERMS = [...GLOSSARY].sort((a, b) => b[0].length - a[0].length);
+const shortDef = (d) => d.split(/\s—\s|\.\s|;\s/)[0].replace(/\s*\([^)]*\)/g, '').slice(0, 70);
+const MOOD_RE = { laugh: /555|ฮ่า|ตลก|ขำ/, sad: /เสียใจ|ร้องไห้|เศร้า|สูญเสีย|จากไป/, shock: /ตกใจ|ไม่น่าเชื่อ|ช็อก/, win: /ดีใจ|สำเร็จ|เคลมได้|จ่ายให้|ได้เงินคืน/ };
+export function findPlan(text) { const t = text.toLowerCase(); return PLANS.find((p) => !p.closed && p.short && t.includes(p.short.toLowerCase())) || PLANS.find((p) => !p.closed && p.en && t.includes(p.en.toLowerCase().replace(/\s*\(.*$/, ''))) || null; }
+/** สไตล์มินิมอล: การ์ดความรู้ · โปสเตอร์/สไลด์แบ่งจอ · ป้ายชื่อ · ไม่มีสติกเกอร์ */
+function autoMini(P, slideKinds) {
+  const lines = [...new Set(P.chunks.map((c) => c.line))]; let terms = 0; const used = new Set();
+  const good = slideKinds.map((k, i) => [k, i]).filter(([k]) => ['stat', 'bar', 'line', 'donut', 'table', 'timeline', 'versus'].includes(k)).map(([, i]) => i); let si = 0;
+  lines.forEach((ln, k) => {
+    const cs = P.chunks.filter((c) => c.line === ln); const txt = cs.map((c) => c.text).join('');
+    const pl = findPlan(txt);
+    if (pl && k > 0) { cs.forEach((c) => { c.scene = 'poster'; c.poster = pl.id; }); cs[0].label = (pl.short || '').toUpperCase(); return; }
+    if (good.length && /\d/.test(txt) && k > 0 && si < good.length) { cs.forEach((c) => { c.scene = 'slide'; c.slide = good[si]; }); si++; return; }
+    if (terms < 4) { const tm = TERMS.find(([w]) => !used.has(w) && txt.includes(w)); if (tm) { const c = cs.find((x) => x.text.includes(tm[0].slice(0, 3))) || cs[0]; c.term = { t: tm[0], d: shortDef(tm[1]) }; used.add(tm[0]); terms++; } }
+  });
+  P.hook = 'none'; P.grade = P.grade || 'cine'; P.sfx = false; P.music = P.music && P.music !== 'off' ? P.music : 'auto'; if (P.musicVol == null || P.musicVol > 0.2) P.musicVol = 0.12; P.endcard = true; P.autoDone = true;
+  return `จัดแบบมินิมอลแล้ว: การ์ดความรู้ ${terms} · ภาพแทรกแบ่งจอ ${P.chunks.filter((c, i, a) => (c.scene === 'poster' || c.scene === 'slide') && a[i - 1]?.line !== c.line).length}`;
+}
 
 const NEG = /ไม่มี|ไม่ได้|ไม่พอ|ปัญหา|เสียเงิน|แพง|ยากมาก|ลำบาก|เจ็บ|ป่วย|หมดตัว|เสี่ยง|เชื่อว่า|เข้าใจผิด/;
 const NUMRE = /\d/;
@@ -13,6 +34,10 @@ const lineText = (P, ln) => P.chunks.filter((c) => c.line === ln).map((c) => c.t
 export function autoAll(P, { slideKinds = [], canCut = false } = {}) {
   const lines = [...new Set(P.chunks.map((c) => c.line))];
   const did = { stickers: 0, stage: 0, bw: 0, slide: 0, cut: 0, arc: 0 };
+  P.chunks.forEach((c) => { c.term = null; c.label = null; c.mood = null; c.poster = null; });
+  if (P.style === 'mini') { P.chunks.forEach((c) => { c.emoji = null; c.scene = P.mode === 'voice' ? 'stage' : 'cam'; c.arc = false; c.slide = null; }); return autoMini(P, slideKinds); }
+  // อารมณ์ประจำฉาก (สไตล์อื่น): ใช้ภาพ + เสียงตามอารมณ์
+  for (const ln of lines) { const cs = P.chunks.filter((c) => c.line === ln); const txt = cs.map((c) => c.text).join(''); const m = Object.keys(MOOD_RE).find((k) => MOOD_RE[k].test(txt)); if (m) cs[0].mood = m; }
   P.chunks.forEach((c) => { c.emoji = null; c.scene = P.mode === 'voice' ? 'stage' : 'cam'; c.arc = false; c.slide = null; if (c.scene !== 'img') c.img = c.img || null; });
   // 1) สติกเกอร์: บรรทัดละ 1 ตัว ที่ช่วงแรกที่มีคำเข้าเค้า
   for (const ln of lines) { const cs = P.chunks.filter((c) => c.line === ln); const c = cs.find((x) => suggestEmoji(x.text)) || null; const code = c ? suggestEmoji(c.text) : suggestEmoji(lineText(P, ln)); if (code) { (c || cs[0]).emoji = code; did.stickers++; } }

@@ -7,13 +7,17 @@ import { getSig, drawSignature } from '../carousel.js';
 import { profile } from '../app.js';
 
 export const VSTYLES = {
+  mini: { name: 'สัมภาษณ์มินิมอล', sub: 'ซับขาวบรรทัดเดียว คำเด่นสีแดง เรียบหรูแบบคลิปพอดแคสต์', stage: 'grid', sw: ['#1d2430', '#ff4040'] },
   neon: { name: 'Neon Pop', sub: 'ตัวขาว คำเด่นชมพูม่วงเรืองแสง ซ้อนเป็นแถว', stage: 'wall', sw: ['#9fb9c9', '#ff4fd8'] },
   grid: { name: 'Grid Stage', sub: 'ผนังตาราง ซับเหลืองเรืองแสงทีละคำ', stage: 'grid', sw: ['#ededed', '#ffe23d'] },
   aom: { name: 'AOM แดงขาว', sub: 'ป้ายแดง ตัวขาว คำเด่นสีทอง', stage: 'aom', sw: ['#fff8f3', '#a6192e'] },
   clean: { name: 'Clean', sub: 'มินิมอล ตัวขาวเงาบาง ด้านล่าง', stage: 'clean', sw: ['#f4f4f2', '#1b1717'] },
 };
-export const SCENES = { cam: 'หน้ากล้อง', stage: 'ฉากตาราง', bw: 'ขาวดำ', cut: 'ตัดฉากหลัง', slide: 'สไลด์', img: 'ภาพแทรก' };
-export const VSCENES = { stage: 'ฉากกราฟิก', slide: 'สไลด์', img: 'ภาพแทรก' };
+export const SCENES = { cam: 'หน้ากล้อง', stage: 'ฉากตาราง', bw: 'ขาวดำ', cut: 'ตัดฉากหลัง', slide: 'สไลด์', img: 'ภาพแทรก', poster: 'โปสเตอร์แผน' };
+export const GRADES = { none: 'ไม่ปรับ', cine: 'โทนหนัง', warm: 'อุ่น', clean: 'สว่างสะอาด' };
+const GRADE_F = { cine: 'contrast(1.1) saturate(0.88) brightness(0.96)', warm: 'sepia(0.14) saturate(1.12) contrast(1.04)', clean: 'brightness(1.05) contrast(1.03) saturate(1.06)' };
+export const MOODS = { laugh: '😂 ตลก', sad: '😢 เศร้า', shock: '😱 ตกใจ', win: '🎉 ดีใจ', calm: '🙂 ปกติ' };
+export const VSCENES = { stage: 'ฉากกราฟิก', slide: 'สไลด์', img: 'ภาพแทรก', poster: 'โปสเตอร์แผน' };
 export const HOOKS = { auto: 'อัตโนมัติ', title: 'หัวข้อตัวใหญ่', money: 'ฝนธนบัตร', flash: 'แฟลช + สั่น', count: 'ตัวเลขนับขึ้น', none: 'ไม่ใส่' };
 const LIGHT = new Set(['stage', 'cut', 'slide']);
 const FONT = '"Kanit", "Sarabun", sans-serif';
@@ -124,7 +128,7 @@ export function sanitize(ch) {
 export function speechSpans(ch) { const out = []; for (const c of ch) { if (c.t0 == null) continue; const l = out[out.length - 1]; if (l && c.t0 - l[1] < 0.4) l[1] = T1(c); else out.push([c.t0, T1(c)]); } return out; }
 function activeIdx(ch, t) { for (let i = ch.length - 1; i >= 0; i--) { const c = ch[i]; if (c.t0 != null && c.t0 <= t) return T1(c) > t ? i : -1; } return -1; }
 function lastStarted(ch, t) { for (let i = ch.length - 1; i >= 0; i--) if (ch[i].t0 != null && ch[i].t0 <= t) return i; return -1; }
-const sceneOf = (P, c) => (P.mode === 'voice' ? (['slide', 'img'].includes(c.scene) ? c.scene : 'stage') : (c.scene || 'cam'));
+const sceneOf = (P, c) => (P.mode === 'voice' ? (['slide', 'img', 'poster'].includes(c.scene) ? c.scene : 'stage') : (c.scene || 'cam'));
 
 /** เหตุการณ์ในคลิป (ใช้ทั้งวาดภาพและวางเสียงประกอบ) */
 export function timeline(P, sl = segList(P)) {
@@ -132,7 +136,7 @@ export function timeline(P, sl = segList(P)) {
   ch.forEach((c, i) => {
     if (c.t0 == null) return;
     const L = (lines[c.line] ||= { start: c.t0, end: T1(c), idx: [] }); L.end = T1(c); L.idx.push(i);
-    const sc = sceneOf(P, c); const id = sc === 'slide' ? c.slide : sc === 'img' ? c.img : null;
+    const sc = sceneOf(P, c); const id = sc === 'slide' ? c.slide : sc === 'img' ? c.img : sc === 'poster' ? c.poster : null;
     const prev = segs[segs.length - 1];
     if (prev && prev.scene === sc && prev.id === id && Math.abs(prev.end - c.t0) < 0.35) { prev.end = T1(c); prev.idx.push(i); } else segs.push({ scene: sc, id, start: c.t0, end: T1(c), idx: [i] });
   });
@@ -167,7 +171,8 @@ function countTarget(P) {
 }
 
 export function sfxEvents(P, tl = timeline(P), win = window_(P)) {
-  if (!P.sfx) return [];
+  const explicit = P.chunks.filter((c) => c.t0 != null && c.sound).map((c) => ({ t: c.t0 + 0.02, n: c.sound, v: 0.95, p: 9 }));
+  if (!P.sfx) return explicit.sort((a, b) => a.t - b.t);
   const ev = []; const [a, b] = win; const hk = hookOf(P);
   if (P.mode === 'cam' && P.zoom) for (const t of tl.cuts) ev.push({ t, n: 'whoosh', v: 0.55, p: 2 });
   for (const s of tl.segs) {
@@ -182,6 +187,9 @@ export function sfxEvents(P, tl = timeline(P), win = window_(P)) {
   if (hk === 'title') { ev.push({ t: a + 0.01, n: 'whoosh', v: 0.8, p: 5 }); ev.push({ t: a + 0.05, n: 'boom', v: 0.6, p: 1 }); }
   if (hk === 'count' && countTarget(P)) { for (let i = 0; i < 8; i++) ev.push({ t: a + i * 0.14, n: 'tick', v: 0.9, p: 0 }); ev.push({ t: a + 1.15, n: 'ding', v: 0.7, p: 6 }); }
   if (P.endcard) ev.push({ t: b + 0.05, n: 'ding', v: 0.55, p: 6 });
+  const MS = { laugh: 'boing', sad: 'sad', shock: 'scratch', win: 'kaching' };
+  P.chunks.forEach((c) => { if (c.t0 != null && !c.sound && MS[c.mood]) ev.push({ t: c.t0 + 0.02, n: MS[c.mood], v: 0.85, p: 8 }); });
+  ev.push(...explicit);
   ev.sort((x, y) => x.t - y.t || y.p - x.p);
   const out = []; for (const e of ev) { const last = out[out.length - 1]; if (last && e.t - last.t < 0.09 && e.n !== 'boom' && last.n !== 'boom' && e.n !== 'tick') { if (e.p > last.p) out[out.length - 1] = e; continue; } out.push(e); }
   return out;
@@ -229,7 +237,7 @@ function drawMedia(x, W, H, media, z, ox, oy, bw) {
   let X0 = (W - dw) / 2; const tr = enh ? P.tracks?.[cid] : null;
   if (tr?.length && dw > W * 1.05) X0 = Math.min(0, Math.max(W - dw, W / 2 - interp(tr, media.currentTime) * dw));
   const m = (z - 1) / 2 * 0.92; ox = Math.max(-m, Math.min(m, ox)); oy = Math.max(-m, Math.min(m, oy));
-  const f = [enh ? P.looks?.[cid] || '' : '', bw ? 'grayscale(1) contrast(1.12) brightness(.96)' : ''].filter(Boolean).join(' ');
+  const f = [enh ? P.looks?.[cid] || '' : '', GRADE_F[P.grade] || '', bw ? 'grayscale(1) contrast(1.12) brightness(.96)' : ''].filter(Boolean).join(' ');
   x.save(); if (f) x.filter = f;
   x.translate(W * (0.5 + ox), H * (0.4 + oy)); x.scale(z, z); x.translate(-W * 0.5, -H * 0.4);
   x.drawImage(media, X0, (H - dh) / 2, dw, dh); x.restore();
@@ -344,7 +352,14 @@ function drawNeon(x, W, H, P, ch, tl, t, mode, ci, measureOnly = false) {
 function drawSingle(x, W, H, P, c, t, mode) {
   const st = P.style; const k = c.words.some((w) => w.key); const light = LIGHT.has(mode);
   x.save(); x.textBaseline = 'middle'; x.textAlign = 'left';
-  if (st === 'grid') {
+  if (st === 'mini') {
+    let S = W * 0.058; const segs = c.words.map((w) => ({ s: w.w, key: w.key }));
+    const meas = () => { x.font = `600 ${S}px ${FONT}`; return segs.reduce((a, g) => a + x.measureText(g.s).width, 0); };
+    let w = meas(); if (w > W * 0.86) { S *= W * 0.86 / w; w = meas(); }
+    const Y = H * textY(P, c, mode, mode === 'split' ? 0.5 : LIGHT.has(mode) ? 0.74 : 0.6); x.globalAlpha = Math.min(1, (t - c.t0) / 0.08);
+    let X = (W - w) / 2;
+    for (const g of segs) { x.save(); x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = S * 0.45; x.shadowOffsetY = S * 0.04; x.fillStyle = g.key ? '#ff4040' : '#ffffff'; x.fillText(g.s, X, Y); x.restore(); x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = Math.max(1, S * 0.05); x.strokeText(g.s, X, Y); x.fillStyle = g.key ? '#ff4040' : '#ffffff'; x.fillText(g.s, X, Y); X += x.measureText(g.s).width; }
+  } else if (st === 'grid') {
     let S = W * (k ? 0.112 : 0.1); x.font = `800 ${S}px ${FONT}`; let w = x.measureText(c.text).width; if (w > W * 0.9) { S *= W * 0.9 / w; x.font = `800 ${S}px ${FONT}`; w = x.measureText(c.text).width; }
     const q = (t - c.t0) / 0.18; const sc = q < 1 ? 0.8 + 0.2 * back(q) : 1; const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.6);
     x.translate(W / 2, Y); x.scale(sc, sc); x.globalAlpha = Math.min(1, q * 2 + 0.2);
@@ -454,7 +469,40 @@ export async function renderEndcard(P) {
   return c;
 }
 
-/** วาด 1 เฟรม ณ เวลา t (เวลาในคลิปที่ส่งออก) · ext: { win, mask, slides, imgs, endcard } */
+// ── สไตล์มินิมอล: แบ่งจอ · การ์ดความรู้ · ป้ายชื่อ · เครดิต ──
+function drawSplit(x, W, H, media, im, label, p) {
+  const top = Math.round(H * 0.46);
+  x.save(); x.beginPath(); x.rect(0, 0, W, top); x.clip(); x.drawImage(stageBg('grid', W, H), 0, -H * 0.1);
+  if (im) {
+    const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height; const lh = label ? W * 0.085 : 0;
+    const maxW = W * 0.84, maxH = top * 0.84 - lh; const k = Math.min(maxW / iw, maxH / ih); const w = iw * k, hh = ih * k; const e = Math.min(1, back(p / 0.35));
+    const X = (W - w) / 2, Y = top * 0.06 + (maxH - hh) / 2 + (1 - e) * W * 0.03;
+    x.globalAlpha = Math.min(1, p / 0.18); x.save(); x.shadowColor = 'rgba(0,0,0,.22)'; x.shadowBlur = W * 0.03; x.shadowOffsetY = W * 0.01; rrect(x, X, Y, w, hh, W * 0.018); x.fillStyle = '#fff'; x.fill(); x.restore();
+    x.save(); rrect(x, X, Y, w, hh, W * 0.018); x.clip(); x.drawImage(im, X, Y, w, hh); x.restore();
+    if (label) { const S = fitLabel(x, label, W * 0.06, W * 0.84); x.textAlign = 'center'; x.textBaseline = 'middle'; glowText(x, label, W / 2, Y + hh + lh * 0.55, { fill: '#ffd21f', stroke: '#2a2000', sw: S * 0.14, shadow: 'rgba(0,0,0,.35)', sblur: S * 0.3, soff: S * 0.05 }); }
+  }
+  x.restore();
+  const vw = media?.videoWidth, vh = media?.videoHeight; x.save(); x.beginPath(); x.rect(0, top, W, H - top); x.clip();
+  if (vw && media.readyState >= 2) { const BH = H - top; const k = Math.max(W / vw, BH / vh); const dw = vw * k, dh = vh * k; const P = CUR.P || {}; const f = [P.enhance !== false ? P.looks?.[media._clip] || '' : '', GRADE_F[P.grade] || ''].filter(Boolean).join(' '); if (f) x.filter = f; x.drawImage(media, (W - dw) / 2, top + (BH - dh) * 0.3, dw, dh); }
+  else { x.fillStyle = '#16181d'; x.fillRect(0, top, W, H - top); }
+  x.restore();
+}
+function fitLabel(x, s, size, maxW) { let S = size; x.font = `italic 800 ${S}px ${FONT}`; while (x.measureText(s).width > maxW && S > 14) { S -= 2; x.font = `italic 800 ${S}px ${FONT}`; } return S; }
+function drawTerm(x, W, H, term, p, out) {
+  const a = Math.min(1, p / 0.18) * out; if (a <= 0) return; x.save(); x.globalAlpha = a; x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  const S = fitLabel(x, term.t, W * 0.115, W * 0.86); const sc = 0.88 + 0.12 * Math.min(1, back(p / 0.3)); x.translate(W / 2, H * 0.17); x.scale(sc, sc);
+  glowText(x, term.t, 0, 0, { fill: '#ffd21f', stroke: '#2a2000', sw: S * 0.12, shadow: 'rgba(0,0,0,.45)', sblur: S * 0.25, soff: S * 0.05 });
+  const d = '(' + term.d + ')'; let s2 = W * 0.036; x.font = `600 ${s2}px ${FONT}`; const ws = words(d); const L = []; let cur = '';
+  for (const w of ws) { if (cur && x.measureText(cur + w).width > W * 0.84) { L.push(cur.trim()); cur = w; } else cur += w; } if (cur.trim()) L.push(cur.trim());
+  L.slice(0, 2).forEach((l, i) => glowText(x, l, 0, s2 * 1.6 + i * s2 * 1.35, { fill: '#ffffff', shadow: 'rgba(0,0,0,.85)', sblur: s2 * 0.5, soff: s2 * 0.06 }));
+  x.restore();
+}
+function drawCredit(x, W, H) {
+  const pr = profile(); const s = `${(pr.brand || 'AOM CONNECT').toUpperCase()} · ${pr.titleEn || 'Financial Advisor'}`;
+  x.save(); x.font = `500 ${W * 0.026}px ${FONT}`; x.textAlign = 'center'; x.fillStyle = 'rgba(255,255,255,.72)'; x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = W * 0.01; x.fillText('— ' + s + ' —', W / 2, H * 0.705); x.restore();
+}
+
+/** วาด 1 เฟรม ณ เวลา t (เวลาในคลิปที่ส่งออก) · ext: { win, mask, slides, imgs, posters, endcard } */
 export function drawFrame(x, P, t, media, tl = timeline(P), ext = {}) {
   const W = x.canvas.width, H = x.canvas.height; const ch = P.chunks; const win = ext.win || window_(P); CUR = { P };
   const ci = activeIdx(ch, t); const ls = lastStarted(ch, t);
@@ -464,8 +512,13 @@ export function drawFrame(x, P, t, media, tl = timeline(P), ext = {}) {
   x.save(); x.clearRect(0, 0, W, H);
   // สั่นจอ (เปิดคลิป)
   if ((hk === 'flash' || hk === 'money') && dt >= 0 && dt < 0.5) { const a = W * 0.012 * (1 - dt / 0.5); x.translate((rnd(Math.floor(t * 60)) - 0.5) * 2 * a, (rnd(Math.floor(t * 60) + 7) - 0.5) * 2 * a); }
+  { const mc = ci >= 0 ? ch[ci] : null; if (mc?.mood === 'laugh' && t - mc.t0 < 0.5) { const a = W * 0.01 * (1 - (t - mc.t0) / 0.5); x.translate((rnd(Math.floor(t * 50)) - 0.5) * 2 * a, (rnd(Math.floor(t * 50) + 3) - 0.5) * 2 * a); } if (mc?.mood === 'shock' && t - mc.t0 < 0.2) { const z = 1 + 0.06 * (1 - (t - mc.t0) / 0.2); x.translate(W / 2, H * 0.4); x.scale(z, z); x.translate(-W / 2, -H * 0.4); } }
   const bgKind = VSTYLES[P.style]?.stage || 'grid';
-  if (scene === 'stage') { x.drawImage(stageBg(bgKind, W, H), 0, 0); if (P.mode === 'cam' && seg) cardShrink(x, W, H, media, (t - seg.start) / 0.4); }
+  const split = P.mode === 'cam' && P.style === 'mini' && ['slide', 'img', 'poster'].includes(scene);
+  const segC = seg ? ch[seg.idx[0]] : null;
+  if (split) drawSplit(x, W, H, media, scene === 'slide' ? ext.slides?.[seg?.id] : scene === 'img' ? ext.imgs?.[seg?.id] : ext.posters?.[seg?.id], (ci >= 0 ? ch[ci].label : null) || segC?.label || null, t - (seg?.start ?? t));
+  else if (scene === 'poster') { x.drawImage(stageBg(bgKind, W, H), 0, 0); const d = P.mode === 'cam' ? 0.4 : 0; if (P.mode === 'cam' && seg) cardShrink(x, W, H, media, (t - seg.start) / 0.4); drawSlideCard(x, W, H, ext.posters?.[seg?.id], t - (seg?.start ?? t) - d); }
+  else if (scene === 'stage') { x.drawImage(stageBg(bgKind, W, H), 0, 0); if (P.mode === 'cam' && seg) cardShrink(x, W, H, media, (t - seg.start) / 0.4); }
   else if (scene === 'slide') { x.drawImage(stageBg(bgKind, W, H), 0, 0); const d = P.mode === 'cam' ? 0.4 : 0; if (P.mode === 'cam' && seg) cardShrink(x, W, H, media, (t - seg.start) / 0.4); drawSlideCard(x, W, H, ext.slides?.[seg?.id], t - (seg?.start ?? t) - d); }
   else if (scene === 'cut') { x.drawImage(stageBg(bgKind, W, H), 0, 0); if (!drawCutout(x, W, H, media, ext.mask, t - (seg?.start ?? t))) drawMedia(x, W, H, media, 1, 0, 0, false); }
   else if (scene === 'img') drawImgScene(x, W, H, ext.imgs?.[seg?.id], t - (seg?.start ?? t), seg ? seg.end - seg.start : 3);
@@ -478,10 +531,12 @@ export function drawFrame(x, P, t, media, tl = timeline(P), ext = {}) {
     drawMedia(x, W, H, media, z, ox, oy, scene === 'bw');
     if (scene === 'bw') { const g = x.createRadialGradient(W / 2, H * 0.42, H * 0.25, W / 2, H * 0.42, H * 0.75); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.45)'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
   }
+  if (P.grade === 'cine' && !split && ['cam', 'bw'].includes(scene)) { const g = x.createRadialGradient(W / 2, H * 0.42, H * 0.3, W / 2, H * 0.42, H * 0.78); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(5,10,20,.42)'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
   if (hk === 'money') drawMoney(x, W, H, dt);
   const counting = hk === 'count' && !!countTarget(P) && dt >= 0 && dt <= 1.7;
   // ซับ + สติกเกอร์
   const st = tl.stickers.filter((s) => s.at <= t && t < s.end && s.scene === scene).pop();
+  const mode = split ? 'split' : scene;
   const titling = hk === 'title' && dt >= 0 && dt < 1.7;
   const skipText = (counting || titling) && ci >= 0 && ch[ci].line === ch[0].line;
   if (ci >= 0 && !skipText && ch[ci].arc) { if (st) drawSticker(x, W, H, st, t, P, scene, null); drawArc(x, W, H, P, ch, tl, t, ci, scene); }
@@ -491,8 +546,15 @@ export function drawFrame(x, P, t, media, tl = timeline(P), ext = {}) {
     drawNeon(x, W, H, P, ch, tl, t, scene, ci);
   } else {
     if (st) drawSticker(x, W, H, st, t, P, scene, null);
-    if (ci >= 0 && !skipText) drawSingle(x, W, H, P, ch[ci], t, scene);
+    if (ci >= 0 && !skipText) drawSingle(x, W, H, P, ch[ci], t, mode);
   }
+  // การ์ดความรู้ / ป้ายชื่อ (ไม่แสดงตอนแบ่งจอ)
+  if (!split) {
+    const tc = ch.filter((c) => c.term && c.t0 != null && c.t0 <= t && t < c.t0 + 3.2).pop();
+    if (tc) { const nx = ch.find((c) => c.term && c.t0 > tc.t0); const end = Math.min(tc.t0 + 3.2, nx ? nx.t0 : 1e9); drawTerm(x, W, H, tc.term, t - tc.t0, end - t < 0.2 ? Math.max(0, (end - t) / 0.2) : 1); }
+    else if (ci >= 0 && ch[ci].label) { const S = fitLabel(x, ch[ci].label, W * 0.07, W * 0.84); x.save(); x.textAlign = 'center'; x.textBaseline = 'middle'; x.globalAlpha = Math.min(1, (t - ch[ci].t0) / 0.15); glowText(x, ch[ci].label, W / 2, H * 0.17, { fill: '#ffd21f', stroke: '#2a2000', sw: S * 0.13, shadow: 'rgba(0,0,0,.4)', sblur: S * 0.3, soff: S * 0.05 }); x.restore(); }
+  }
+  if (P.style === 'mini' && P.credit !== false && t < win[1]) drawCredit(x, W, H);
   if (titling) drawTitle(x, W, H, P, P.coverTitle || ch.filter((c) => c.line === ch[0]?.line).map((c) => c.text).join(' '), dt);
   if (counting) drawCount(x, W, H, P, dt, scene === 'stage' || scene === 'slide' ? 0.7 : 0.42);
   // แฟลชขาว
@@ -632,7 +694,7 @@ export class Player {
         if (Math.abs(this.active.currentTime - want) > 0.3) this.active.currentTime = want;
         else if (this.active.paused) this.active.play().catch(() => {});
       }
-      if (this.sfxNow) { const ahead = t + 0.12 * rate; for (const e of this.ev) if (e.t > this.sched && e.t <= ahead) SFX[e.n]?.(ctx, this.sfxGain, ctx.currentTime + Math.max(0, (e.t - t) / rate), e.v); this.sched = Math.max(this.sched, ahead); }
+      if (this.sfxNow) { const ahead = t + 0.12 * rate; for (const e of this.ev) if (e.t > this.sched && e.t <= ahead) { const when = ctx.currentTime + Math.max(0, (e.t - t) / rate); if (e.n.startsWith('my:')) { const b = this.ext.sounds?.[e.n.slice(3)]; if (b) { const src = ctx.createBufferSource(); src.buffer = b; const g = ctx.createGain(); g.gain.value = e.v; src.connect(g).connect(this.sfxGain); src.start(when); } } else SFX[e.n]?.(ctx, this.sfxGain, when, e.v); } this.sched = Math.max(this.sched, ahead); }
       this.draw(t);
       if (t >= this.to - 0.01) { this.pause(); this.onEnd?.(); return; }
       this.raf = requestAnimationFrame(loop);

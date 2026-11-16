@@ -11,11 +11,12 @@ export function renderPosters(q = {}) {
   const list = h('div.ps-list');
   const paint = () => {
     const items = PLANS.filter((p) => !p.closed && (ST.cat === 'all' || p.cat === ST.cat) && (!ST.q || (p.name + p.short + p.tagline).toLowerCase().includes(ST.q.toLowerCase()))).sort((a, b) => (b.star ? 1 : 0) - (a.star ? 1 : 0));
-    list.replaceChildren(...items.map((p) => h('a.ps-item', { href: '#/studio/poster?plan=' + p.id }, h('div', h('b', p.short || p.name), h('small', p.tagline)), p.star ? h('span.ps-star', 'ขายดี') : null, p.closing ? h('span.ps-close', 'ปิดขาย') : null, icon('next'))));
+    const show = ST.q || ST.cat !== 'all' || ST.all ? items : items.slice(0, 12);
+    list.replaceChildren(...show.map((p) => h('a.ps-item', { href: '#/studio/poster?plan=' + p.id }, h('div', h('b', p.short || p.name), h('small', p.tagline)), p.star ? h('span.ps-star', 'ขายดี') : null, p.closing ? h('span.ps-close', 'ปิดขาย') : null, icon('next'))), show.length < items.length ? h('button.btn.sm.ghost', { onclick: () => { ST.all = true; paint(); } }, `ดูทั้งหมด ${items.length} แผน`) : null);
   };
   paint();
   return h('div', { 'data-title': 'โปสเตอร์แผน' },
-    h('div.topbar', h('div', h('h1', 'โปสเตอร์แผน'), h('div.sub', 'เลือกแผน ได้โปสเตอร์สรุปเข้าใจง่ายทันที — ไม่ต้องแปะตารางเบี้ย'))),
+    h('div.topbar', h('div', h('h1', 'โปสเตอร์แผน'), h('div.sub', 'เลือกแผน ได้ภาพทันที'))),
     h('input.input.ps-search', { type: 'search', placeholder: 'ค้นหาแผน เช่น Health Happy, CI, บำนาญ', 'aria-label': 'ค้นหาแผน', oninput: (e) => { ST.q = e.target.value; paint(); } }),
     h('div.chips', { style: { margin: '10px 0' } }, [['all', 'ทั้งหมด'], ...CATEGORIES.map((c) => [c.id, c.name])].map(([k, l]) => h('button.chip', { class: ST.cat === k ? 'on' : '', onclick: (e) => { ST.cat = k; [...e.currentTarget.parentNode.children].forEach((c) => c.classList.toggle('on', c === e.currentTarget)); paint(); } }, l))),
     list);
@@ -38,7 +39,7 @@ function renderPosterEditor(id, q) {
   const save = async () => { const b = await blob(); const a = h('a', { href: URL.createObjectURL(b), download: `poster-${id}.jpg` }); document.body.append(a); a.click(); a.remove(); toast('บันทึกภาพแล้ว'); };
   const share = async () => { const b = await blob(); const f = new File([b], `poster-${id}.jpg`, { type: 'image/jpeg' }); if (navigator.canShare?.({ files: [f] })) { copyText(posterCaption(d, o)); navigator.share({ files: [f], text: posterCaption(d, o) }).catch(() => {}); } else save(); };
   const node = h('div.ps-ed', { 'data-title': 'โปสเตอร์ ' + d.name },
-    h('div.topbar', h('div', h('a.crumb', { href: '#/studio/poster' }, '‹ โปสเตอร์แผน'), h('h1', d.name), h('div.sub', d.tagline))),
+    h('div.topbar', h('div', h('a.crumb', { href: '#/studio/poster' }, '‹ โปสเตอร์แผน'), h('h1', d.name), h('div.sub', d.tagline)), h('button.icon-btn', { 'aria-label': 'เปิดบนอีกเครื่อง', onclick: () => import('../qr.js').then((m) => m.openOnOtherDevice()) }, icon('link'))),
     h('div.ps-grid',
       h('div.ps-prev', h('div.ps-frame', cv), h('div.row.wrap.ps-acts', h('button.btn.primary', { onclick: share }, icon('share'), 'แชร์ (คัดลอกแคปชั่นให้)'), h('button.btn', { onclick: save }, icon('download'), 'บันทึกภาพ'))),
       h('div.ps-side',

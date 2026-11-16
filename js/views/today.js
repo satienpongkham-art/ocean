@@ -132,8 +132,7 @@ export function render(q = {}) {
     installCard(),
     sg,
     setup,
-    ...closingPlans.map((x) => h('a.countdown', { href: '#/plan/' + x.plan.id, style: { textDecoration: 'none', color: 'inherit', marginBottom: '12px' } },
-      h('div.big', x.days), h('div', { style: { flex: 1 } }, h('b', `วัน ${x.plan.short} ปิดรับ`), h('div.small.muted', noHealth ? `ลูกค้า ${noHealth} คนยังไม่มีประกันสุขภาพของตัวเอง` : 'แตะเพื่อดูแผน')), icon('next'))),
+    // แผนใกล้ปิดขาย: อยู่ในการ์ด "วันนี้โพสต์อะไรดี" แล้ว
     bento, rest,
     h('div.row', { style: { justifyContent: 'center', marginTop: '12px' } }, h('button.btn.ghost.sm', { onclick: editBento }, icon('grid'), 'จัดหน้าแรก')),
     !store.sync.config.url ? h('a.callout.warn', { href: '#/tools/sync', style: { display: 'block', marginTop: '12px', color: 'inherit', textDecoration: 'none' } }, 'ข้อมูลยังอยู่แค่เครื่องนี้ — แตะเพื่อตั้งค่าซิงก์กับคอม') : null);

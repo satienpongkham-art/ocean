@@ -144,6 +144,27 @@ export function hooksFor(topic) { const t = (topic || 'เรื่องนี�
 
 // ── หน้าแรกสตูดิโอ ──
 async function thumb(it, el, i = 0) { try { const r = await renderSlide(it.deck.slides[i], it.deck, i); el.src = r.canvas.toDataURL('image/jpeg', 0.6); } catch {} }
+/** ตรวจก่อนโพสต์ */
+async function checkSheet(deck, setDeck) {
+  const body = h('div.stack', h('p.small.muted', 'กำลังตรวจทุกหน้า…'));
+  sheet({ title: 'ตรวจก่อนโพสต์', body });
+  const { checkDeck } = await import('../carousel-clip.js'); const list = await checkDeck(deck);
+  body.replaceChildren(...(list.length ? list.map((r) => h('div.ck-row', { class: r.level }, h('b', r.i >= 0 ? `หน้า ${r.i + 1}` : 'ทั้งชุด'), h('span', r.msg),
+    r.fix === 'split' && r.i >= 0 ? h('button.btn.sm', { onclick: () => { const d = structuredClone(deck); d.slides.splice(r.i, 1, ...splitSlide(d.slides[r.i])); closeSheet(true); setDeck(d); toast('แยกเป็น 2 หน้าแล้ว'); } }, 'แยกเป็น 2 หน้า') : null))
+    : [h('div.ck-ok', icon('check'), h('b', 'เรียบร้อย พร้อมโพสต์'), h('small', 'ขนาดตัวอักษร ระยะขอบ และความยาวข้อความผ่านทุกหน้า'))]));
+}
+/** ทำภาพหลายหน้าเป็นคลิปสั้น 9:16 */
+function clipSheet(deck, title) {
+  const bar = h('div.vd-bar.on', h('i')); const res = h('div'); const go = h('button.btn.primary.block', { onclick: run }, icon('play'), 'สร้างคลิป');
+  sheet({ title: 'ทำเป็นคลิปสั้น', sub: 'ฟีลเล่าเรื่อง ภาพเลื่อนนุ่ม ๆ มีเพลงเบา ๆ', body: h('div.stack', h('p.small.muted', 'แอปจะเล่นสไลด์ 1 รอบตามเวลาจริง (หน้าละ 3–5 วิ ตามความยาวข้อความ) อย่าสลับแอประหว่างสร้าง'), go, bar, res) });
+  async function run() {
+    go.disabled = true; try { const { carouselToClip } = await import('../carousel-clip.js'); const blob = await carouselToClip(deck, { onProgress: (p) => { bar.firstChild.style.width = Math.round(p * 100) + '%'; } });
+      const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'; const name = `aom-slides-${Date.now().toString(36)}.${ext}`; const url = URL.createObjectURL(blob); const file = new File([blob], name, { type: blob.type });
+      res.replaceChildren(h('video', { src: url, controls: true, playsInline: true, style: { width: '100%', borderRadius: '12px', maxHeight: '55vh', background: '#000' } }), h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, navigator.canShare?.({ files: [file] }) ? h('button.btn.primary', { onclick: () => navigator.share({ files: [file], title }).catch(() => {}) }, icon('share'), 'แชร์') : null, h('a.btn', { href: url, download: name }, icon('download'), 'บันทึกไฟล์')));
+    } catch (e) { res.replaceChildren(h('p.small', 'ทำไม่สำเร็จ: ' + (e.message || e))); } go.disabled = false;
+  }
+}
+
 /** เมนูงาน: เปิด / ทำสำเนา / ลบ */
 export function itemMenu(it) {
   const del = () => { closeSheet(true); store.remove('content', it.id); toast('ลบงานแล้ว', { action: { label: 'เอาคืน', fn: () => store.put('content', { ...it }) } }); if (location.hash.startsWith('#/studio/' + it.id)) location.hash = '#/studio'; };
@@ -183,14 +204,15 @@ export function renderStudio() {
   const due = items.filter((x) => x.date && x.date <= todayISO() && x.status !== 'posted');
   const noStat = items.filter((x) => x.status === 'posted' && !x.stats).length;
   return h('div', { 'data-title': 'สตูดิโอ' },
-    h('div.topbar', h('div', h('h1', 'สตูดิโอ'), h('div.sub', 'วันละเรื่อง เลือก แก้ โพสต์ แล้วกลับมาบันทึกผล')), h('div.row', { style: { gap: '6px' } }, h('button.icon-btn', { 'aria-label': 'จัดการงานและพื้นที่', onclick: () => cleanSheet(items) }, icon('trash')), h('button.btn.primary', { onclick: newSheet }, icon('plus'), 'สร้าง'))),
+    h('div.topbar', h('div', h('h1', 'สตูดิโอ'), h('div.sub', 'สร้าง โพสต์ แล้วดูผล')), h('div.row', { style: { gap: '6px' } }, h('button.icon-btn', { 'aria-label': 'จัดการงานและพื้นที่', onclick: () => cleanSheet(items) }, icon('trash')), h('button.btn.primary', { onclick: newSheet }, icon('plus'), 'สร้าง'))),
+    h('div.sd-create', h('a.sd-big', { href: '#/studio/poster' }, h('span', icon('doc')), h('b', 'โปสเตอร์แผน'), h('small', 'สรุปแผนเป็นภาพเดียว')), h('button.sd-big', { onclick: newSheet }, h('span', icon('layers')), h('b', 'ภาพหลายหน้า'), h('small', 'ความรู้ 6–7 หน้า')), h('a.sd-big', { href: '#/studio/video' }, h('span', icon('play')), h('b', 'คลิป'), h('small', 'อัด ตัด ใส่ซับให้'))),
     sgCard,
     today,
-    h('div.sd-nav', h('a', { href: '#/studio/library' }, h('span', icon('book')), h('b', 'คลัง 365 เรื่อง')), h('a', { href: '#/studio/poster' }, h('span', icon('doc')), h('b', 'โปสเตอร์แผน')), h('a', { href: '#/studio/video' }, h('span', icon('play')), h('b', 'ตัดต่อคลิป')), h('a', { href: '#/studio/stats' }, h('span', icon('line')), h('b', 'ผลโพสต์'), noStat ? h('i', noStat) : null), h('a', { href: '#/studio/playbook' }, h('span', icon('bulb')), h('b', 'หลักที่ใช้')), h('a', { href: '#/studio/sign' }, h('span', icon('pen')), h('b', 'ลายเซ็น')), h('a', { href: '#/studio/covers' }, h('span', icon('target')), h('b', 'ปก IG')), h('a', { href: '#/brand' }, h('span', icon('star')), h('b', 'แบรนด์'))),
+    h('details.sd-more', h('summary', 'เพิ่มเติม · คลัง 365 · ผลโพสต์ · ลายเซ็น · ปก IG · แบรนด์', noStat ? h('i', noStat) : null), h('div.sd-nav', h('a', { href: '#/studio/library' }, h('span', icon('book')), h('b', 'คลัง 365 เรื่อง')), h('a', { href: '#/studio/stats' }, h('span', icon('line')), h('b', 'ผลโพสต์'), noStat ? h('i', noStat) : null), h('a', { href: '#/studio/playbook' }, h('span', icon('bulb')), h('b', 'หลักที่ใช้')), h('a', { href: '#/studio/sign' }, h('span', icon('pen')), h('b', 'ลายเซ็น')), h('a', { href: '#/studio/covers' }, h('span', icon('target')), h('b', 'ปก IG')), h('a', { href: '#/brand' }, h('span', icon('star')), h('b', 'แบรนด์')))),
     due.length ? h('div.callout', { style: { margin: '12px 0' } }, h('b', `ถึงกำหนดโพสต์ ${due.length} งาน: `), due.slice(0, 3).map((x, i) => [i ? ' · ' : '', h('a', { href: '#/studio/' + x.id }, x.title)])) : null,
     h('div.section', h('div.row.between', h('h2', { style: { margin: 0 } }, 'งานของฉัน'), h('div.seg.sm-seg', [['board', 'บอร์ด'], ['cal', 'ปฏิทิน']].map(([k, l]) => h('button', { class: sv.view === k ? 'on' : '', onclick: () => { sv.view = k; rerender(); } }, l)))),
       sv.view === 'cal' ? studioCal(items) : items.length ? h('div.studio-board', COLS.map(([id, name, ic]) => { const list = items.filter((x) => (x.status || 'idea') === id);
-      return h('div.sb-col', h('div.sb-h', icon(ic), h('b', name), h('span.muted', list.length)), list.map(card), !list.length ? h('div.small.muted.sb-empty', id === 'idea' ? 'กด "สร้าง" หรือเลือกจากคลัง' : '—') : null); }))
+      return h('div.sb-col', h('div.sb-h', icon(ic), h('b', name), h('span.muted', list.length)), list.slice(0, 5).map(card), list.length > 5 ? h('button.btn.sm.ghost', { onclick: (e) => { e.currentTarget.replaceWith(...list.slice(5).map(card)); } }, `ดูอีก ${list.length - 5} งาน`) : null, !list.length ? h('div.small.muted.sb-empty', id === 'idea' ? 'กด "สร้าง" หรือเลือกจากคลัง' : '—') : null); }))
       : h('div.card', empty('ยังไม่มีงาน', 'pen', h('button.btn.primary', { onclick: newSheet }, icon('plus'), 'สร้างงานแรก'), 'เริ่มจาก "เรื่องของวันนี้" ด้านบนได้เลย'))));
 }
 
@@ -251,7 +273,7 @@ function dataSheet(slide, onSave) {
 }
 const STRUCT = ['bar', 'line', 'donut', 'table', 'timeline', 'versus'];
 const STICKERS = ['ต้องรู้', 'เซฟไว้เลย', 'ทำตามได้จริง', 'จริงหรือ?', 'ส่งต่อให้คนที่ห่วง', 'ใหม่'];
-const ARTS = [['', 'ไม่มี'], ['bars', 'กราฟ'], ['coins', 'เหรียญ'], ['shield', 'โล่'], ['heart', 'หัวใจ'], ['chat', 'แชต'], ['spark', 'ประกาย'], ['home', 'บ้าน'], ['clock', 'นาฬิกา']];
+const ARTS = [['', 'ไม่มี'], ['p-family', 'ครอบครัว'], ['p-saver', 'ออมเงิน'], ['p-care', 'ดูแลสุขภาพ'], ['p-elder', 'เกษียณ'], ['p-work', 'คนทำงาน'], ['p-think', 'สงสัย'], ['p-grow', 'งอกเงย'], ['bars', 'กราฟ'], ['coins', 'เหรียญ'], ['shield', 'โล่'], ['heart', 'หัวใจ'], ['chat', 'แชต'], ['spark', 'ประกาย'], ['home', 'บ้าน'], ['clock', 'นาฬิกา']];
 
 // ── หน้าแก้งาน ──
 const ed = { id: null, tab: 'carousel', i: 0, hist: [], fut: [] };
@@ -267,6 +289,7 @@ export function renderStudioItem(id) {
     h('a.icon-btn', { href: '#/studio', 'aria-label': 'กลับสตูดิโอ' }, icon('back')),
     h('input.input.st-title', { value: it.title, 'aria-label': 'ชื่องาน', onchange: (e) => save({ title: e.target.value }, { hist: false }) }),
     h('button.icon-btn', { 'aria-label': 'เลิกทำ', disabled: !ed.hist.length, onclick: () => { ed.fut.push(JSON.stringify(it.deck)); it = store.put('content', { ...it, deck: JSON.parse(ed.hist.pop()) }); } }, icon('undo')),
+    h('button.icon-btn', { 'aria-label': 'เปิดบนอีกเครื่อง', onclick: () => import('../qr.js').then((m) => m.openOnOtherDevice()) }, icon('link')),
     h('button.icon-btn', { 'aria-label': 'เมนูงาน (ลบ/ทำสำเนา)', onclick: () => itemMenu(it) }, icon('more')),
     h('button.icon-btn', { 'aria-label': 'ทำซ้ำ', disabled: !ed.fut.length, onclick: () => { ed.hist.push(JSON.stringify(it.deck)); it = store.put('content', { ...it, deck: JSON.parse(ed.fut.pop()) }); } }, icon('redo')));
   const setStatus = (s2) => { save({ status: s2, ...(s2 === 'posted' ? { postedAt: it.postedAt || todayISO() } : {}) }, { hist: false }); if (s2 === 'posted') { import('../fx.js').then((m) => m.celebrate?.()).catch(() => {}); toast('โพสต์แล้ว! อีก 2–3 วันกลับมาบันทึกผลในหน้า "ผลโพสต์"'); } };
@@ -335,6 +358,10 @@ export function renderStudioItem(id) {
     topic.addEventListener('input', draw); draw();
     sheet({ title: 'ประโยคเปิด 10 แบบ', sub: 'เลือกแล้วใส่หน้าปกให้ทันที แก้ต่อได้', body: h('div.stack', h('label.f', h('span', 'หัวข้อของโพสต์นี้'), topic), list, h('a.small', { href: '#/studio/playbook', onclick: () => closeSheet(true) }, 'ดูที่มาของแต่ละสูตร')) }); };
   const tools = h('div.st-tools',
+    story ? null : h('div.row.wrap.st-extra', { style: { gap: '6px', marginBottom: '8px' } },
+      h('button.btn.sm', { onclick: () => checkSheet(deck, setDeck) }, icon('check'), 'ตรวจก่อนโพสต์'),
+      h('button.btn.sm', { onclick: () => clipSheet(deck, it.title) }, icon('play'), 'ทำเป็นคลิปสั้น'),
+      h('button.btn.sm', { 'aria-pressed': String(deck.flow !== false), onclick: () => { const d = structuredClone(deck); d.flow = deck.flow === false; setDeck(d); } }, deck.flow === false ? 'เส้นต่อเนื่อง: ปิด' : 'เส้นต่อเนื่อง: เปิด')),
     h('div.row.wrap', { style: { gap: '6px' } },
       h('button.btn.sm', { 'aria-label': 'สไลด์ก่อนหน้า', disabled: ed.i === 0, onclick: () => { ed.i--; rerender(); } }, icon('back')),
       h('button.btn.sm', { 'aria-label': 'สไลด์ถัดไป', disabled: ed.i === deck.slides.length - 1, onclick: () => { ed.i++; rerender(); } }, icon('next')),

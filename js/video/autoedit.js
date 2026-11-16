@@ -52,8 +52,8 @@ export function deriveSegs(P) {
 /** จุดตัดช่วงเงียบ = ส่วนที่ไม่ใช่ช่วงพูด */
 export function silenceCuts(clip, speech) {
   const lo = clip.in ?? 0, hi = clip.out ?? clip.dur; const out = []; let t = lo;
-  for (const r of speech) { if (r.a - t > 0.25) out.push({ clip: clip.id, a: +t.toFixed(2), b: +r.a.toFixed(2), why: 'silence', on: true }); t = Math.max(t, r.b); }
-  if (hi - t > 0.25) out.push({ clip: clip.id, a: +t.toFixed(2), b: +hi.toFixed(2), why: 'silence', on: true });
+  for (const r of speech) { if (r.a - t > 0.4) out.push({ clip: clip.id, a: +t.toFixed(2), b: +r.a.toFixed(2), why: 'silence', on: true }); t = Math.max(t, r.b); }
+  if (hi - t > 0.4) out.push({ clip: clip.id, a: +t.toFixed(2), b: +hi.toFixed(2), why: 'silence', on: true });
   return out;
 }
 
@@ -81,7 +81,7 @@ export async function autoEdit(P, env) {
   // 1) ฟังเสียง
   onStep('audio', 'กำลังฟังเสียง…');
   const speech = {}; P.gain ||= {};
-  for (const c of clips) { const b = await env.getBlob(c); speech[c.id] = await A.speechRanges(c.key, b, { gap: 0.35, pad: 0.1 }); P.gain[c.id] = await A.loudGain(c.key, b).catch(() => 1); }
+  for (const c of clips) { const b = await env.getBlob(c); speech[c.id] = await A.speechRanges(c.key, b, { gap: 0.45, pad: 0.16 }); P.gain[c.id] = await A.loudGain(c.key, b).catch(() => 1); }
   // 2) ภาพ
   onStep('look', 'กำลังปรับแสงสี…');
   P.looks ||= {}; P.tracks ||= {};
@@ -116,7 +116,7 @@ export async function autoEdit(P, env) {
   P.cuts = [];
   for (const c of clips) {
     const mine = keep.filter((x) => x.clip === c.id);
-    const spoken = mine.map((x) => ({ a: Math.max(0, x.s - 0.08), b: x.e + 0.1 })); // ช่วงพูดทั้งหมด (รวมเทคที่ตัด) เพื่อให้เอาคืนได้
+    const spoken = mine.map((x) => ({ a: Math.max(0, x.s - 0.14), b: x.e + 0.18 })); // ช่วงพูดทั้งหมด (รวมเทคที่ตัด) เพื่อให้เอาคืนได้
     const base = mine.length ? spoken.sort((p, q) => p.a - q.a) : speech[c.id];
     P.cuts.push(...silenceCuts(c, base));
     for (const x of mine.filter((y) => y.drop && y.drop !== 'unclear')) P.cuts.push({ clip: c.id, a: +x.s.toFixed(2), b: +x.e.toFixed(2), why: x.drop, on: true, text: x.text });
@@ -139,4 +139,25 @@ export async function autoEdit(P, env) {
   sum.subs = P.chunks.length; sum.cut = P.cuts.filter((x) => x.on).reduce((a, x) => a + x.b - x.a, 0); sum.total = sl.reduce((a, s) => a + s.b - s.a, 0);
   P.autoEdited = new Date().toISOString();
   return sum;
+}
+
+/**
+ * จัดจังหวะซับจากเสียงจริง (มีบทอยู่แล้ว): หาช่วงพูดในคลิปที่ส่งออก แล้ววางแต่ละบรรทัดลงช่วงพูดตามสัดส่วนความยาว
+ * แม่นกว่าการเฉลี่ย เพราะซับจะไม่ขึ้นตอนเงียบ · คืน chunks ใหม่
+ */
+export async function alignToSpeech(P, getBlob, A) {
+  const sl = segList(P); const ranges = [];
+  for (const s of sl) { const b = await getBlob(s.clip); if (!b) continue; const rs = await A.speechRanges(s.key, b, { gap: 0.25, pad: 0.05 }); for (const r of rs) { const a = Math.max(r.a, s.a), e = Math.min(r.b, s.b); if (e - a > 0.12) ranges.push({ a: s.o0 + a - s.a, b: s.o0 + e - s.a }); } }
+  if (!ranges.length) throw new Error('ไม่พบช่วงพูดในคลิป');
+  const lines = [...new Set(P.chunks.map((c) => c.line))]; const lenOf = (ln) => P.chunks.filter((c) => c.line === ln).reduce((a, c) => a + visLen(c.text) + 1, 0);
+  const totalChars = lines.reduce((a, ln) => a + lenOf(ln), 0); const totalSpeech = ranges.reduce((a, r) => a + r.b - r.a, 0);
+  // เดินไปตามช่วงพูด: เวลาสะสมของคำพูด ↔ ตัวอักษรสะสม
+  const at = (frac) => { let need = frac * totalSpeech; for (const r of ranges) { const d = r.b - r.a; if (need <= d) return r.a + need; need -= d; } return ranges[ranges.length - 1].b; };
+  let acc = 0; const out = P.chunks.map((c) => ({ ...c }));
+  for (const ln of lines) {
+    for (const c of out.filter((x) => x.line === ln)) { const w = visLen(c.text) + 1; c.t0 = +at(acc / totalChars).toFixed(2); acc += w; c.t1 = +at(acc / totalChars).toFixed(2); }
+    // บรรทัดใหม่มักเริ่มหลังช่วงเงียบ: ขยับจุดเริ่มไปที่ต้นช่วงพูดที่ใกล้ที่สุด
+    const first = out.find((x) => x.line === ln); const near = ranges.find((r) => Math.abs(r.a - first.t0) < 0.45); if (near && near.a < first.t1 - 0.1) first.t0 = +near.a.toFixed(2);
+  }
+  return out;
 }
