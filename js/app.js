@@ -23,7 +23,7 @@ const NAV = [
 ];
 NAV.splice(1, 2, NAV[2], NAV[1]); // วันนี้ · ลูกค้า · แผน · สตูดิโอ · งานขาย
 const SIDE_SUB = {
-  plans: [['#/plans', 'คลังแผน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
+  plans: [['#/plans', 'คลังแผน'], ['#/plans/stages', 'ชุดแผนตามช่วงวัย'], ['#/plans/ww', 'มี vs ไม่มีประกัน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
   studio: [['#/studio', 'งานของฉัน'], ['#/studio/library', 'คลัง 365 เรื่อง'], ['#/studio/stats', 'ผลโพสต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์']],
   menu: [['#/menu', 'เมนูทั้งหมด'], ['#/settings', 'ตั้งค่า'], ['#/settings/look', 'สีจอและหน้าตา'], ['#/tools/calc', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/tax', 'คำนวณภาษี'], ['#/tools/profile', 'โปรไฟล์'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
@@ -86,6 +86,9 @@ const routes = [
   [/^\/tools\/calc\/(\w+)$/, 'tools', (q, t) => import('./views/public.js').then((m) => m.renderCalc(t, {}, true))],
   [/^\/tools\/quiz$/, 'tools', () => import('./views/public.js').then((m) => m.renderQuiz({}, true))],
   [/^\/tools\/timemachine$/, 'tools', () => import('./views/timemachine.js').then((m) => m.renderTimeMachine())],
+  [/^\/tools\/data$/, 'menu', () => import('./views/facts.js').then((m) => m.renderFacts())],
+  [/^\/plans\/stages$/, 'plans', () => import('./views/stages.js').then((m) => m.renderStages())],
+  [/^\/plans\/ww$/, 'plans', () => import('./views/stages.js').then((m) => m.renderWW())],
   [/^\/brand$/, 'studio', () => import('./views/brand.js').then((m) => m.renderBrand())],
   [/^\/plans\/body$/, 'plans', () => import('./views/planviz.js').then((m) => m.renderBody())],
   [/^\/plans\/build$/, 'plans', (q) => import('./views/planviz.js').then((m) => m.renderBuilder(q))],
@@ -205,6 +208,16 @@ export function rerender() { route(); }
 // ภาพประกอบหัวหน้า (ลายเส้นเดียวกับหมวดแผน) — ใส่ให้หน้าหลัก ๆ อัตโนมัติ
 const ART = [ [/^\/clients\/?$/, 'clients'], [/^\/work\/calendar$/, 'calendar'], [/^\/brand$/, 'brand'], [/^\/work\/(sales|goals)$/, 'money'], [/^\/tools\/sync$/, 'time'], [/^\/work\/?$/, 'clients'], [/^\/work\/review$/, 'money'], [/^\/tools\/content$/, 'story']];
 function decorate(node, path) {
+  try {
+    if (/^\/plans\/?$/.test(path) && !clientMode()) { const tb = node?.querySelector?.('.topbar'); if (tb && !node.querySelector('.pl-cta')) tb.after(h('div.pl-cta',
+      h('a', { href: '#/plans/stages' }, illus('family', { size: 64 }), h('span', h('b', 'ชุดแผนตามช่วงวัย'), h('small', 'เลือกวัย ได้ชุดตั้งต้นทันที'))),
+      h('a', { href: '#/plans/ww' }, illus('health', { size: 64 }), h('span', h('b', 'มี vs ไม่มีประกัน'), h('small', 'เทียบจากบิลจริง'))))); }
+    const cm = path.match(/^\/client\/([\w-]+)$/); const head = cm && node?.querySelector?.('.client-head');
+    if (head && !node.querySelector('.c-stats')) { const id = cm[1]; const pol = store.all('policies').filter((x) => x.clientId === id && ['submitted', 'issued'].includes(x.status)); const prem = pol.reduce((t, x) => t + (+x.premium || 0), 0);
+      const logs = store.all('logs').filter((x) => x.clientId === id).map((x) => x.date || (x.createdAt || '').slice(0, 10)).sort(); const last = logs.at(-1); const days = last ? Math.max(0, Math.round((Date.now() - Date.parse(last)) / 864e5)) : null;
+      const up = store.all('appts').filter((x) => x.clientId === id && x.status === 'planned').length;
+      head.classList.add('social'); head.after(h('div.c-stats', [[pol.length, 'กรมธรรม์'], [prem ? Math.round(prem / 1000) + 'k' : '—', 'เบี้ย/ปี'], [days == null ? '—' : days === 0 ? 'วันนี้' : days + ' วัน', 'คุยล่าสุด'], [up, 'นัดที่รออยู่']].map(([v, l]) => h('div', h('b', v), h('span', l))))); }
+  } catch (e) { console.error(e); }
   const hit = ART.find(([re]) => re.test(path)); const tb = node?.querySelector?.(':scope > .topbar'); if (!hit || !tb || tb.querySelector('.tb-art')) return;
   const art = illus(hit[1], { size: 72 }); art.classList.add('tb-art');
   const first = tb.firstElementChild; first.after(art);

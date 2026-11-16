@@ -17,6 +17,10 @@ const A = {
   money: '<path d="M28 72h64"/><rect x="34" y="52" width="10" height="20" rx="2"/><rect x="52" y="42" width="10" height="30" rx="2"/><rect x="70" y="30" width="10" height="42" rx="2"/><path d="M34 40l18-12 12 6 20-12"/><path d="M78 22h6v6"/>',
   time: '<circle cx="60" cy="50" r="22"/><path d="M60 38v12l8 6"/><path d="M34 34l-4 10 10-1"/><path d="M33 44a28 28 0 0 1 4-12"/>',
   brand: '<path d="M34 56V44l40-14v40L34 56z"/><path d="M34 44h-6v12h6M44 58l4 14h8l-3-11"/><path d="M84 40l6-4M84 50h8M84 60l6 4"/>',
+  person: '<circle cx="60" cy="32" r="11"/><path d="M40 76c0-13 9-22 20-22s20 9 20 22"/><path d="M52 62l8 8 8-8"/>',
+  couple: '<circle cx="46" cy="34" r="10"/><circle cx="76" cy="36" r="9"/><path d="M28 76c0-12 8-20 18-20s18 8 18 20"/><path d="M62 62c3-4 8-6 14-6 9 0 16 8 16 20"/><path d="M58 20c2-4 8-4 8 1 0 4-8 8-8 8s-8-4-8-8c0-5 6-5 8-1z"/>',
+  family: '<circle cx="42" cy="32" r="9"/><circle cx="78" cy="32" r="9"/><circle cx="60" cy="52" r="7"/><path d="M26 74c0-11 7-19 16-19 4 0 8 2 11 5M94 74c0-11-7-19-16-19-4 0-8 2-11 5"/><path d="M48 76c0-8 5-13 12-13s12 5 12 13"/>',
+  elder: '<circle cx="54" cy="30" r="10"/><path d="M38 76c0-14 7-22 16-22 8 0 14 6 16 16"/><path d="M78 46v30M78 46c0-5 8-5 8 0"/><path d="M48 26c4-3 9-3 13 0"/>',
   story: '<rect x="42" y="20" width="36" height="56" rx="8"/><path d="M48 28h24M48 70h24"/><path d="M54 44l12 6-12 6z"/>',
 };
 export function illus(name, { size = 120, label } = {}) {

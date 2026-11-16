@@ -309,7 +309,7 @@ export async function renderSlide(slide, deck, idx, { story = false } = {}) {
   x.font = F(500, 24, false); x.fillStyle = T.sub; x.fillText(`  ·  ${p.name}${p.licenseLife ? ' · ใบอนุญาต ' + p.licenseLife : ''}`, M + bw, fy);
   if (!last) { x.font = F(600, 30); x.fillStyle = T.accent; const s = 'ปัดต่อ'; const sw = x.measureText(s).width; x.fillText(s, W - M - sw - 56, fy); x.strokeStyle = T.accent; x.lineWidth = 5; x.lineCap = 'round'; x.lineJoin = 'round'; x.beginPath(); x.moveTo(W - M - 46, fy - 10); x.quadraticCurveTo(W - M - 24, fy - 16 + R() * 6, W - M - 4, fy - 10); x.moveTo(W - M - 16, fy - 22); x.lineTo(W - M - 4, fy - 10); x.lineTo(W - M - 18, fy + 2); x.stroke(); }
   else if (sig && deck.sig !== false) await drawSignature(x, sig, W - M - 300, fy - 196, 300, 140, ['night', 'classic'].includes(T.look) && deck.theme !== 'cream' && deck.theme !== 'pop' || deck.theme === 'aomfull' ? T.ink : '#3a3a3c');
-  else { x.font = F(500, 22, false); x.fillStyle = T.sub; x.globalAlpha = .85; const s = 'ข้อมูลเบื้องต้น ความคุ้มครองเป็นไปตามกรมธรรม์'; x.fillText(s, W - M - x.measureText(s).width, fy); x.globalAlpha = 1; }
+  else { x.font = F(500, 22, false); x.fillStyle = T.sub; x.globalAlpha = .85; const s = 'ข้อมูลเบื้องต้น ความคุ้มครองเป็นไปตามกรมธรรม์'; x.fillText(s, W - M - x.measureText(s).width, fy - 38); x.globalAlpha = 1; }
   if (slide.src) { x.font = F(500, 20, false); x.fillStyle = T.sub; x.globalAlpha = .9; x.fillText('ที่มา: ' + slide.src, M, fy - 40); x.globalAlpha = 1; }
   // จุดความคืบหน้า
   const dw = 12, gap = 9, tw2 = total * dw + (total - 1) * gap + 20; let dx = (W - tw2) / 2; const dy = story ? fy - 78 : H - 36;

@@ -21,7 +21,7 @@ export function renderMenu() {
   const p = profile();
   const G = [
     ['งานขาย', [['#/work/sales', 'line', 'ยอดขาย & กรมธรรม์'], ['#/work/calendar', 'cal', 'ปฏิทิน'], ['#/work/goals', 'target', 'เป้าหมาย'], ['#/work/report', 'doc', 'รายงานประจำเดือน'], ['#/work/call', 'flame', 'โทรรวด', 'call'], ['#/work/mandala', 'grid', 'แมนฮาร่าเป้าหมาย', 'mandala'], ['#/clients/lists', 'filter', 'รายชื่ออัจฉริยะ'], ['#/work/review', 'line', 'ทบทวนสัปดาห์', 'review']]],
-    ['ลูกค้าและแผน', [['#/check', 'heart', 'ตรวจสุขภาพการเงิน'], ['#/plans/advisor', 'compass', 'ระบบแนะนำแผน'], ['#/plans/tools', 'layers', 'เครื่องมือแผน'], ['#/tools/calc', 'link', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/tax', 'tax', 'คำนวณภาษี'], ['#/tools/simulate', 'heart', 'จำลองเหตุการณ์', 'simulate']]],
+    ['ลูกค้าและแผน', [['#/check', 'heart', 'ตรวจสุขภาพการเงิน'], ['#/plans/stages', 'clients', 'ชุดแผนตามช่วงวัย'], ['#/plans/ww', 'shield', 'มี vs ไม่มีประกัน'], ['#/tools/data', 'info', 'ข้อมูลจริง & ปฏิทินการเงิน'], ['#/plans/advisor', 'compass', 'ระบบแนะนำแผน'], ['#/plans/tools', 'layers', 'เครื่องมือแผน'], ['#/tools/calc', 'link', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/tax', 'tax', 'คำนวณภาษี'], ['#/tools/simulate', 'heart', 'จำลองเหตุการณ์', 'simulate']]],
     ['พัฒนาตัวเอง', [['#/tools/train', 'bulb', 'ฝึกตัวเอง', 'train'], ['#/tools/objections', 'chat', 'รับมือข้อโต้แย้ง', 'objections'], ['#/brand', 'star', 'แบรนด์ของฉัน'], ['#/tools/glossary', 'book', 'คำศัพท์ภาษาง่าย']]],
   ];
   return h('div', { 'data-title': 'เมนู' },

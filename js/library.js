@@ -1,5 +1,6 @@
 // ─── คลังคอนเทนต์ 365 เรื่อง: โหลดตามหมวด · แปลงเป็นชุดสไลด์ · เรื่องของวัน ───
 import { CATS } from '../data/studio.js';
+import { EXTRA } from '../data/libextra.js';
 import { compoundCompare, fvMonthly, retirement } from './engine/calc.js';
 import { taxOnNet, marginalRate } from './engine/tax.js';
 
@@ -65,7 +66,24 @@ export function buildDeck(it, { theme } = {}) {
   const C = CATS[it.c] || CATS.money; let n = 0;
   const mid = (it.s || []).flatMap(S).map((sl) => (sl.kind === 'point' ? { ...sl, num: ++n } : sl));
   const story = it.c === 'story';
-  if (mid.length === 1 && !it.x) mid.push(mid[0].kind === 'check' ? { kind: 'point', num: '', title: 'ยังไม่ครบไม่เป็นไร', body: 'เลือก 1 ข้อที่ทำได้ภายในสัปดาห์นี้ แล้วเริ่มจากตรงนั้น' } : { kind: 'quote', title: 'รู้แล้ว ลองทำดู 1 อย่างในสัปดาห์นี้', body: 'ก้าวเล็กที่ทำจริง ดีกว่าแผนใหญ่ที่ยังไม่เริ่ม' });
+  // เติมเนื้อหาให้ได้ 6–7 แผ่น (ไม่นับปกและหน้าปิด) จากสไลด์เสริมของหมวด โดยไม่ซ้ำกับที่มีอยู่
+  const X = EXTRA[it.c]; const want = it.me ? 0 : 6; const hsh = [...it.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
+  const has = (sl) => mid.some((m) => m.kind === sl.kind && (m.title === sl.title || (sl.kind === 'myth' && m.myth === sl.myth)));
+  const kinds = () => new Set(mid.map((m) => m.kind));
+  if (X && mid.length < want) {
+    const takeaways = mid.flatMap((m) => (m.kind === 'point' ? [m.title] : m.kind === 'myth' ? [m.fact] : m.kind === 'list' ? (m.items || []).slice(0, 2) : m.kind === 'quote' && !story ? [m.title] : [])).filter((t) => t && t.length <= 70).slice(0, 4);
+    const myth = X.myths[hsh % X.myths.length]; const mythS = { kind: 'myth', myth: myth[0], fact: myth[1] };
+    if (!kinds().has('myth') && !has(mythS)) mid.splice(Math.min(1, mid.length), 0, mythS);
+    const VIS = ['bar', 'line', 'donut', 'table', 'timeline', 'versus', 'check'];
+    if (mid.length < want && !mid.some((m) => ['bar', 'line', 'donut', 'table'].includes(m.kind))) for (let i = 0; i < X.vis.length; i++) { const v = S(X.vis[(hsh + i) % X.vis.length]).filter((sl) => VIS.includes(sl.kind))[0]; if (v && !has(v) && !(v.kind === 'timeline' && kinds().has('timeline')) && !(v.kind === 'versus' && kinds().has('versus')) && !(v.kind === 'check' && kinds().has('check'))) { mid.push(v); break; } }
+    if (mid.length < want && takeaways.length >= 2) mid.push({ kind: 'list', title: story ? 'บทเรียนจากเรื่องนี้' : 'สรุปอีกครั้ง', items: takeaways });
+    const act = X.acts[(hsh >>> 3) % X.acts.length];
+    if (mid.length < want) mid.push({ kind: 'point', num: '', title: 'ลองทำวันนี้: ' + act[0], body: act[1], sticker: 'ทำได้เลย' });
+    if (mid.length < want) mid.push({ kind: 'quote', title: X.asks[(hsh >>> 5) % X.asks.length], body: 'ลองตอบในใจ หรือคอมเมนต์บอกกันได้' });
+    if (mid.length < want) { const m2 = X.myths[(hsh + 2) % X.myths.length]; const s2 = { kind: 'myth', myth: m2[0], fact: m2[1] }; if (!has(s2) && m2 !== myth) mid.splice(Math.min(3, mid.length), 0, s2); }
+    if (mid.length < want) { const a2 = X.acts[((hsh >>> 3) + 1) % X.acts.length]; mid.push({ kind: 'point', num: '', title: 'อีกหนึ่งอย่างที่ทำได้: ' + a2[0], body: a2[1] }); }
+    n = 0; mid.forEach((sl) => { if (sl.kind === 'point' && sl.num !== '') sl.num = ++n; });
+  }
   return { theme: theme || 'aom', tag: C.short, art: it.art || C.art, lib: it.id, cat: it.c, topic: it.t || '', hookStyle: it.hs || '', slides: [
     { kind: 'cover', kicker: it.k || C.name, title: it.h, hl: it.hl || '', body: it.sub || (mid.length ? 'ปัดอ่านต่อ ใช้เวลาไม่ถึง 1 นาที' : ''), ...(it.st ? { sticker: it.st } : {}) },
     ...mid,
