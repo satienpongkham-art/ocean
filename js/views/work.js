@@ -306,7 +306,7 @@ export function renderGoals() {
     field('เบี้ยเฉลี่ยต่อเคส (บาท/ปี)', inputEl('avgPremium', g.avgPremium, { type: 'number', inputmode: 'numeric', step: 1000 })),
     field('อัตราค่าคอมปีแรกเฉลี่ย (%)', inputEl('commissionPct', Math.round((g.commissionRate || 0) * 100), { type: 'number', inputmode: 'numeric', step: 1 }), 'ดูอัตราจริงจากระบบตัวแทน'),
     field('เป้าคะแนนกิจกรรมต่อวัน', inputEl('dailyPoints', g.dailyPoints, { type: 'number', inputmode: 'numeric', min: 1 })),
-    h('div.full', h('button.btn.primary', { type: 'submit' }, icon('check'), 'บันทึกเป้าหมาย')));
+    h('div.full.sticky-act', h('button.btn.primary', { type: 'submit' }, icon('check'), 'บันทึกเป้าหมาย')));
   draw({ ...g, commissionPct: Math.round((g.commissionRate || 0) * 100) });
 
   // กราฟคะแนน 14 วันล่าสุด

@@ -77,11 +77,11 @@ export async function shareImage(p, r, tier) {
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
   // พื้นหลัง
-  ctx.fillStyle = '#f5f2ec'; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#1f4e46'; ctx.fillRect(0, 0, W, 330);
-  ctx.fillStyle = '#c8102e'; ctx.beginPath(); ctx.arc(W - 110, 110, 26, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#faf8f6'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#a6192e'; ctx.fillRect(0, 0, W, 330);
+  ctx.fillStyle = '#ffd9a8'; ctx.beginPath(); ctx.arc(W - 110, 110, 26, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = 'rgba(245,242,236,.75)'; ctx.font = F(500, 34); ctx.fillText('แผนความคุ้มครองที่ออกแบบสำหรับ', M, 120);
-  ctx.fillStyle = '#f5f2ec'; ctx.font = F(700, 76, true); ctx.fillText('คุณ' + (p.nick || ''), M, 215);
+  ctx.fillStyle = '#ffffff'; ctx.font = F(700, 76, true); ctx.fillText('คุณ' + (p.nick || ''), M, 215);
   ctx.font = F(500, 36); ctx.fillStyle = 'rgba(245,242,236,.85)'; ctx.fillText(`${r.pkg.name} · ระดับ${TIER_LABEL[tier]}`, M, 285);
   // รายการแผน
   let y = 400;
@@ -101,7 +101,7 @@ export async function shareImage(p, r, tier) {
   ctx.font = F(400, 31);
   for (const reason of r.reasons.slice(0, 2)) {
     const lines = wrap(ctx, reason, W - M * 2 - 44).slice(0, 3);
-    ctx.fillStyle = '#2f6b4f'; ctx.fillText('✓', M, y);
+    ctx.fillStyle = '#a6192e'; ctx.fillText('✓', M, y);
     ctx.fillStyle = '#1d2422'; lines.forEach((ln, i) => ctx.fillText(ln, M + 44, y + i * 44));
     y += lines.length * 44 + 18;
   }

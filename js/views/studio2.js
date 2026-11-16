@@ -115,3 +115,40 @@ export function renderSign() {
     h('div.section', h('h2', 'ตัวอย่างในภาพ'), h('div.card', prev, h('div.row', { style: { gap: '8px', marginTop: '10px' } }, getSig() ? h('button.btn.sm.danger', { onclick: () => { setSig(null); toast('เอาลายเซ็นออกแล้ว'); rerender(); } }, 'ไม่ใช้ลายเซ็น') : h('span.small.muted', 'ยังไม่ได้ตั้งลายเซ็น')))),
     h('p.source', 'ลายเซ็นเก็บในเครื่องนี้เท่านั้น ไม่ถูกส่งไปที่อื่น'));
 }
+
+// ── ปกไฮไลต์ IG ──
+const CV_DEF = [['shield', 'ประกัน'], ['heart', 'สุขภาพ'], ['cat-saving', 'ออมเงิน'], ['line', 'ลงทุน'], ['tax', 'ภาษี'], ['cat-annuity', 'เกษียณ'], ['bulb', 'AI'], ['star', 'รีวิว'], ['user', 'เกี่ยวกับออม'], ['chat', 'ติดต่อ']];
+const CV_STY = { red: ['แดง', '#a6192e', '#ffffff', '#ffffff'], white: ['ขาว', '#ffffff', '#a6192e', '#1b1717'], cream: ['ครีม', '#f6efe6', '#a6192e', '#1b1717'], grad: ['ไล่สี', 'grad', '#ffffff', '#ffffff'], ink: ['ดำ', '#1b1717', '#ffd9a8', '#ffffff'] };
+const cvSt = { sty: 'red', label: true, items: null };
+async function drawCover(icName, label, sty, withLabel, size = 1080, tall = true) {
+  const [, bg, fg, tx] = CV_STY[sty]; const W = size, H = tall ? Math.round(size * 16 / 9) : size; const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  if (bg === 'grad') { const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#c2263c'); g.addColorStop(.55, '#a6192e'); g.addColorStop(1, '#5e0d1b'); x.fillStyle = g; } else x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2; const R = W * 0.36;
+  x.strokeStyle = fg; x.globalAlpha = .22; x.lineWidth = W * 0.008; x.beginPath(); x.arc(cx, cy, R, 0, 7); x.stroke(); x.globalAlpha = 1;
+  const svg = icon(icName); svg.setAttribute('stroke', fg); svg.setAttribute('stroke-width', '1.6'); svg.setAttribute('width', '240'); svg.setAttribute('height', '240'); svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg).replace(/currentColor/g, fg));
+  const im = new Image(); await new Promise((r) => { im.onload = r; im.onerror = r; im.src = src; });
+  const s = R * (withLabel ? 0.95 : 1.2); x.drawImage(im, cx - s / 2, cy - s / 2 - (withLabel ? R * 0.2 : 0), s, s);
+  if (withLabel) { await document.fonts?.ready; let fs = W * 0.115; x.font = `600 ${fs}px "Kanit", sans-serif`; while (x.measureText(label).width > R * 1.5 && fs > 20) { fs -= 4; x.font = `600 ${fs}px "Kanit", sans-serif`; } x.fillStyle = tx; x.textAlign = 'center'; x.fillText(label, cx, cy + R * 0.7); }
+  return c;
+}
+export function renderCovers() {
+  if (!cvSt.items) cvSt.items = CV_DEF.map(([i, l]) => ({ i, l, on: true }));
+  const grid = h('div.cv-grid'); const ICONS = ['shield', 'heart', 'cat-saving', 'line', 'tax', 'cat-annuity', 'bulb', 'star', 'user', 'chat', 'cal', 'target', 'book', 'phone', 'clients', 'cat-health', 'cat-life', 'cat-ci', 'doc', 'gear'];
+  const draw = async () => { grid.replaceChildren(...cvSt.items.map((it, k) => { const im = h('img', { alt: it.l }); drawCover(it.i, it.l, cvSt.sty, cvSt.label, 300, false).then((c) => { im.src = c.toDataURL('image/png'); });
+    return h('button.cv-i', { class: it.on ? 'on' : '', onclick: () => edit(k) }, im, h('small', it.l)); }), h('button.cv-i', { onclick: () => { cvSt.items.push({ i: 'star', l: 'หัวข้อใหม่', on: true }); edit(cvSt.items.length - 1); } }, h('span', { style: { width: '86px', height: '86px', borderRadius: '50%', display: 'grid', placeItems: 'center', border: '2px dashed var(--line)', color: 'var(--ink-3)' } }, icon('plus')), h('small', 'เพิ่ม'))); };
+  const edit = (k) => { const it = cvSt.items[k]; const inp = h('input.input', { value: it.l, 'aria-label': 'ชื่อหัวข้อ' });
+    import('../ui.js').then(({ sheet: sh, closeSheet: cs }) => sh({ title: 'แก้ปก', body: h('div.stack', h('label.f', h('span', 'ชื่อหัวข้อ'), inp), h('div.chips.wrap', ICONS.map((n) => h('button.chip', { class: it.i === n ? 'on' : '', 'aria-label': 'ไอคอน ' + n, onclick: (e) => { it.i = n; e.currentTarget.parentElement.querySelectorAll('.chip').forEach((b) => b.classList.remove('on')); e.currentTarget.classList.add('on'); } }, icon(n)))),
+      h('label.row.small', h('input', { type: 'checkbox', checked: it.on, onchange: (e) => { it.on = e.target.checked; } }), 'รวมในการส่งออก'),
+      h('button.btn.primary.block', { onclick: () => { it.l = inp.value.trim() || it.l; cs(true); draw(); } }, icon('check'), 'ใช้'), h('button.btn.ghost.block', { onclick: () => { cvSt.items.splice(k, 1); cs(true); draw(); } }, icon('trash'), 'ลบหัวข้อนี้')) })); };
+  const exportAll = async () => { const files = []; for (const it of cvSt.items.filter((x) => x.on)) { const c = await drawCover(it.i, it.l, cvSt.sty, cvSt.label); files.push(new File([await new Promise((r) => c.toBlob(r, 'image/png'))], `highlight-${it.l}.png`, { type: 'image/png' })); }
+    try { if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files }); return; } } catch (e) { if (e?.name === 'AbortError') return; }
+    for (const f of files) { const a = h('a', { href: URL.createObjectURL(f), download: f.name }); document.body.append(a); a.click(); a.remove(); await new Promise((r) => setTimeout(r, 200)); } toast(`บันทึก ${files.length} ภาพแล้ว`); };
+  draw();
+  return h('div', { 'data-title': 'ปกไฮไลต์ IG' }, back('ปกไฮไลต์ IG', 'ชุดปกวงกลมธีม AOM CONNECT แตะเพื่อแก้ชื่อหรือไอคอน แล้วส่งออกเป็นภาพ 1080×1920'),
+    h('div.card', h('div.q', h('span.ql', 'สไตล์'), choices('cvs', cvSt.sty, Object.entries(CV_STY).map(([k, v]) => [k, v[0]]), { onChange: (v) => { cvSt.sty = v; draw(); } })),
+      h('label.row.small', { style: { marginTop: '8px' } }, h('input', { type: 'checkbox', checked: cvSt.label, onchange: (e) => { cvSt.label = e.target.checked; draw(); } }), 'ใส่ชื่อหัวข้อบนปก (ปิดได้ เพราะ IG แสดงชื่อใต้วงกลมอยู่แล้ว)')),
+    h('div.card', { style: { marginTop: '12px' } }, grid),
+    h('div.sticky-act', h('button.btn.primary', { onclick: exportAll }, icon('share'), 'ส่งออกปกที่เลือกทั้งหมด')),
+    h('p.source', 'วิธีใช้: ใน Instagram กดค้างที่ไฮไลต์ › แก้ไขไฮไลต์ › แก้ไขปก › เลือกภาพจากคลัง'));
+}

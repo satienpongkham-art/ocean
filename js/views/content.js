@@ -77,7 +77,7 @@ export function renderContent() {
 }
 
 // ── ภาพทิปการเงิน 1080×1350 ──
-const STYLES = { navy: { bg: ['#13284a', '#0b1730'], ink: '#f3efe6', accent: '#c9a45c', name: 'กรมท่า-ทอง' }, cream: { bg: ['#f6f1e7', '#ece4d4'], ink: '#13284a', accent: '#b08a3e', name: 'ครีม-กรมท่า' }, green: { bg: ['#1f4e46', '#12302b'], ink: '#f5f2ec', accent: '#e2c27a', name: 'เขียวหมึก' } };
+const STYLES = { aom: { bg: ['#a6192e', '#7d1022'], ink: '#fff8f4', accent: '#ffd9a8', name: 'แดง-ขาว' }, white: { bg: ['#ffffff', '#f8eeee'], ink: '#1b1717', accent: '#a6192e', name: 'ขาว-แดง' }, navy: { bg: ['#13284a', '#0b1730'], ink: '#f3efe6', accent: '#c9a45c', name: 'กรมท่า-ทอง' }, cream: { bg: ['#f6f1e7', '#ece4d4'], ink: '#13284a', accent: '#b08a3e', name: 'ครีม-กรมท่า' }, green: { bg: ['#1f4e46', '#12302b'], ink: '#f5f2ec', accent: '#e2c27a', name: 'เขียวหมึก' } };
 const seg = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('th', { granularity: 'word' }) : null;
 function wrap(ctx, text, maxW) {
   const words = seg ? [...seg.segment(text)].map((x) => x.segment) : String(text).split(/(\s+)/);
@@ -87,7 +87,7 @@ function wrap(ctx, text, maxW) {
 }
 export async function drawTip({ title, body, no, style }) {
   await document.fonts.ready;
-  const S = STYLES[style] || STYLES.navy; const W = 1080, H = 1350, M = 96; const p = profile();
+  const S = STYLES[style] || STYLES.aom; const W = 1080, H = 1350, M = 96; const p = profile();
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, S.bg[0]); g.addColorStop(1, S.bg[1]); x.fillStyle = g; x.fillRect(0, 0, W, H);
   x.strokeStyle = S.accent; x.lineWidth = 3; x.globalAlpha = .5; x.beginPath(); x.arc(W + 40, H + 40, 420, Math.PI, Math.PI * 1.5); x.stroke(); x.beginPath(); x.arc(W + 40, H + 40, 470, Math.PI, Math.PI * 1.5); x.stroke(); x.globalAlpha = 1;
@@ -106,7 +106,7 @@ export async function drawTip({ title, body, no, style }) {
   x.font = F(400, 26); x.fillText([p.tagline, p.licenseLife ? 'ใบอนุญาตเลขที่ ' + p.licenseLife : null].filter(Boolean).join(' · '), M, H - 88); x.globalAlpha = 1;
   return c;
 }
-const tc = { i: 0, style: 'navy', title: '', body: '' };
+const tc = { i: 0, style: 'aom', title: '', body: '' };
 export function renderTipCard(qs = {}) {
   if (qs.t) { tc.title = qs.t; tc.body = qs.b || ''; }
   else if (!tc.title) { [tc.title, tc.body] = TIPS[0]; }

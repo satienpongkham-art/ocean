@@ -1,5 +1,6 @@
 // ─── หน้าแผนแบบเต็มจอ: ภาพกดดูรายละเอียด · คิดเบี้ยสด · เส้นเวลาชีวิต · เคลมจริงจ่ายเท่าไร · เทียบแผนใกล้เคียง · คำถามบ่อย · ภาษาง่าย ───
 import { basketButton } from '../basket.js';
+import { clientMode } from '../app.js';
 import { h, icon, sheet, closeSheet, choices, fmt, toast, T, more } from '../ui.js';
 import * as store from '../store.js';
 import { PLANS, PLAN, CAT, TAX_LABEL, quickFacts, closingInfo } from '../../data/plans.js';
@@ -40,13 +41,20 @@ const parseNum = (s) => { const t = String(s || ''); const m = t.match(/([\d.,]+
 
 // ── ภาพกดดูรายละเอียด ──
 function tiles(p) {
-  const items = [...(p.highlights || []).slice(0, 6)];
-  return h('div.vtiles', items.map((t, i) => h('button.vtile', { onclick: () => sheet({ title: headline(t, 60), sub: p.short, body: h('div.stack',
-    h('div.vt-big', { class: 'cat-' + p.cat }, icon(iconFor(t))), h('p', { style: { fontSize: '16.5px', lineHeight: 1.7 } }, T(t)),
-    p.pros?.[i] ? h('div.callout.good', h('b', 'ทำไมสำคัญ: '), T(p.pros[i])) : null,
-    (p.benefits || []).length ? more('ผลประโยชน์ทั้งหมดของแผนนี้', h('div.kvlist', (p.benefits || []).map(([k, v]) => h('div', h('span', k), h('b', T(v)))))) : null) }),
-    'aria-label': t },
-    h('span.vt-ic', icon(iconFor(t))), h('b', headline(t)), h('span.vt-more', 'แตะดู', icon('next')))));
+  const items = [...(p.highlights || []).slice(0, 6)]; if (!items.length) return h('p.muted', 'ยังไม่มีข้อมูลจุดเด่น');
+  const open = (i) => { const t = items[i]; closeSheet(true);
+    sheet({ title: headline(t, 60), sub: `${p.short} · จุดเด่น ${i + 1}/${items.length}`, body: h('div.stack',
+      h('div.hl-hero.cat-' + p.cat, h('span.hl-n', String(i + 1).padStart(2, '0')), h('span.hl-bigic', icon(iconFor(t)))),
+      h('p', { style: { fontSize: '16.5px', lineHeight: 1.7, margin: 0 } }, T(t)),
+      p.pros?.[i] ? h('div.callout.good', h('b', 'ทำไมสำคัญ: '), T(p.pros[i])) : null,
+      (p.benefits || []).length ? more('ผลประโยชน์ทั้งหมดของแผนนี้', h('div.kvlist', (p.benefits || []).map(([k, v]) => h('div', h('span', k), h('b', T(v)))))) : null,
+      h('div.row', { style: { gap: '8px' } }, h('button.btn', { style: { flex: 1 }, disabled: i === 0, onclick: () => open(i - 1) }, icon('back'), 'ก่อนหน้า'), h('button.btn.primary', { style: { flex: 1 }, disabled: i === items.length - 1, onclick: () => open(i + 1) }, 'ถัดไป', icon('next')))) }); };
+  const dots = h('div.hl-dots', items.map((_, i) => h('i', { class: i ? '' : 'on' })));
+  const rail = h('div.hl-rail', { onscroll: (e) => { const r = e.currentTarget; const k = Math.round(r.scrollLeft / (r.firstElementChild?.offsetWidth + 12 || 1)); [...dots.children].forEach((d, n) => d.classList.toggle('on', n === k)); } },
+    items.map((t, i) => h('button.hl-card.tilt.cat-' + p.cat, { onclick: () => open(i), 'aria-label': `จุดเด่น ${i + 1}: ${t}` },
+      h('span.hl-n', String(i + 1).padStart(2, '0')), h('span.hl-bigic', icon(iconFor(t))), h('span.hl-ic', icon(iconFor(t))),
+      h('b', headline(t, 70)), h('span.hl-more', 'แตะดูรายละเอียด', icon('next')))));
+  return h('div', rail, items.length > 1 ? dots : null);
 }
 
 // ── คิดเบี้ยแบบสด ──
@@ -238,7 +246,7 @@ export function renderPlanPage(id) {
       h('p', `สมัครได้ตอนอายุ ${q.age || 'ตามเงื่อนไข'} · ${q.pay || 'จ่ายเบี้ยตามเงื่อนไข'} · ${q.cover || ''}`),
       p.kind === 'rider' ? h('p', 'ซื้อเดี่ยวไม่ได้ ต้องมีประกันชีวิตตัวหลักก่อน แล้วแนบแผนนี้เข้าไป') : null,
       h('p', 'สิ่งที่ต้องรู้: ' + (p.watch?.[0] || 'อ่านเงื่อนไขในกรมธรรม์'))) : null,
-    h('section#sec-pic.pp-sec', h('h2', 'จุดเด่น (แตะภาพเพื่อดูรายละเอียด)'), tiles(p),
+    h('section#sec-pic.pp-sec', h('h2', 'จุดเด่น (ปัดดู แตะเพื่ออ่านต่อ)'), tiles(p),
       h('div.row', { style: { gap: '8px', marginTop: '12px' } },
         h('button.btn.primary', { style: { flex: 1 }, onclick: () => import('./story.js').then((m) => m.openStory(p)) }, icon('play'), 'ดูแบบสตอรี่'),
         h('a.btn', { style: { flex: 1 }, href: '#/sheet/' + p.id }, icon('doc'), 'สรุปหน้าเดียว')),
@@ -250,6 +258,7 @@ export function renderPlanPage(id) {
     claimModel(p) ? h('section#sec-claim.pp-sec', h('h2', 'เคลมจริง แผนนี้จ่ายเท่าไร'), claimCalc(p)) : null,
     h('section#sec-why.pp-sec', h('h2', 'ทำไมตัวนี้ ไม่ใช่ตัวนั้น'), whyThis(p)),
     h('section#sec-faq.pp-sec', h('h2', 'คำถามที่ลูกค้าถามบ่อย'), h('div.faq', faqs(p).map(([qq, a]) => h('details', h('summary', qq, icon('next')), h('p', T(a)))))),
+    clientMode() ? null : h('div.sticky-act.pp-sticky', basketButton(p.id, 'btn'), h('a.btn.primary', { href: '#/sheet/' + p.id }, icon('doc'), 'สรุปหน้าเดียว')),
     h('div.pp-actions',
       h('a.btn', { href: p.url, target: '_blank', rel: 'noopener' }, icon('ext'), 'AIA'),
       p.brochure ? h('a.btn', { href: p.brochure, target: '_blank', rel: 'noopener' }, icon('doc'), 'โบรชัวร์') : null,

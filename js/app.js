@@ -9,7 +9,7 @@ import { glossify } from './glossary.js';
 setTextHook(glossify);
 import { setEmptyArt } from './ui.js';
 import { illus } from './illus.js';
-setEmptyArt(() => illus('empty', { size: 96 }));
+setEmptyArt((ic) => illus(({ clients: 'family', user: 'person', heart: 'couple', cal: 'calendar', pen: 'story', star: 'person', line: 'money', clock: 'time', book: 'story' })[ic] || 'empty', { size: 96 }));
 import { initBasket } from './basket.js';
 import { initIsland } from './island.js';
 import { initTilt } from './tilt.js';
@@ -78,6 +78,7 @@ const routes = [
   [/^\/studio\/stats$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderStats())],
   [/^\/studio\/playbook$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderPlaybook())],
   [/^\/studio\/sign$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderSign())],
+  [/^\/studio\/covers$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderCovers())],
   [/^\/studio\/([\w-]+)$/, 'studio', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
   [/^\/p\/quiz$/, 'public', (q) => import('./views/public.js').then((m) => m.renderQuiz(q))],
   [/^\/p\/calc$/, 'public', (q) => import('./views/public.js').then((m) => m.renderCalc(null, q))],
@@ -167,7 +168,7 @@ export async function route() {
       renderNav(nav, path);
       document.body.classList.toggle('presenting', /^\/present\//.test(path));
       document.body.classList.toggle('public', nav === 'public');
-      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call|work\/report|studio|brand|menu|tools\/?$|settings)/.test(path));
+      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call|work\/report|studio|brand|menu|plan\/|plans\/(stages|ww)|tools\/?$|settings)/.test(path));
       const samePage = current.split('?')[0] === path;
       current = raw;
       try {
@@ -188,6 +189,7 @@ export async function route() {
         if (!samePage) {
           window.scrollTo(0, 0);
           import('./anim.js').then((m) => m.animateNumbers($('#view'))).catch(() => {});
+          setTimeout(() => import('./coach.js').then((m) => m.coach(path)).catch(() => {}), 1100);
           $('#view').classList.add('entering'); clearTimeout(window.__entT); window.__entT = setTimeout(() => $('#view').classList.remove('entering'), 1200);
           // ย้ายโฟกัสไปที่หัวเรื่องของหน้าใหม่ (โปรแกรมอ่านหน้าจอรู้ว่าเปลี่ยนหน้าแล้ว)
           setTimeout(() => { const v = $('#view'); if (v.contains(document.activeElement) || isSheetOpen()) return; const hd = v.querySelector('h1'); if (hd) { hd.setAttribute('tabindex', '-1'); hd.focus({ preventScroll: true }); } }, 60);
@@ -206,7 +208,7 @@ export async function route() {
 export function rerender() { route(); }
 
 // ภาพประกอบหัวหน้า (ลายเส้นเดียวกับหมวดแผน) — ใส่ให้หน้าหลัก ๆ อัตโนมัติ
-const ART = [ [/^\/clients\/?$/, 'clients'], [/^\/work\/calendar$/, 'calendar'], [/^\/brand$/, 'brand'], [/^\/work\/(sales|goals)$/, 'money'], [/^\/tools\/sync$/, 'time'], [/^\/work\/?$/, 'clients'], [/^\/work\/review$/, 'money'], [/^\/tools\/content$/, 'story']];
+const ART = [[/^\/clients\/?$/, 'family'], [/^\/work\/calendar$/, 'calendar'], [/^\/brand$/, 'person'], [/^\/work\/sales$/, 'money'], [/^\/work\/goals$/, 'person'], [/^\/tools\/sync$/, 'time'], [/^\/work\/?$/, 'couple'], [/^\/work\/review$/, 'person'], [/^\/tools\/content$/, 'story'], [/^\/clients\/lists$/, 'family'], [/^\/check$/, 'person'], [/^\/tools\/tax$/, 'money'], [/^\/plans\/advisor$/, 'couple']];
 function decorate(node, path) {
   try {
     if (/^\/plans\/?$/.test(path) && !clientMode()) { const tb = node?.querySelector?.('.topbar'); if (tb && !node.querySelector('.pl-cta')) tb.after(h('div.pl-cta',
