@@ -230,7 +230,7 @@ export function renderPlanPage(id) {
           h('button.pp-tog', { 'aria-pressed': String(ui.big), onclick: () => { ui.big = !ui.big; rerender(); }, 'aria-label': 'ตัวอักษรใหญ่' }, 'ก+'))),
       h('div.pp-head', h('div', h('div.pp-kind', CAT[p.cat].name + (p.kind === 'rider' ? ' · สัญญาเพิ่มเติม' : ' · สัญญาหลัก')), h('h1', p.short), h('p', p.tagline)), illus(p.cat, { size: 112 })),
       ci && !ci.closed ? h('div.pp-close', icon('clock'), `ปิดรับใบคำขออีก ${ci.days} วัน`) : null,
-      h('div.pp-30', h('div.pp-30h', icon('clock'), 'แผนนี้ใน 30 วินาที'),
+      h('div.pp-30', h('div.pp-30h', icon('clock'), '3 คำตอบใน 5 วินาที'),
         h('ol', h('li', h('b', 'คุ้มครอง: '), T(ui.plain ? PLAIN[p.cat] : headline(p.what || p.tagline, 110))), h('li', h('b', 'เหมาะกับ: '), T(p.bestFor?.[0] || '—')), h('li', h('b', 'เบี้ย: '), priceLine))),
       h('div.pp-facts', [['อายุรับ', q.age], ['จ่ายเบี้ย', q.pay], ['คุ้มครอง', (q.cover || '').replace('คุ้มครอง', '').trim()]].map(([k, v]) => h('div', h('span', k), h('b', v || '—'))))),
     h('nav.pp-nav', { 'aria-label': 'ไปยังส่วนของหน้า' }, nav.map(([sid, l]) => h('button', { onclick: () => go(sid) }, l))),
