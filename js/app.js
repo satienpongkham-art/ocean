@@ -29,7 +29,7 @@ const SIDE_SUB = {
   menu: [['#/menu', 'เมนูทั้งหมด'], ['#/settings', 'ตั้งค่า'], ['#/settings/look', 'สีจอและหน้าตา'], ['#/tools/calc', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/tax', 'คำนวณภาษี'], ['#/tools/profile', 'โปรไฟล์'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.7 · 18 พ.ย. 69';
+export const APP_VERSION = '5.8 · 18 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
@@ -80,7 +80,7 @@ const routes = [
   [/^\/studio\/sign$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderSign())],
   [/^\/studio\/covers$/, 'studio', () => import('./views/studio2.js').then((m) => m.renderCovers())],
   [/^\/studio\/video$/, 'studio', (q) => import('./views/video.js').then((m) => m.renderVideos(q))],
-  [/^\/studio\/video\/([\w-]+)$/, 'studio', (q, id) => import('./views/video.js').then((m) => m.renderVideoEditor(id))],
+  [/^\/studio\/video\/([\w-]+)$/, 'studio', (q, id) => import('./views/video.js').then((m) => m.renderVideoEditor(id, q))],
   [/^\/studio\/([\w-]+)$/, 'studio', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
   [/^\/p\/quiz$/, 'public', (q) => import('./views/public.js').then((m) => m.renderQuiz(q))],
   [/^\/p\/calc$/, 'public', (q) => import('./views/public.js').then((m) => m.renderCalc(null, q))],

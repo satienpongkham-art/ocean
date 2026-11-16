@@ -33,7 +33,7 @@ export async function speechRanges(key, blob, { gap = 0.45, pad = 0.12 } = {}) {
 }
 
 /** เสียงโมโน 16kHz ของคลิป (สำหรับถอดซับ) */
-async function mono16(key, blob) {
+export async function mono16(key, blob) {
   const v = await decode(key, blob); if (v.mono16) return v.mono16;
   const len = Math.ceil(v.buf.duration * 16000);
   const ctx = new OfflineAudioContext(1, len, 16000); const s = ctx.createBufferSource(); s.buffer = v.buf; s.connect(ctx.destination); s.start();
@@ -45,4 +45,12 @@ export async function outputPCM(segs, getBlob) {
   for (const s of segs) { const blob = await getBlob(s.clip); if (!blob) continue; const m = await mono16(s.key, blob); const p = m.subarray(Math.floor(s.a * 16000), Math.floor(s.b * 16000)); parts.push(p); total += p.length; }
   const out = new Float32Array(total); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
   return out;
+}
+
+/** ความดังของเสียงพูด → ตัวคูณให้ดังเท่ากันทุกคลิป (เป้า RMS ≈ 0.1) */
+export async function loudGain(key, blob) {
+  const { buf } = await decode(key, blob); const d = buf.getChannelData(0); const step = Math.max(1, Math.floor(d.length / 200000));
+  const v = []; for (let i = 0; i < d.length; i += step) v.push(Math.abs(d[i]));
+  v.sort((a, b) => a - b); const loud = v.slice(Math.floor(v.length * 0.6)); const rms = Math.sqrt(loud.reduce((a, x) => a + x * x, 0) / Math.max(1, loud.length));
+  return +Math.max(0.6, Math.min(3, 0.1 / Math.max(1e-4, rms))).toFixed(2);
 }
