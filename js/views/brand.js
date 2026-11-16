@@ -43,6 +43,8 @@ export function renderBrand() {
       h('div.q', h('span.ql', 'อยากให้เขาได้อะไร'), h('input.input', { value: b.outcome, onchange: (e) => save({ outcome: e.target.value }) })),
       h('div.q', h('span.ql', 'คุณต่างจากตัวแทนคนอื่นตรงไหน'), multi('edge', EDGES)),
       h('div.q', h('span.ql', 'สไตล์การพูด'), choices('tone', b.tone, TONES, { onChange: (v) => save({ tone: v }) })),
+      h('div.q', h('span.ql', 'คำลงท้ายในแคปชั่น'), choices('particle', b.particle || '', [['', 'ไม่ใส่'], ['ครับ', 'ครับ'], ['ค่ะ', 'ค่ะ']], { onChange: (v) => save({ particle: v }) })),
+      h('div.row.wrap', { style: { gap: '8px', marginTop: '6px' } }, h('a.btn.sm', { href: '#/studio/sign' }, icon('pen'), 'ลายเซ็นท้ายภาพ'), h('a.btn.sm', { href: '#/studio/playbook' }, icon('bulb'), 'หลักที่ใช้ทำคอนเทนต์')),
       h('div.q', h('span.ql', 'ชื่อซีรีส์ประจำ'), h('input.input', { value: b.series, onchange: (e) => save({ series: e.target.value }) }), h('span.qh', 'ใช้เป็นป้ายบนปกภาพหลายหน้าในสตูดิโอ')))),
     h('div.section', h('h2', '2 · ไบโอพร้อมใช้'), h('div.bios', box('ig', 'Instagram', copy.ig, 150), box('fb', 'Facebook (แนะนำตัว)', copy.fb), box('tt', 'TikTok', copy.tiktok, 80), box('line', 'LINE สถานะ', copy.line, 50))),
     h('div.section', h('h2', '3 · ภารกิจ 30 วัน'), h('div.card',
