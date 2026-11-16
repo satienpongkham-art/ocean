@@ -96,6 +96,20 @@ function sayOf(s) {
 const hashNum = (str) => [...String(str)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const fillTone = (t, p) => t.replace(/\{nick\}/g, (p.nick || p.name || '').replace(/^คุณ/, '').split(' ')[0] || 'เรา').replace(/\{me\}/g, '').replace(/\{kp\}/g, brandSet().particle ? ' ' + brandSet().particle : '');
 function swapTone(text, tone) { for (const [a, b] of TONE_SWAP[tone] || []) text = text.split(a).join(b); return text; }
+// ปรับเนื้อหาตรงกลางตามโทน (ไม่ใช้ AI): ความยาว การแบ่งบรรทัด ลำดับเลข และคำ
+const BODY = {
+  genz: { max: 56, cut: true, marks: ['✦', '→', '✔︎', '💡'] },
+  work: { max: 90, cut: true },
+  senior: { num: true, gap: true, swap: [['%', ' เปอร์เซ็นต์'], [' AI', ' เอไอ'], ['vs', 'เทียบกับ'], ['/', ' หรือ ']] },
+  formal: { num: true, swap: [['เรา', 'ผู้อ่าน'], ['นะ', ''], ['เลย', ''], ['จ้า', ''], ['!', '']] },
+  family: { swap: [['ตัวเอง', 'ตัวเองและครอบครัว']] },
+};
+const clip = (t, n) => { if (t.length <= n) return t; const cut = t.slice(0, n); const k = Math.max(cut.lastIndexOf(' '), cut.lastIndexOf(' — ')); return (k > n * 0.5 ? cut.slice(0, k) : cut).trim() + '…'; };
+export function toneBody(lines, tk, bullet) {
+  const B = BODY[tk] || {};
+  return lines.map((x, i) => { let t = String(x); if (B.cut) t = t.split(' — ')[0]; if (B.max) t = clip(t, B.max); for (const [a, b2] of B.swap || []) t = t.split(a).join(b2); t = t.replace(/\s{2,}/g, ' ').trim();
+    const mark = B.num ? `${i + 1}.` : B.marks ? B.marks[i % B.marks.length] : bullet; return `${mark} ${t}` + (B.gap ? '\n' : ''); });
+}
 
 /** แคปชั่นตามโทนภาษา */
 export function toCaption(it, toneKey) {
@@ -105,7 +119,7 @@ export function toCaption(it, toneKey) {
   const pts = sl.filter((s) => !['cover', 'cta'].includes(s.kind)).flatMap((s) => { const a = sayOf(s); return s.kind === 'point' || s.kind === 'quote' || s.kind === 'stat' ? a : a.slice(0, 1).concat(a.slice(1, 4)); }).filter(Boolean).slice(0, 9);
   const mark = T.emoji === 2 ? '🔥 ' : T.emoji === 1 ? '📌 ' : '';
   const tags = (CATS[it.deck.cat]?.tags || TAGS[it.pillar] || '') + (it.deck.series ? ' #' + it.deck.series.replace(/\s/g, '') : '') + (p.brand ? ' #' + p.brand.replace(/\s/g, '') : '');
-  const out = [mark + (cov?.title || ''), open.replace(/\{me\}/g, me), '', ...pts.map((x) => `${T.bullet} ${x}`), '', fillTone(T.ask, p), end ? (T.emoji ? '👉 ' : '') + end.title : '', fillTone(T.close, p), '', tags,
+  const out = [mark + (cov?.title || ''), open.replace(/\{me\}/g, me), '', ...toneBody(pts, tk, T.bullet), '', fillTone(T.ask, p), end ? (T.emoji ? '👉 ' : '') + end.title : '', fillTone(T.close, p), '', tags,
     `—\n${p.name}${p.nick ? ' (' + p.nick + ')' : ''} · ${p.title}${p.licenseLife ? ' · ใบอนุญาตเลขที่ ' + p.licenseLife : ''}${p.line ? ' · LINE ' + p.line : ''}`];
   return swapTone(out.filter((x) => x !== null && x !== undefined).join('\n').replace(/\n{3,}/g, '\n\n'), tk);
 }
@@ -114,7 +128,7 @@ export function toScript(it, toneKey) {
   const sl = it.deck.slides; const cov = sl.find((s) => s.kind === 'cover') || sl[0]; const midS = sl.filter((s) => !['cover', 'cta'].includes(s.kind)); const end = sl.find((s) => s.kind === 'cta');
   const per = Math.max(3, Math.floor(24 / Math.max(1, midS.length)));
   let t = 3; const out = [`[0–3 วิ] ประโยคเปิด (มองกล้อง พูดทันที ไม่ต้องแนะนำตัว)\n"${cov?.title || ''}"\nข้อความบนจอ: ${cov?.title || ''}`];
-  for (const s of midS) { const a = sayOf(s); const say = a.slice(0, 3).join(' · '); const onScreen = s.kind === 'stat' ? s.value : ['bar', 'line', 'donut', 'table', 'timeline'].includes(s.kind) ? 'แสดงภาพ: ' + (KINDS[s.kind] || '') : headline(a[0] || '', 28);
+  for (const s of midS) { const a = toneBody(sayOf(s).slice(0, 3), tk, '').map((x) => x.replace(/^\S+\s/, '').trim()); const say = a.join(' · '); const onScreen = s.kind === 'stat' ? s.value : ['bar', 'line', 'donut', 'table', 'timeline'].includes(s.kind) ? 'แสดงภาพ: ' + (KINDS[s.kind] || '') : headline(a[0] || '', 28);
     out.push(`[${t}–${t + per} วิ] ${say}\nข้อความบนจอ: ${onScreen}`); t += per; }
   out.push(`[${t}–${t + 5} วิ] ปิดท้าย\n"${end?.title || 'ทักมาคุยได้'} ${fillTone(T.close, p)}"\nข้อความบนจอ: ${p.line ? 'LINE ' + p.line : 'ทักมาคุย'}`);
   return swapTone(out.join('\n\n'), tk) + '\n\nเคล็ดลับ: อัดแนวตั้ง แสงเข้าหน้า เสียงชัด · ตัดต่อให้มีอะไรเปลี่ยนทุก 2–3 วินาที · ใส่คำบรรยายทุกคลิป';
@@ -150,11 +164,28 @@ export function renderStudio() {
   return h('div', { 'data-title': 'สตูดิโอ' },
     h('div.topbar', h('div', h('h1', 'สตูดิโอ'), h('div.sub', 'วันละเรื่อง เลือก แก้ โพสต์ แล้วกลับมาบันทึกผล')), h('button.btn.primary', { onclick: newSheet }, icon('plus'), 'สร้าง')),
     today,
-    h('div.sd-nav', h('a', { href: '#/studio/library' }, h('span', icon('book')), h('b', 'คลัง 365 เรื่อง')), h('a', { href: '#/studio/stats' }, h('span', icon('line')), h('b', 'ผลโพสต์'), noStat ? h('i', noStat) : null), h('a', { href: '#/studio/playbook' }, h('span', icon('bulb')), h('b', 'หลักที่ใช้')), h('a', { href: '#/studio/sign' }, h('span', icon('pen')), h('b', 'ลายเซ็น')), h('a', { href: '#/brand' }, h('span', icon('star')), h('b', 'แบรนด์'))),
+    h('div.sd-nav', h('a', { href: '#/studio/library' }, h('span', icon('book')), h('b', 'คลัง 365 เรื่อง')), h('a', { href: '#/studio/stats' }, h('span', icon('line')), h('b', 'ผลโพสต์'), noStat ? h('i', noStat) : null), h('a', { href: '#/studio/playbook' }, h('span', icon('bulb')), h('b', 'หลักที่ใช้')), h('a', { href: '#/studio/sign' }, h('span', icon('pen')), h('b', 'ลายเซ็น')), h('a', { href: '#/studio/covers' }, h('span', icon('target')), h('b', 'ปก IG')), h('a', { href: '#/brand' }, h('span', icon('star')), h('b', 'แบรนด์'))),
     due.length ? h('div.callout', { style: { margin: '12px 0' } }, h('b', `ถึงกำหนดโพสต์ ${due.length} งาน: `), due.slice(0, 3).map((x, i) => [i ? ' · ' : '', h('a', { href: '#/studio/' + x.id }, x.title)])) : null,
-    h('div.section', h('h2', 'งานของฉัน'), items.length ? h('div.studio-board', COLS.map(([id, name, ic]) => { const list = items.filter((x) => (x.status || 'idea') === id);
+    h('div.section', h('div.row.between', h('h2', { style: { margin: 0 } }, 'งานของฉัน'), h('div.seg.sm-seg', [['board', 'บอร์ด'], ['cal', 'ปฏิทิน']].map(([k, l]) => h('button', { class: sv.view === k ? 'on' : '', onclick: () => { sv.view = k; rerender(); } }, l)))),
+      sv.view === 'cal' ? studioCal(items) : items.length ? h('div.studio-board', COLS.map(([id, name, ic]) => { const list = items.filter((x) => (x.status || 'idea') === id);
       return h('div.sb-col', h('div.sb-h', icon(ic), h('b', name), h('span.muted', list.length)), list.map(card), !list.length ? h('div.small.muted.sb-empty', id === 'idea' ? 'กด "สร้าง" หรือเลือกจากคลัง' : '—') : null); }))
       : h('div.card', empty('ยังไม่มีงาน', 'pen', h('button.btn.primary', { onclick: newSheet }, icon('plus'), 'สร้างงานแรก'), 'เริ่มจาก "เรื่องของวันนี้" ด้านบนได้เลย'))));
+}
+
+const sv = { view: 'board', ym: null };
+function studioCal(items) {
+  const t = new Date(); if (!sv.ym) sv.ym = [t.getFullYear(), t.getMonth()]; const [y, m] = sv.ym;
+  const MON = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+  const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const byDay = {}; for (const it of items) { const d = it.status === 'posted' ? (it.postedAt || it.date) : it.date; if (d) (byDay[d] ||= []).push(it); }
+  const lead = (new Date(y, m, 1).getDay() + 6) % 7; const days = new Date(y, m + 1, 0).getDate(); const today = key(t);
+  const go = (d) => { const n = new Date(y, m + d, 1); sv.ym = [n.getFullYear(), n.getMonth()]; rerender(); };
+  const noDate = items.filter((x) => !x.date && x.status !== 'posted');
+  return h('div', { style: { marginTop: '10px' } },
+    h('div.row.between', { style: { marginBottom: '8px' } }, h('button.icon-btn', { onclick: () => go(-1), 'aria-label': 'เดือนก่อน' }, icon('back')), h('b', `${MON[m]} ${y + 543}`), h('button.icon-btn', { onclick: () => go(1), 'aria-label': 'เดือนถัดไป' }, icon('next'))),
+    h('div.sc-cal', ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'].map((d) => h('div.sc-dow', d)), Array.from({ length: lead }, () => h('div.sc-day.pad')),
+      Array.from({ length: days }, (_, i) => { const k = key(new Date(y, m, i + 1)); return h('div.sc-day', { class: k === today ? 'today' : '' }, h('span', i + 1), (byDay[k] || []).map((it) => h('a', { href: '#/studio/' + it.id, class: it.status === 'posted' ? 'posted' : '', style: { '--pc': catColor(it) }, title: it.title }, it.title))); })),
+    noDate.length ? h('p.small.muted', { style: { marginTop: '10px' } }, `ยังไม่ได้ตั้งวันโพสต์ ${noDate.length} งาน · เปิดงานแล้วกดไอคอนปฏิทินเพื่อตั้งวัน`) : null);
 }
 
 export function newSheet() {

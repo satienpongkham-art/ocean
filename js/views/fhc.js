@@ -319,7 +319,7 @@ export function renderFHCDetail(id) {
     money('monthlyRetireSaving', c.monthlyRetireSaving, 'ออมเพื่อเกษียณต่อเดือน'),
     money('eduFund', c.eduFund, 'ทุนการศึกษาลูกที่เตรียมแล้ว'),
     money('taxLifeUsed', c.taxLifeUsed, 'ใช้สิทธิประกันชีวิต/สุขภาพแล้วต่อปี', 'สูงสุด 100,000'),
-    h('div.full', h('button.btn.primary.block', { type: 'submit' }, icon('check'), 'บันทึกผลตรวจ')));
+    h('div.full.sticky-act', h('button.btn.primary.block', { type: 'submit' }, icon('check'), 'บันทึกผลตรวจ')));
   draw(c);
   return h('div', { 'data-title': 'ตรวจละเอียด ' + c.nick },
     h('div.back-row', h('a.icon-btn', { href: '#/client/' + id, 'aria-label': 'กลับ' }, icon('back')), h('div', h('h1', { style: { fontFamily: 'var(--serif)', fontSize: '22px' } }, 'ตรวจแบบละเอียด'), h('div.small.muted', 'คุณ' + c.nick + ' · ใส่ตัวเลขจริง แมนฮาร่าอัปเดตทันที'))),

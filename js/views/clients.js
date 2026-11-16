@@ -4,7 +4,7 @@ import * as store from '../store.js';
 import { STAGES, STAGE, SOURCES, ACTIVITIES, grade, ageUp, noNextStep, busyIds } from '../engine/work.js';
 import { HEALTH_LEVELS, healthCheck, fmtM } from '../engine/needs.js';
 import { resultView, needSteps } from './advisor.js';
-import { apptSheet, apptResultSheet, setStage, gcalLink, logActivity, policySheet, policyRow, nextStepSheet, nextStepPicker, applyNext } from './common.js';
+import { apptSheet, apptResultSheet, setStage, gcalLink, logActivity, policySheet, policyRow, nextStepSheet, nextStepPicker, applyNext, policyName } from './common.js';
 import { mandalaGrid, historyView } from './fhc.js';
 import { removeWithUndo } from '../undo.js';
 import { AVATARS, avatarEl } from '../avatars.js';
@@ -158,6 +158,23 @@ function editRow(c, key) {
   return row;
 }
 
+// ไทม์ไลน์แบบโซเชียล: รวมนัด บันทึก กิจกรรม กรมธรรม์ การตรวจการเงิน เรียงล่าสุดก่อน
+function timeline(id, c) {
+  const K = { appt: ['cal', 'var(--primary)'], note: ['note', 'var(--c-life)'], stage: ['next', 'var(--ink-3)'], call: ['phone', 'var(--good)'], meet: ['clients', 'var(--c-saving)'], present: ['doc', 'var(--warn)'], close: ['star', 'var(--accent)'], pol: ['shield', 'var(--accent)'], check: ['heart', 'var(--c-ci)'], add: ['plus', 'var(--ink-3)'] };
+  const ev = [];
+  for (const l of store.all('logs').filter((x) => x.clientId === id)) ev.push({ d: l.date || (l.createdAt || '').slice(0, 10), t: l.createdAt || l.date, k: K[l.type] ? l.type : 'note', title: l.type === 'stage' ? 'เปลี่ยนขั้นการขาย' : ({ call: 'โทร/ทักหา', meet: 'พบลูกค้า', present: 'เสนอแผน', close: 'ปิดการขาย', note: 'บันทึก' })[l.type] || 'บันทึก', text: l.text });
+  for (const a of store.all('appts').filter((x) => x.clientId === id)) ev.push({ d: a.date, t: a.date + 'T' + (a.time || '00:00'), k: 'appt', title: (a.status === 'planned' ? 'นัดหมาย' : a.status === 'done' ? 'พบตามนัด' : 'ยกเลิกนัด') + (a.time ? ' ' + a.time : ''), text: [a.title || a.purpose, a.place, a.result].filter(Boolean).join(' · ') });
+  for (const x of store.all('policies').filter((y) => y.clientId === id)) ev.push({ d: x.submitDate || x.issueDate || (x.createdAt || '').slice(0, 10), t: x.createdAt, k: 'pol', title: ({ proposed: 'เสนอแผน', submitted: 'ยื่นใบคำขอ', issued: 'อนุมัติกรมธรรม์', lapsed: 'กรมธรรม์ขาดอายุ' })[x.status] || 'กรมธรรม์', text: `${policyName(x)}${x.premium ? ' · เบี้ย ' + Number(x.premium).toLocaleString('th-TH') + ' บาท/ปี' : ''}` });
+  for (const x of store.all('checks').filter((y) => y.clientId === id)) ev.push({ d: (x.createdAt || '').slice(0, 10), t: x.createdAt, k: 'check', title: 'ตรวจสุขภาพการเงิน', text: x.score != null ? 'คะแนน ' + x.score : '' });
+  if (c.createdAt) ev.push({ d: c.createdAt.slice(0, 10), t: c.createdAt, k: 'add', title: 'เพิ่มเป็นลูกค้า', text: c.source ? 'ที่มา: ' + c.source : '' });
+  ev.sort((a, b) => String(b.t || b.d).localeCompare(String(a.t || a.d)));
+  if (!ev.length) return h('p.small.muted', 'ยังไม่มีความเคลื่อนไหว');
+  let last = ''; const out = [];
+  for (const e of ev.slice(0, 80)) { if (e.d !== last) { last = e.d; out.push(h('div.tl-day', e.d ? dateTH(e.d, true) : '—')); } const [ic, col] = K[e.k] || K.note;
+    out.push(h('div.tl-it', h('span.tl-ic', { style: { '--kc': col } }, icon(ic)), h('div.tl-bub', h('b', e.title), e.text ? h('p', e.text) : null))); }
+  return h('div.tl-feed', out);
+}
+
 export function renderDetail(id) {
   const c = store.get('clients', id);
   if (!c) { location.hash = '#/clients'; return null; }
@@ -205,7 +222,7 @@ export function renderDetail(id) {
         h('span.pt', h('b', dateTH(a.date, true) + ' ' + (a.time || '')), h('span', [a.title || a.purpose, a.place, a.result].filter(Boolean).join(' · '))),
         h('span.pr', a.status === 'planned' ? h('button.btn.sm', { onclick: () => apptResultSheet(a) }, 'บันทึกผล') : h('span.tag.' + (a.status === 'done' ? 'good' : 'warn'), a.status === 'done' ? 'พบแล้ว' : 'ยกเลิก'),
           h('a.icon-btn', { href: gcalLink({ title: (a.title || a.purpose || 'นัด') + ' — ' + c.nick, date: a.date, time: a.time, place: a.place }), target: '_blank', rel: 'noopener', 'aria-label': 'Google Calendar' }, icon('cal')))))) : null,
-      h('div.section', h('h2', 'ประวัติ'), logs.length ? h('div.card', h('ul.list', logs.slice(0, 50).map((l) => h('li.small', h('span.muted.xs', dateTH(l.date) + ' · '), l.text)))) : h('p.small.muted', 'ยังไม่มีประวัติ')));
+      h('div.section', h('h2', 'ไทม์ไลน์'), timeline(id, c)));
   };
 
   const pols = () => {
@@ -213,7 +230,7 @@ export function renderDetail(id) {
     return h('div', h('button.btn.primary.block', { onclick: () => policySheet({ clientId: id }) }, icon('plus'), 'เพิ่มกรมธรรม์ / ยอดขาย'),
       list.length ? h('div.plist', { style: { marginTop: '12px' } }, list.map((x) => policyRow(x))) : h('p.small.muted', { style: { marginTop: '12px' } }, 'บันทึกแผนที่เสนอ/ขายได้ แอปจะนับยอดขายและเตือนก่อนครบชำระเบี้ย'));
   };
-  const t = tabs([['ov', 'ภาพรวม'], ['md', 'แมนฮาร่า'], ['rec', 'แผนที่แนะนำ'], ['pol', 'กรมธรรม์'], ['ap', 'นัด & ประวัติ']], detailTab[id] || 'ov',
+  const t = tabs([['ov', 'ภาพรวม'], ['md', 'แมนฮาร่า'], ['rec', 'แผนที่แนะนำ'], ['pol', 'กรมธรรม์'], ['ap', 'ไทม์ไลน์']], detailTab[id] || 'ov',
     (k) => ({ ov: overview, md: mandala, rec: () => resultView(p), pol: pols, ap: appts })[k](), { onChange: (k) => { detailTab[id] = k; } });
 
   const detail = h('div', { 'data-title': c.nick },

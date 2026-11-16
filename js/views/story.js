@@ -30,7 +30,7 @@ let ov = null;
 export function openStory(p) {
   closeStory();
   const ss = slides(p); let i = 0;
-  const color = HEX[p.cat] || '#1f4e46';
+  const color = HEX[p.cat] || '#a6192e';
   const bars = h('div.st-bars', ss.map(() => h('i')));
   const stage = h('div.st-stage', { 'aria-live': 'polite' });
   const draw = () => {
@@ -72,7 +72,7 @@ function wrap(ctx, text, maxW) {
 async function render(p, s, idx, total) {
   await document.fonts.ready;
   const W = 1080, H = 1920, M = 96; const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
-  const col = HEX[p.cat] || '#1f4e46';
+  const col = HEX[p.cat] || '#a6192e';
   const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, col); g.addColorStop(1, '#14211e'); x.fillStyle = g; x.fillRect(0, 0, W, H);
   x.fillStyle = 'rgba(255,255,255,.07)'; x.beginPath(); x.arc(W - 120, 260, 300, 0, Math.PI * 2); x.fill();
   const F = (w, sz, serif) => `${w} ${sz}px ${serif ? '"Kanit"' : '"Sarabun"'}, sans-serif`;

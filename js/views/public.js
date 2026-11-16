@@ -66,7 +66,7 @@ export function renderQuiz(qs = {}, internal = false) {
     const tips = qz.ans.map((k, i) => ({ s: QUIZ[i][1][k][1], t: QUIZ[i][2] })).filter((x) => x.s < 20).sort((x, y) => x.s - y.s).slice(0, 3);
     const num = h('b', '0'); setTimeout(() => countUp(num, score), 50);
     const text = `ผลแบบทดสอบ "พร้อมรับมือเรื่องไม่คาดฝันแค่ไหน": ${score}/100 (${lv})\nอยากให้ช่วยดูว่าควรเริ่มจากเรื่องไหนครับ/ค่ะ`;
-    box.replaceChildren(illus(score >= 60 ? 'finder' : 'empty', { size: 110 }), h('div.pub-score', { style: { '--sc': col } }, num, h('small', '/100')), h('h2', { style: { color: col } }, lv), h('p', msg),
+    box.replaceChildren(illus(score >= 60 ? 'family' : 'person', { size: 110 }), h('div.pub-score', { style: { '--sc': col } }, num, h('small', '/100')), h('h2', { style: { color: col } }, lv), h('p', msg),
       tips.length ? h('div.pub-tips', h('b', 'เรื่องที่ควรเติมก่อน'), h('ol', tips.map((x) => h('li', x.t)))) : null,
       sendBox(a, text), h('button.btn.ghost.sm', { onclick: () => { qz.i = 0; qz.ans = []; draw(); } }, icon('sync'), 'ทำใหม่'));
   };

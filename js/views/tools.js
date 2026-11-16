@@ -72,7 +72,7 @@ export function renderProfile() {
     field('อีเมล', inputEl('email', p.email, { type: 'email' })),
     field('พื้นที่ให้บริการ', inputEl('area', p.area)),
     h('div.full', field('สโลแกน', inputEl('tagline', p.tagline))),
-    h('div.full.row', { style: { gap: '8px' } }, h('button.btn.primary', { type: 'submit', style: { flex: 1 } }, icon('check'), 'บันทึก'),
+    h('div.full.row.sticky-act', { style: { gap: '8px' } }, h('button.btn.primary', { type: 'submit', style: { flex: 1 } }, icon('check'), 'บันทึก'),
       h('button.btn', { type: 'button', onclick: () => { store.saveSettings({ profile: { ...DEFAULT_PROFILE } }); location.reload(); } }, 'คืนค่าเริ่มต้น')));
   const exp = p.licenseExpiry ? Math.round((new Date(p.licenseExpiry) - new Date()) / 864e5) : null;
   return h('div', { 'data-title': 'โปรไฟล์ตัวแทน' },
