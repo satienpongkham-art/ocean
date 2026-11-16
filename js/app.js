@@ -16,30 +16,35 @@ import { initTilt } from './tilt.js';
 
 const NAV = [
   { id: 'today', label: 'วันนี้', icon: 'today', href: '#/' },
-  { id: 'plans', label: 'แผนประกัน', icon: 'plans', href: '#/plans' },
+  { id: 'plans', label: 'แผน', icon: 'plans', href: '#/plans' },
   { id: 'clients', label: 'ลูกค้า', icon: 'clients', href: '#/clients' },
+  { id: 'studio', label: 'สตูดิโอ', icon: 'studio', href: '#/studio' },
   { id: 'work', label: 'งานขาย', icon: 'work', href: '#/work' },
-  { id: 'tools', label: 'เครื่องมือ', icon: 'tools', href: '#/tools' },
 ];
+NAV.splice(1, 2, NAV[2], NAV[1]); // วันนี้ · ลูกค้า · แผน · สตูดิโอ · งานขาย
 const SIDE_SUB = {
   plans: [['#/plans', 'คลังแผน'], ['#/plans/build', 'ต่อชุดแผน'], ['#/plans/body', 'แผนที่ร่างกาย'], ['#/plans/path', 'เส้นทางชีวิต'], ['#/plans/finder', 'ตัวช่วยเลือกแผน'], ['#/plans/tools', 'เครื่องมือแผน'], ['#/plans/packages', 'แพ็กเกจ 3 ระดับ'], ['#/plans/advisor', 'แนะนำลูกค้า'], ['#/plans/compare', 'เทียบแผน'], ['#/plans/cases', 'ตัวอย่างเคส']],
   work: [['#/work', 'ท่อการขาย'], ['#/work/call', 'โหมดโทรรวด'], ['#/work/calendar', 'ปฏิทิน'], ['#/work/goals', 'เป้าหมาย & ตัวเลข'], ['#/work/sales', 'ยอดขาย'], ['#/work/review', 'ทบทวนสัปดาห์'], ['#/work/mandala', 'แมนฮาร่าเป้าหมาย']],
-  tools: [['#/tools/tax', 'คำนวณภาษี'], ['#/tools/objections', 'รับมือข้อโต้แย้ง'], ['#/tools/train', 'ฝึกตัวเอง'], ['#/studio', 'สตูดิโอคอนเทนต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/calc', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/content', 'ปฏิทินคอนเทนต์'], ['#/tools/tipcard', 'ภาพทิปการเงิน'], ['#/tools/captions', 'แคปชั่นโพสต์'], ['#/tools/profile', 'โปรไฟล์ตัวแทน'], ['#/tools/display', 'การแสดงผล & ติดตั้งแอป'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล'], ['#/tools/timemachine', 'ย้อนเวลาข้อมูล']],
+  studio: [['#/studio', 'งานของฉัน'], ['#/studio/library', 'คลัง 365 เรื่อง'], ['#/studio/stats', 'ผลโพสต์'], ['#/brand', 'แบรนด์ของฉัน'], ['#/tools/content', 'ปฏิทินคอนเทนต์']],
+  menu: [['#/menu', 'เมนูทั้งหมด'], ['#/settings', 'ตั้งค่า'], ['#/settings/look', 'สีจอและหน้าตา'], ['#/tools/calc', 'เครื่องคิด & ลิงก์ลูกค้า'], ['#/tools/tax', 'คำนวณภาษี'], ['#/tools/profile', 'โปรไฟล์'], ['#/tools/sync', 'ซิงก์ & สำรองข้อมูล']],
 };
 
-export const APP_VERSION = '5.4 · 16 พ.ย. 69';
+export const APP_VERSION = '5.5 · 17 พ.ย. 69';
 
 export function profile() { return { ...DEFAULT_PROFILE, ...(store.getSettings().profile || {}) }; }
 
 function renderNav(active, path) {
-  const tb = $('#tabbar'); tb.replaceChildren();
+  if (active === 'tools') active = 'menu';
+  const tb = $('#tabbar'); tb.replaceChildren(); const p = profile();
+  const me = (p.nick || p.name || 'A').replace(/^คุณ/, '').trim(); const meCh = 'เแโใไ'.includes(me.charAt(0)) ? me.charAt(1) : me.charAt(0);
   for (const n of NAV) tb.append(h('a', { href: n.href, class: n.id === active ? 'on' : '', 'aria-current': n.id === active ? 'page' : null }, h('span.pill', icon(n.icon)), n.label));
-  const sb = $('#sidebar'); const p = profile();
+  tb.append(h('a.tb-me', { href: '#/menu', class: active === 'menu' ? 'on' : '', 'aria-current': active === 'menu' ? 'page' : null }, h('span.pill', h('span.tb-av', meCh)), 'เมนู'));
+  const sb = $('#sidebar');
   const syncDot = h('span.sync-dot', { class: store.sync.state === 'ok' ? 'ok' : store.sync.state === 'busy' ? 'busy' : store.sync.state === 'err' ? 'err' : '' });
   sb.replaceChildren(
-    h('div.brand', h('div.mark', initials(p.name || 'A')), h('div', h('b', p.name), h('span', p.title + ' · ' + (p.company || '')))),
+    h('div.brand', h('div.mark', meCh), h('div', h('b', p.brand || 'AOM CONNECT'), h('span', p.name))),
     h('a.side-link', { href: '#/search', class: active === 'search' ? 'on' : '' }, icon('search'), 'ค้นหา'),
-    ...NAV.flatMap((n) => [
+    ...[...NAV, { id: 'menu', label: 'เมนู & ตั้งค่า', icon: 'menu', href: '#/menu' }].flatMap((n) => [
       h('a.side-link', { href: n.href, class: n.id === active ? 'on' : '' }, icon(n.icon), n.label),
       ...(n.id === active && SIDE_SUB[n.id] ? SIDE_SUB[n.id].map(([href, lab]) => h('a.side-link', { href, style: { paddingLeft: '38px', fontSize: '13.5px' }, class: '#' + path === href ? 'on' : '' }, lab)) : []),
     ]),
@@ -48,7 +53,7 @@ function renderNav(active, path) {
 }
 
 const routes = [
-  [/^\/?$/, 'today', () => import('./views/today.js').then((m) => m.render())],
+  [/^\/?$/, 'today', (q) => import('./views/today.js').then((m) => m.render(q))],
   [/^\/plans\/?$/, 'plans', (q) => import('./views/plans.js').then((m) => m.renderCatalog(q))],
   [/^\/plans\/packages$/, 'plans', (q) => import('./views/packages.js').then((m) => m.renderPackages(q))],
   [/^\/plans\/advisor$/, 'plans', (q) => import('./views/advisor.js').then((m) => m.renderAdvisor(q))],
@@ -57,10 +62,19 @@ const routes = [
   [/^\/search$/, 'search', (q) => import('./views/search.js').then((m) => m.renderSearch(q))],
   [/^\/present\/([\w-]+)$/, 'clients', (q, id) => import('./views/present.js').then((m) => m.renderPresent(id, q))],
   [/^\/work\/sales$/, 'work', () => import('./views/sales.js').then((m) => m.renderSales())],
-  [/^\/tools\/display$/, 'tools', () => import('./views/tools.js').then((m) => m.renderDisplay())],
+  [/^\/tools\/display$/, 'menu', () => import('./views/menu.js').then((m) => m.renderLook())],
   [/^\/plan\/([\w-]+)$/, 'plans', (q, id) => import('./views/planpage.js').then((m) => m.renderPlanPage(id))],
-  [/^\/studio$/, 'tools', () => import('./views/studio.js').then((m) => m.renderStudio())],
-  [/^\/studio\/([\w-]+)$/, 'tools', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
+  [/^\/(menu|tools)\/?$/, 'menu', () => import('./views/menu.js').then((m) => m.renderMenu())],
+  [/^\/settings$/, 'menu', () => import('./views/menu.js').then((m) => m.renderSettings())],
+  [/^\/settings\/look$/, 'menu', () => import('./views/menu.js').then((m) => m.renderLook())],
+  [/^\/settings\/access$/, 'menu', () => import('./views/menu.js').then((m) => m.renderAccess())],
+  [/^\/settings\/notify$/, 'menu', () => import('./views/menu.js').then((m) => m.renderNotify())],
+  [/^\/settings\/features$/, 'menu', () => import('./views/menu.js').then((m) => m.renderFeatures())],
+  [/^\/settings\/security$/, 'menu', () => import('./views/menu.js').then((m) => m.renderSecurity())],
+  [/^\/settings\/app$/, 'menu', () => import('./views/menu.js').then((m) => m.renderApp())],
+  [/^\/work\/report$/, 'work', (q) => import('./views/report.js').then((m) => m.renderReport(q))],
+  [/^\/studio$/, 'studio', () => import('./views/studio.js').then((m) => m.renderStudio())],
+  [/^\/studio\/([\w-]+)$/, 'studio', (q, id) => import('./views/studio.js').then((m) => m.renderStudioItem(id))],
   [/^\/p\/quiz$/, 'public', (q) => import('./views/public.js').then((m) => m.renderQuiz(q))],
   [/^\/p\/calc$/, 'public', (q) => import('./views/public.js').then((m) => m.renderCalc(null, q))],
   [/^\/p\/calc\/(\w+)$/, 'public', (q, t) => import('./views/public.js').then((m) => m.renderCalc(t, q))],
@@ -68,12 +82,12 @@ const routes = [
   [/^\/tools\/calc\/(\w+)$/, 'tools', (q, t) => import('./views/public.js').then((m) => m.renderCalc(t, {}, true))],
   [/^\/tools\/quiz$/, 'tools', () => import('./views/public.js').then((m) => m.renderQuiz({}, true))],
   [/^\/tools\/timemachine$/, 'tools', () => import('./views/timemachine.js').then((m) => m.renderTimeMachine())],
-  [/^\/brand$/, 'tools', () => import('./views/brand.js').then((m) => m.renderBrand())],
+  [/^\/brand$/, 'studio', () => import('./views/brand.js').then((m) => m.renderBrand())],
   [/^\/plans\/body$/, 'plans', () => import('./views/planviz.js').then((m) => m.renderBody())],
   [/^\/plans\/build$/, 'plans', (q) => import('./views/planviz.js').then((m) => m.renderBuilder(q))],
   [/^\/plans\/path$/, 'plans', (q) => import('./views/planviz.js').then((m) => m.renderPath(q))],
-  [/^\/tools\/content$/, 'tools', () => import('./views/content.js').then((m) => m.renderContent())],
-  [/^\/tools\/tipcard$/, 'tools', (q) => import('./views/content.js').then((m) => m.renderTipCard(q))],
+  [/^\/tools\/content$/, 'studio', () => import('./views/content.js').then((m) => m.renderContent())],
+  [/^\/tools\/tipcard$/, 'studio', (q) => import('./views/content.js').then((m) => m.renderTipCard(q))],
   [/^\/plans\/finder$/, 'plans', () => import('./views/finder.js').then((m) => m.renderFinder())],
   [/^\/proposal\/([\w-]+)$/, 'clients', (q, id) => import('./views/proposal.js').then((m) => m.renderProposal(id))],
   [/^\/clients\/?$/, 'clients', (q) => import('./views/clients.js').then((m) => m.renderList(q))],
@@ -104,7 +118,6 @@ const routes = [
   [/^\/work\/goals$/, 'work', () => import('./views/work.js').then((m) => m.renderGoals())],
   [/^\/work\/review$/, 'work', () => import('./views/work.js').then((m) => m.renderReview())],
   [/^\/work\/mandala$/, 'work', () => import('./views/mandala.js').then((m) => m.renderAgentMandala())],
-  [/^\/tools\/?$/, 'tools', () => import('./views/tools.js').then((m) => m.renderTools())],
   [/^\/tools\/tax$/, 'tools', (q) => import('./views/tax.js').then((m) => m.renderTax(q))],
   [/^\/tools\/objections$/, 'tools', () => import('./views/tools.js').then((m) => m.renderObjections())],
   [/^\/tools\/captions$/, 'tools', (q) => import('./views/captions.js').then((m) => m.renderCaptions(q))],
@@ -147,11 +160,12 @@ export async function route() {
       renderNav(nav, path);
       document.body.classList.toggle('presenting', /^\/present\//.test(path));
       document.body.classList.toggle('public', nav === 'public');
-      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call|studio\/)/.test(path));
+      document.body.classList.toggle('no-fab', /^\/(present\/|check|client\/new|client\/[\w-]+\/(edit|fhc)|work\/call|work\/report|studio\/|menu|tools\/?$|settings)/.test(path));
       const samePage = current.split('?')[0] === path;
       current = raw;
       try {
-        const node = await fn(q, ...m.slice(1));
+        const skT = samePage ? 0 : setTimeout(() => { $('#view').replaceChildren(h('div.skel', { 'aria-hidden': 'true' }, h('i.s-h'), h('i.s-c'), h('i.s-r'), h('i.s-r'), h('i.s-c'))); }, 220);
+        const node = await fn(q, ...m.slice(1)); clearTimeout(skT);
         decorate(node, path);
         if (node) {
           const v = $('#view');
@@ -171,7 +185,7 @@ export async function route() {
           // ย้ายโฟกัสไปที่หัวเรื่องของหน้าใหม่ (โปรแกรมอ่านหน้าจอรู้ว่าเปลี่ยนหน้าแล้ว)
           setTimeout(() => { const v = $('#view'); if (v.contains(document.activeElement) || isSheetOpen()) return; const hd = v.querySelector('h1'); if (hd) { hd.setAttribute('tabindex', '-1'); hd.focus({ preventScroll: true }); } }, 60);
         }
-        document.title = (node?.dataset?.title ? node.dataset.title + ' · ' : '') + 'Advisor Desk';
+        document.title = (node?.dataset?.title ? node.dataset.title + ' · ' : '') + 'AOM CONNECT';
         hideSplash(); updateBadge();
       } catch (e) {
         console.error(e);
@@ -185,7 +199,7 @@ export async function route() {
 export function rerender() { route(); }
 
 // ภาพประกอบหัวหน้า (ลายเส้นเดียวกับหมวดแผน) — ใส่ให้หน้าหลัก ๆ อัตโนมัติ
-const ART = [[/^\/tools\/?$/, 'tools'], [/^\/clients\/?$/, 'clients'], [/^\/work\/calendar$/, 'calendar'], [/^\/brand$/, 'brand'], [/^\/work\/(sales|goals)$/, 'money'], [/^\/tools\/sync$/, 'time'], [/^\/work\/?$/, 'clients'], [/^\/work\/review$/, 'money'], [/^\/tools\/content$/, 'story']];
+const ART = [ [/^\/clients\/?$/, 'clients'], [/^\/work\/calendar$/, 'calendar'], [/^\/brand$/, 'brand'], [/^\/work\/(sales|goals)$/, 'money'], [/^\/tools\/sync$/, 'time'], [/^\/work\/?$/, 'clients'], [/^\/work\/review$/, 'money'], [/^\/tools\/content$/, 'story']];
 function decorate(node, path) {
   const hit = ART.find(([re]) => re.test(path)); const tb = node?.querySelector?.(':scope > .topbar'); if (!hit || !tb || tb.querySelector('.tb-art')) return;
   const art = illus(hit[1], { size: 72 }); art.classList.add('tb-art');
@@ -246,6 +260,8 @@ if (clientMode()) { document.body.classList.add('client-mode'); renderClientBar(
 initBasket();
 initIsland();
 initTilt();
+import('./lock.js').then((m) => m.initLock());
+setTimeout(() => { if (document.body.classList.contains('public')) return; import('./morning.js').then((m) => { let fresh = false; try { fresh = !localStorage.getItem('advdesk.v1.seenVersion0'); localStorage.setItem('advdesk.v1.seenVersion0', '1'); } catch {} if (fresh && !store.all('clients').length) m.onboarding(); else m.morningBrief(); }); }, 1600);
 // การ์ดแผน → หน้าแผน: ขยายต่อเนื่อง (View Transition แบบตั้งชื่อ)
 document.addEventListener('click', (e) => { const a = e.target.closest?.('a[href^="#/plan/"], button.prow[class*="cat-"], button.mini-plan'); if (!a || document.querySelector('#view .pp-hero')) return; document.querySelectorAll('[data-morph]').forEach((x) => { x.style.viewTransitionName = ''; delete x.dataset.morph; }); a.style.viewTransitionName = 'pp-hero'; a.dataset.morph = '1'; }, true);
 setTimeout(() => { try { store.snapshotDaily(); } catch {} }, 4000);

@@ -44,7 +44,8 @@ let chip = null;
 function paint() {
   const n = getBasket().ids.length;
   if (!chip) { chip = h('button.basket-chip', { onclick: openBasket }); document.body.append(chip); }
-  chip.hidden = !n;
+  let off = false; try { off = JSON.parse(localStorage.getItem('advdesk.v1.settings') || '{}').main?.features?.basket === false; } catch {}
+  chip.hidden = !n || off;
   chip.replaceChildren(icon('plans'), h('span', 'ชุดแผน'), h('b', String(n)));
   chip.setAttribute('aria-label', `ชุดแผนที่กำลังคุย ${n} แผน`);
 }

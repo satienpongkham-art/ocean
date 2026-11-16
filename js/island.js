@@ -1,6 +1,7 @@
 // ─── ไดนามิกไอส์แลนด์: แถบสดด้านบน ระหว่างโทรรวด หรือใกล้/กำลังมีนัด ───
 import { h, icon, todayISO } from './ui.js';
 import * as store from './store.js';
+import { featureOn } from './features.js';
 
 let el = null, timer = null;
 const mmss = (s) => { const a = Math.abs(s); return String(Math.floor(a / 60)).padStart(2, '0') + ':' + String(a % 60).padStart(2, '0'); };
@@ -26,7 +27,7 @@ function state() {
 function paint() {
   const b = document.body;
   const off = b.classList.contains('public') || b.classList.contains('presenting') || b.classList.contains('client-mode');
-  const s = off ? null : state();
+  const s = off || !featureOn('island') ? null : state();
   if (!el) { el = h('a.island', { hidden: true }); document.body.append(el); }
   document.body.classList.toggle('has-island', !!s);
   if (!s) { el.hidden = true; schedule(30000); return; }

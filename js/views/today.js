@@ -15,7 +15,7 @@ const MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.'
 
 const bar = (pct) => h('div.hbar', h('i', { style: { width: Math.max(2, Math.min(100, pct * 100)) + '%' } }));
 
-export function render() {
+export function render(q = {}) {
   const clients = store.all('clients');
   const appts = store.all('appts');
   const activities = store.all('activities');
@@ -103,22 +103,28 @@ export function render() {
       h('button.btn.primary.block', { onclick: () => { closeSheet(true); store.saveSettings({ bento: st }); } }, icon('check'), 'บันทึก'),
       h('button.btn.ghost.block', { onclick: () => { closeSheet(true); store.saveSettings({ bento: [] }); } }, 'คืนค่าเริ่มต้น')) });
   };
-  const bento = h('div.bento', order.filter((x) => x.on).map((x) => h('div.bx', { class: T[x.id][0] }, T[x.id][1]())));
+  // ค่าเริ่มต้น: เห็นแค่ 4 ช่องหลัก ที่เหลือพับไว้ (ถ้าจัดหน้าแรกเองแล้ว ใช้ตามที่จัด)
+  const CORE = ['goal', 'tasks', 'appts', 'quick'];
+  const custom = (settings.bento || []).length > 0;
+  const tile = (x) => h('div.bx', { class: T[x.id][0] }, T[x.id][1]());
+  const bento = h('div.bento', order.filter((x) => x.on && (custom || CORE.includes(x.id))).sort((a, b) => (custom ? 0 : CORE.indexOf(a.id) - CORE.indexOf(b.id))).map(tile));
+  const rest = custom ? null : h('details.home-more', h('summary.more-btn', 'ดูตัวเลขและทางลัดอื่น ๆ'), h('div.bento', { style: { marginTop: '10px' } }, order.filter((x) => x.on && !CORE.includes(x.id)).map(tile)));
+  if (q.edit) setTimeout(() => { history.replaceState(null, '', '#/'); editBento(); }, 80);
 
   // เช็กลิสต์ตั้งค่าครั้งแรก
   const steps = [
     ['โปรไฟล์: เลขใบอนุญาต / LINE ID', !!(p.licenseLife && p.line), '#/tools/profile'],
     ['ตั้งเป้ารายได้', !!settings.goal, '#/work/goals'],
     ['ซิงก์กับคอม (Google Sheets)', !!store.sync.config.url, '#/tools/sync'],
-    ['ติดตั้งแอปบนมือถือ', isStandalone() || !!settings.installed, '#/tools/display'],
+    ['ติดตั้งแอปบนมือถือ', isStandalone() || !!settings.installed, '#/settings/app'],
     ['เพิ่มลูกค้าคนแรก', clients.length > 0, '#/client/new'],
     ['ตรวจสุขภาพการเงินครั้งแรก', store.all('checks').length > 0, '#/check'],
   ];
   const doneN = steps.filter((x) => x[1]).length;
   if (isStandalone() && !settings.installed) setTimeout(() => store.saveSettings({ installed: true }), 0);
-  const setup = settings.setupHidden || doneN === steps.length ? null : h('div.card.setup',
-    h('div.row.between', h('div', h('b', `ตั้งค่าแอปให้พร้อม ${doneN}/${steps.length}`), h('div.small.muted', 'ทำครบแล้วการ์ดนี้จะหายไปเอง')), h('button.icon-btn', { 'aria-label': 'ซ่อนเช็กลิสต์', onclick: () => store.saveSettings({ setupHidden: true }) }, icon('close'))),
-    h('div.setup-bar', { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': steps.length, 'aria-valuenow': doneN }, h('i', { style: { width: (doneN / steps.length) * 100 + '%' } })),
+  const setup = settings.setupHidden || doneN === steps.length ? null : h('details.card.setup', h('summary',
+    h('div.row.between', h('div', h('b', `ตั้งค่าแอปให้พร้อม ${doneN}/${steps.length}`), h('div.small.muted', 'แตะเพื่อดูรายการ · ทำครบแล้วการ์ดนี้จะหายไปเอง')), h('button.icon-btn', { 'aria-label': 'ซ่อนเช็กลิสต์', onclick: () => store.saveSettings({ setupHidden: true }) }, icon('close'))),
+    h('div.setup-bar', { role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': steps.length, 'aria-valuenow': doneN }, h('i', { style: { width: (doneN / steps.length) * 100 + '%' } }))),
     h('ul.setup-list', steps.map(([t, ok, href]) => h('li', { class: ok ? 'ok' : '' }, h('a', { href }, h('span.sl-ic', { 'aria-hidden': 'true' }, ok ? icon('check') : ''), h('span', t), h('span.sr-only', ok ? ' (ทำแล้ว)' : ' (ยังไม่ได้ทำ)'), ok ? null : icon('next'))))));
 
   return h('div', { 'data-title': 'วันนี้' },
@@ -126,7 +132,7 @@ export function render() {
     setup,
     ...closingPlans.map((x) => h('a.countdown', { href: '#/plan/' + x.plan.id, style: { textDecoration: 'none', color: 'inherit', marginBottom: '12px' } },
       h('div.big', x.days), h('div', { style: { flex: 1 } }, h('b', `วัน ${x.plan.short} ปิดรับ`), h('div.small.muted', noHealth ? `ลูกค้า ${noHealth} คนยังไม่มีประกันสุขภาพของตัวเอง` : 'แตะเพื่อดูแผน')), icon('next'))),
-    bento,
+    bento, rest,
     h('div.row', { style: { justifyContent: 'center', marginTop: '12px' } }, h('button.btn.ghost.sm', { onclick: editBento }, icon('grid'), 'จัดหน้าแรก')),
     !store.sync.config.url ? h('a.callout.warn', { href: '#/tools/sync', style: { display: 'block', marginTop: '12px', color: 'inherit', textDecoration: 'none' } }, 'ข้อมูลยังอยู่แค่เครื่องนี้ — แตะเพื่อตั้งค่าซิงก์กับคอม') : null);
 }

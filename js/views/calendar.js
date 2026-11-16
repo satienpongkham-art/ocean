@@ -1,4 +1,5 @@
 // ─── ปฏิทินรายเดือน: นัด · วันเกิด · อายุประกันขึ้น · ครบชำระเบี้ย · วันติดตาม ───
+import { featureOn } from '../features.js';
 import { h, icon, todayISO, isoDate, dateTH, empty } from '../ui.js';
 import * as store from '../store.js';
 import { anniversariesIn, milestones } from '../engine/work.js';
@@ -101,6 +102,6 @@ export function renderCalendar() {
 // ใช้แถบเมนูเดียวกับหน้างานขาย
 import { rerender } from '../app.js';
 function workTabs(active) {
-  const t = [['pipe', 'ท่อการขาย', '#/work'], ['call', 'โทรรวด', '#/work/call'], ['cal', 'ปฏิทิน', '#/work/calendar'], ['goals', 'เป้าหมาย', '#/work/goals'], ['sales', 'ยอดขาย', '#/work/sales'], ['review', 'ทบทวนสัปดาห์', '#/work/review'], ['mandala', 'แมนฮาร่า', '#/work/mandala']];
+  const t = [['pipe', 'ท่อการขาย', '#/work'], ['call', 'โทรรวด', '#/work/call'], ['cal', 'ปฏิทิน', '#/work/calendar'], ['goals', 'เป้าหมาย', '#/work/goals'], ['sales', 'ยอดขาย', '#/work/sales'], ['review', 'ทบทวนสัปดาห์', '#/work/review'], ['mandala', 'แมนฮาร่า', '#/work/mandala']].filter(([id]) => !['call', 'review', 'mandala'].includes(id) || featureOn(id));
   return h('div.seg', t.map(([id, l, href]) => h('button', { class: id === active ? 'on' : '', onclick: () => { location.hash = href; } }, l)));
 }

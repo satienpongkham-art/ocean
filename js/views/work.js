@@ -1,6 +1,7 @@
 // ─── งานขาย: ท่อการขาย · ชั่วโมงโทรนัด · เป้าหมาย & ตัวเลข · ทบทวนสัปดาห์ ───
 import { h, icon, dateTH, todayISO, isoDate, initials, empty, field, inputEl, readForm, toast, fmt, seg, nextBirthday, sheet, closeSheet } from '../ui.js';
 import * as store from '../store.js';
+import { featureOn } from '../features.js';
 import { STAGES, STAGE, ACTIVITIES, ACT, grade, ratios, reverseGoal, countBy, weekRange, pointsOn, ageUp, callQueue } from '../engine/work.js';
 import { haptic } from '../pwa.js';
 import { snap, restore } from '../undo.js';
@@ -11,7 +12,7 @@ import { lineChart, legend } from '../charts.js';
 import { profile } from '../app.js';
 
 function tabsWork(active) {
-  const t = [['pipe', 'ท่อการขาย', '#/work'], ['call', 'โทรรวด', '#/work/call'], ['cal', 'ปฏิทิน', '#/work/calendar'], ['goals', 'เป้าหมาย', '#/work/goals'], ['sales', 'ยอดขาย', '#/work/sales'], ['review', 'ทบทวนสัปดาห์', '#/work/review'], ['mandala', 'แมนฮาร่า', '#/work/mandala']];
+  const t = [['pipe', 'ท่อการขาย', '#/work'], ['call', 'โทรรวด', '#/work/call'], ['cal', 'ปฏิทิน', '#/work/calendar'], ['goals', 'เป้าหมาย', '#/work/goals'], ['sales', 'ยอดขาย', '#/work/sales'], ['review', 'ทบทวนสัปดาห์', '#/work/review'], ['mandala', 'แมนฮาร่า', '#/work/mandala']].filter(([id]) => !['call', 'review', 'mandala'].includes(id) || featureOn(id));
   return h('div.seg', t.map(([id, l, href]) => h('button', { class: id === active ? 'on' : '', onclick: () => { location.hash = href; } }, l)));
 }
 
