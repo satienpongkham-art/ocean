@@ -63,6 +63,6 @@ export function renderCaptions(q = {}) {
 
   build();
   return h('div', { 'data-title': 'แคปชั่นโพสต์' },
-    h('div.topbar', h('div', h('a.crumb', { href: '#/tools' }, icon('back'), 'เครื่องมือ'), h('h1', 'แคปชั่นโพสต์'), h('div.sub', 'สูตรที่นักการตลาดใช้จริง: ฮุก 2 บรรทัดแรก → ปัญหา → ทางออก → ชวนติดต่อ'))),
+    h('div.topbar', h('div', h('a.crumb', { href: '#/tools' }, icon('back'), 'เมนู'), h('h1', 'แคปชั่นโพสต์'), h('div.sub', 'สูตรที่นักการตลาดใช้จริง: ฮุก 2 บรรทัดแรก → ปัญหา → ทางออก → ชวนติดต่อ'))),
     h('div.grid.g2', { style: { alignItems: 'start' } }, opts, out));
 }

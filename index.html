@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Advisor Desk</title>
+  <title>AOM CONNECT</title>
   <meta name="description" content="แอปส่วนตัวของที่ปรึกษาการเงิน — คลังแผน แพ็กเกจ ระบบแนะนำ ลูกค้า และงานขาย">
-  <meta name="theme-color" content="#f5f2ec" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#faf8f6" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#151917" media="(prefers-color-scheme: dark)">
   <meta name="robots" content="noindex, nofollow">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Advisor Desk">
+  <meta name="apple-mobile-web-app-title" content="AOM CONNECT">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/favicon-64.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -27,6 +27,7 @@
   <link rel="stylesheet" href="css/ui7.css">
   <link rel="stylesheet" href="css/ui8.css">
   <link rel="stylesheet" href="css/ui9.css">
+  <link rel="stylesheet" href="css/ui10.css">
   <script>
     // ตั้งค่าธีม/ขนาดตัวอักษรก่อนแสดงผล (ไม่ให้จอกระพริบ)
     try { var t = localStorage.getItem('advdesk.v1.theme'); if (t && t !== 'auto') document.documentElement.dataset.theme = t;
@@ -45,13 +46,13 @@
 </head>
 <body>
   <a class="skip-link" href="#view" onclick="event.preventDefault();var v=document.querySelector('#view h1')||document.getElementById('view');v.setAttribute('tabindex','-1');v.focus();">ข้ามไปเนื้อหา</a>
-  <div id="splash" aria-hidden="true"><div class="sp-mark"><img src="assets/icon-192.png" alt="" width="84" height="84"><span id="sp-ini"></span></div><b id="sp-name">Advisor Desk</b><small id="sp-tag">ที่ปรึกษาการเงินส่วนตัว</small><i class="sp-bar"></i></div>
+  <div id="splash" aria-hidden="true"><div class="sp-mark"><img src="assets/icon-192.png" alt="" width="84" height="84"><span id="sp-ini"></span></div><b id="sp-name">AOM CONNECT</b><small id="sp-tag">ที่ปรึกษาการเงินส่วนตัว</small><i class="sp-bar"></i></div>
   <script>
     // หน้าเปิดแอปแบบมีชื่อแบรนด์ (อ่านจากโปรไฟล์ในเครื่อง)
     try { var st = JSON.parse(localStorage.getItem('advdesk.v1.settings') || '{}'); var pf = (st.main && st.main.profile) || {};
       if (location.hash.indexOf('#/p/') === 0) { document.getElementById('splash').remove(); }
-      else if (pf.name) { document.getElementById('sp-name').textContent = pf.nick ? pf.nick : pf.name; document.getElementById('sp-tag').textContent = pf.tagline || ((pf.title || '') + (pf.company ? ' · ' + pf.company : ''));
-        var n0 = pf.name.trim(), ch = n0.charAt(0); if ('เแโใไ'.indexOf(ch) >= 0) ch = n0.charAt(1); document.getElementById('sp-ini').textContent = ch; document.getElementById('splash').classList.add('named'); } } catch (e) {}
+      else if (pf.name) { document.getElementById('sp-name').textContent = pf.brand || 'AOM CONNECT'; document.getElementById('sp-tag').textContent = pf.tagline || ((pf.title || '') + (pf.company ? ' · ' + pf.company : ''));
+      } } catch (e) {}
   </script>
   <div class="app">
     <aside class="sidebar" id="sidebar"></aside>

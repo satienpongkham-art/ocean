@@ -1,5 +1,6 @@
 // โปรไฟล์ตัวแทน (ค่าเริ่มต้น) — แก้ในแอปได้ที่ เครื่องมือ › โปรไฟล์ (ค่าที่แก้ในแอปจะทับค่านี้)
 export const DEFAULT_PROFILE = {
+  brand: 'AOM CONNECT',
   name: 'เสฐียรพงษ์ คำศรี',
   title: 'Financial Advisor',
   company: 'AIA ประเทศไทย',

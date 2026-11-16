@@ -57,8 +57,9 @@ export function renderObjections() {
 export function renderProfile() {
   const p = profile();
   const f = h('form.form-grid', {
-    onsubmit: (e) => { e.preventDefault(); store.saveSettings({ profile: readForm(f) }); toast('บันทึกโปรไฟล์แล้ว'); location.hash = '#/tools'; },
+    onsubmit: (e) => { e.preventDefault(); store.saveSettings({ profile: readForm(f) }); toast('บันทึกโปรไฟล์แล้ว'); location.hash = '#/menu'; },
   },
+    field('ชื่อแบรนด์', inputEl('brand', p.brand || 'AOM CONNECT'), 'แสดงที่หน้าเปิดแอป เมนู และท้ายภาพโพสต์'),
     field('ชื่อ-นามสกุล', inputEl('name', p.name)),
     field('ชื่อเล่น', inputEl('nick', p.nick, { placeholder: 'เช่น คุณออม' }), 'แสดงในสตอรี่ ภาพทิป และแคปชั่น'),
     field('ตำแหน่ง', inputEl('title', p.title)),
@@ -75,7 +76,7 @@ export function renderProfile() {
       h('button.btn', { type: 'button', onclick: () => { store.saveSettings({ profile: { ...DEFAULT_PROFILE } }); location.reload(); } }, 'คืนค่าเริ่มต้น')));
   const exp = p.licenseExpiry ? Math.round((new Date(p.licenseExpiry) - new Date()) / 864e5) : null;
   return h('div', { 'data-title': 'โปรไฟล์ตัวแทน' },
-    h('div.topbar', h('div', h('a.crumb', { href: '#/tools' }, icon('back'), 'เครื่องมือ'), h('h1', 'โปรไฟล์ตัวแทน'))),
+    h('div.topbar', h('div', h('a.crumb', { href: '#/tools' }, icon('back'), 'เมนู'), h('h1', 'โปรไฟล์ตัวแทน'))),
     exp != null && exp <= 90 ? h('div.callout.red', { style: { marginBottom: '12px' } }, h('b', `ใบอนุญาตหมดอายุในอีก ${exp} วัน`), ' — เตรียมต่ออายุและชั่วโมงอบรม') : null,
     h('div.card', f),
     h('div.section', h('h2', 'นามบัตรดิจิทัล'), h('div.card', (() => { const box = h('div'); const draw = () => import('../card.js').then((m) => box.replaceChildren(m.cardManager(draw))); draw(); return box; })())));
@@ -124,7 +125,7 @@ export function renderSync() {
     'ทำข้อ 5 ซ้ำในมือถือ/คอมอีกเครื่อง (ใช้ลิงก์และรหัสเดียวกัน) — ข้อมูลจะตรงกันทุกเครื่อง',
   ];
   return h('div', { 'data-title': 'ซิงก์ & สำรองข้อมูล' },
-    h('div.topbar', h('div', h('a.crumb', { href: '#/tools' }, icon('back'), 'เครื่องมือ'), h('h1', 'ซิงก์ & สำรองข้อมูล'), h('div.sub', 'ข้อมูลลูกค้าอยู่ในเครื่องนี้ + Google Sheets ของคุณเท่านั้น ไม่ขึ้น GitHub'))),
+    h('div.topbar', h('div', h('a.crumb', { href: '#/tools' }, icon('back'), 'เมนู'), h('h1', 'ซิงก์ & สำรองข้อมูล'), h('div.sub', 'ข้อมูลลูกค้าอยู่ในเครื่องนี้ + Google Sheets ของคุณเท่านั้น ไม่ขึ้น GitHub'))),
     h('a.card.tm-entry', { href: '#/tools/timemachine' }, h('span.tm-ic', icon('clock')), h('span', h('b', 'ย้อนเวลาข้อมูล'), h('small', 'กู้รายการที่ลบพลาด · ดูประวัติการแก้ไข · ย้อนทั้งหมดไปเมื่อวาน')), icon('next')),
     h('div.grid.g2', { style: { alignItems: 'start' } },
       h('div.card', h('div.card-h', h('h3', 'ซิงก์มือถือ ↔ คอม (Google Sheets)')), f, status),
@@ -179,8 +180,8 @@ export function renderDisplay() {
       h('input', { type: 'checkbox', checked: getHaptic(), onchange: (e) => setHaptic(e.target.checked), style: { width: '22px', height: '22px' } })))));
 }
 
-const PALETTES = [['ink', 'เขียวหมึก', '#1f4e46', '#f5f2ec'], ['red', 'แดง AIA', '#b3121f', '#f5f2ec'], ['navy', 'กรมท่า-ทอง', '#1e3354', '#b08a3e'], ['plum', 'ม่วงพลัม', '#5b2a59', '#f5f2ec']];
-function palettePicker() {
+const PALETTES = [['ink', 'แดง-ขาว (ค่าเริ่มต้น)', '#a6192e', '#ffffff'], ['green', 'เขียวหมึก', '#1f4e46', '#f5f2ec'], ['navy', 'กรมท่า-ทอง', '#1e3354', '#b08a3e'], ['plum', 'ม่วงพลัม', '#5b2a59', '#f5f2ec']];
+export function palettePicker() {
   const wrap = h('div');
   const draw = () => {
     const cur = getPalette(); const bc = getBrandColor();
@@ -196,7 +197,7 @@ function palettePicker() {
   draw();
   return wrap;
 }
-function fontPicker() {
+export function fontPicker() {
   FONTS.forEach(([id]) => loadFont(id));
   const wrap = h('div.th-fonts');
   const fam = { kanit: ["'Kanit'", "'Sarabun'"], plex: ["'IBM Plex Sans Thai'", "'IBM Plex Sans Thai Looped'"], noto: ["'Noto Serif Thai'", "'Noto Sans Thai'"] };

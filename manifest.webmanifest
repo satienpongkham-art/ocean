@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Advisor Desk — ที่ปรึกษาการเงิน",
-  "short_name": "Advisor Desk",
+  "name": "AOM CONNECT — ที่ปรึกษาการเงิน",
+  "short_name": "AOM CONNECT",
   "description": "คลังแผน แพ็กเกจ ระบบแนะนำ ลูกค้า และงานขาย สำหรับที่ปรึกษาการเงิน",
   "lang": "th",
   "start_url": "./#/",
@@ -11,8 +11,8 @@
     "standalone",
     "minimal-ui"
   ],
-  "background_color": "#f5f2ec",
-  "theme_color": "#f5f2ec",
+  "background_color": "#faf8f6",
+  "theme_color": "#faf8f6",
   "icons": [
     {
       "src": "assets/icon-192.png",

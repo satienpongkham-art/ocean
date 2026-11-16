@@ -2,6 +2,7 @@
 import { haptic } from './pwa.js';
 const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.motion === 'reduce';
 export function celebrate({ count = 90 } = {}) {
+  try { const f = JSON.parse(localStorage.getItem('advdesk.v1.settings') || '{}').main?.features; if (f && f.fx === false) return; } catch {}
   haptic(40);
   if (calm()) return;
   const c = document.createElement('canvas'); c.className = 'confetti'; c.width = innerWidth * devicePixelRatio; c.height = innerHeight * devicePixelRatio; c.setAttribute('aria-hidden', 'true');
