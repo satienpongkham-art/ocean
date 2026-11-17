@@ -1,7 +1,7 @@
 // ─── ตัดต่อคลิป: พูดหน้ากล้อง / เสียงพากย์ + กราฟิก → ซับทีละคำ ซูม ฉาก สติกเกอร์ เพลง เสียงประกอบ ป้ายท้าย → ไฟล์ 9:16 ───
 import { h, icon, sheet, closeSheet, toast, dateTH, empty } from '../ui.js';
 import * as store from '../store.js';
-import { VSTYLES, SCENES, VSCENES, HOOKS, GRADES, MOODS, remapWords, parseScript, speechFromScript, autoTime, readDur, timed, Player, drawFrame, timeline, loadFonts, preloadEmoji, pickMime, window_, segList, remapTimes, sanitize, renderEndcard, drawCover } from '../video/engine.js';
+import { VSTYLES, SCENES, VSCENES, HOOKS, GRADES, MOODS, remapWords, remapEn, parseScript, speechFromScript, autoTime, readDur, timed, Player, drawFrame, timeline, loadFonts, preloadEmoji, pickMime, window_, segList, remapTimes, sanitize, renderEndcard, drawCover } from '../video/engine.js';
 import { EMOJI, EMOJI_BY, emojiSrc, suggestEmoji } from '../../data/emoji.js';
 import { GENRES, renderMusic, autoGenre } from '../video/music.js';
 import { autoAll, TEMPLATES, findPlan } from '../video/smart.js';
@@ -141,7 +141,7 @@ export async function renderVideoEditor(id, q = {}) {
     ensureAssets();
   }
   /** ใช้ช่วงคลิปใหม่ + ย้ายเวลาซับตามเสียงเดิม */
-  function applySegs() { const old = segList(P); P.segs = deriveSegs(P).filter((s) => M.urls[s.clip]); const nw = segList(P); if (old.length && timed(P.chunks)) { P.chunks = remapTimes(P.chunks, old, nw); if (P.words) P.words = remapWords(P.words, old, nw); } save(); M.player.seek(Math.min(M.player.t, M.player.win[2])); ensureMusic(); }
+  function applySegs() { const old = segList(P); P.segs = deriveSegs(P).filter((s) => M.urls[s.clip]); const nw = segList(P); if (old.length && timed(P.chunks)) { P.chunks = remapTimes(P.chunks, old, nw); if (P.words) P.words = remapWords(P.words, old, nw); if (P.enSegs) P.enSegs = remapEn(P.enSegs, old, nw); } save(); M.player.seek(Math.min(M.player.t, M.player.win[2])); ensureMusic(); }
 
   // ── ของประกอบ: สไลด์ ภาพแทรก ป้ายท้าย เพลง ตัวตัดฉากหลัง ──
   let deckCache = null;
@@ -220,15 +220,15 @@ export async function renderVideoEditor(id, q = {}) {
   const modelPicker = (state) => { const box = h('div'); import('../video/asr.js').then(({ ASR_MODELS, defaultModel }) => { state.model ||= defaultModel(); box.replaceChildren(h('div.vd-models', Object.entries(ASR_MODELS).map(([k, m]) => h('button.vd-model', { type: 'button', class: k === state.model ? 'on' : '', onclick: (e) => { state.model = k; [...e.currentTarget.parentNode.children].forEach((c) => c.classList.toggle('on', c === e.currentTarget)); } }, h('b', m.name), h('small', `${m.size} · ${m.sub}`))))); }); return box; };
   async function autoSheet({ startNow = false } = {}) {
     const hasLive = P.clips.length > 0 && P.clips.every((c) => P.live[c.id]?.length);
-    const st = { model: null }; const opt = { cutSilence: true, cutRetake: false, cutFiller: false, useScript: false };
+    const st = { model: null }; const opt = { cutSilence: true, cutRetake: false, cutFiller: false, useScript: false, en: (P.subLang || 'th') !== 'th' };
     const ck = (key, label, sub) => h('label.vd-tg', h('input', { type: 'checkbox', checked: opt[key], onchange: (e) => { opt[key] = e.target.checked; } }), h('span', h('b', label), sub ? h('small', sub) : null));
     const lenSeg = h('div.seg', [[0, 'ไม่จำกัด (เก็บทุกคำ)'], [15, '15 วิ'], [30, '30 วิ'], [60, '60 วิ']].map(([v, l]) => h('button', { class: P.target === v ? 'on' : '', onclick: (e) => { P.target = v; save(); [...lenSeg.children].forEach((b) => b.classList.toggle('on', b === e.currentTarget)); } }, l)));
     const list = h('ol.vd-autosteps', AUTO_STEPS.map(([k, l]) => h('li', { 'data-k': k }, h('i'), h('span', l), h('small'))));
     const bar = h('div.vd-bar', h('i')); const go2 = h('button.btn.primary.vd-export', { onclick: run }, icon('bulb'), 'ตัดต่อให้เลย');
     sheet({ title: 'ตัดต่อให้เลย', sub: 'ซับครบทุกคำ ตรงจังหวะพูด', body: h('div',
       h('p.small', { style: { marginTop: 0 } }, h('b', 'โมเดลถอดเสียงภาษาไทย'), hasLive ? ' (ใช้ซับสดตอนอัดช่วยเรื่องตัวสะกดด้วย)' : ''), modelPicker(st),
-      h('p.small', h('b', 'ให้แอปตัดอะไรออกบ้าง')),
-      ck('cutSilence', 'ช่วงเงียบ', 'เหลือจังหวะหายใจไว้ ไม่ตัดกลางคำ'), ck('cutRetake', 'พูดซ้ำ / เทคเสีย', 'ปิดไว้ = เก็บทุกคำที่พูด'), ck('cutFiller', 'คำเติม เอ่อ อ่า'),
+      h('p.small', h('b', 'ซับ')), ck('en', 'ใส่ซับภาษาอังกฤษด้วย', 'แปลทีละประโยค ตรวจแก้ได้ก่อนโพสต์'),
+      h('p.small', h('b', 'ให้แอปตัดอะไรออกบ้าง')), ck('cutSilence', 'ช่วงเงียบ', 'เหลือจังหวะหายใจไว้ ไม่ตัดกลางคำ'), ck('cutRetake', 'พูดซ้ำ / เทคเสีย', 'ปิดไว้ = เก็บทุกคำที่พูด'), ck('cutFiller', 'คำเติม เอ่อ อ่า'),
       (P.script || '').trim() && !P.autoEdited ? ck('useScript', 'ใช้บทของฉันเป็นซับ', 'ตัวสะกดตามบท 100% แอปจับเวลาจากเสียงให้') : null,
       h('p.small', h('b', 'ความยาวคลิป')), lenSeg, list, bar, go2, h('p.xs.muted', 'ครั้งแรกต้องโหลดโมเดล (ต่อ Wi-Fi) · ทำในเครื่อง ไม่ส่งเสียงไปไหน · อย่าปิดหน้านี้ระหว่างทำ')) });
     if (startNow) setTimeout(run, 400);
@@ -238,6 +238,7 @@ export async function renderVideoEditor(id, q = {}) {
       try {
         const AE = await import('../video/autoedit.js'); const d = await deck();
         const sum = await AE.autoEdit(P, await asrEnv({ onStep: mark, target: P.target, model: st.model, canCut: (navigator.hardwareConcurrency || 4) >= 6, slideKinds: d?.slides?.map((x) => x.kind) || [], profile: profile(), ...opt }));
+        if (opt.en) { list.append(h('li', { 'data-k': 'en' }, h('i'), h('span', 'แปลซับเป็นภาษาอังกฤษ'), h('small'))); const T = await import('../video/translate.js'); try { await T.translateProject(P, { onStatus: (t) => mark('en', t), onProgress: (p) => mark('en', null, p) }); P.subLang = 'both'; } catch (e) { console.error(e); toast('แปลภาษาอังกฤษไม่สำเร็จ ลองใหม่ได้ในขั้นจังหวะ'); } }
         if (cur) cur.className = 'done';
         P.autoDone = true; P.autoMode = false; save(); M.player.ext.slides = {}; await ensureAssets(); await M.player.seek(M.player.win[0]);
         closeSheet(true); step = 'sync'; paintSteps(); paintPanel();
@@ -312,7 +313,7 @@ export async function renderVideoEditor(id, q = {}) {
         stage.textContent = 'กำลังเตรียมเสียง…'; const AE = await import('../video/autoedit.js');
         const n = await AE.subtitleOnly(P, await asrEnv({ model: st.model, useScript, onStep: (k, t, p) => { if (t) stage.textContent = t; if (p != null) { bar.classList.toggle('busy', p < 0); bar.firstChild.style.width = p < 0 ? '100%' : Math.round(p * 100) + '%'; } } }));
         if (!n || !P.chunks.length) throw new Error('ไม่ได้ยินเสียงพูด');
-        P.chunks = sanitize(P.chunks); if (!useScript) P.autoDone = false; save(); closeSheet(true); toast(useScript ? `จับเวลาแล้ว (ตรงกับเสียง ${Math.round((P.alignScore || 0) * 100)}%)` : `เขียนซับแล้ว ${n} คำ ตรวจคำผิดได้เลย`); step = 'sync'; paintSteps(); paintPanel(); M.player.seek(M.player.win[0]);
+        P.chunks = sanitize(P.chunks); if (!useScript) P.autoDone = false; if (P.enSegs?.length) (await import('../video/translate.js')).fillFromCache(P); save(); closeSheet(true); toast(useScript ? `จับเวลาแล้ว (ตรงกับเสียง ${Math.round((P.alignScore || 0) * 100)}%)` : `เขียนซับแล้ว ${n} คำ ตรวจคำผิดได้เลย`); step = 'sync'; paintSteps(); paintPanel(); M.player.seek(M.player.win[0]);
       } catch (e) { console.error(e); stage.textContent = 'ไม่สำเร็จ: ' + (e.message || e); start.disabled = false; bar.classList.remove('on'); }
     }
   }
@@ -344,12 +345,13 @@ export async function renderVideoEditor(id, q = {}) {
         h('div.seg', [[0.8, 'ช้า'], [1, 'ปกติ'], [1.25, 'เร็ว'], [1.5, 'เร็วมาก']].map(([v, l]) => h('button', { class: P.readSpeed === v ? 'on' : '', onclick: () => { P.readSpeed = v; P.chunks = autoTime(P.chunks, readDur(P.chunks, v)); save(); M.player.seek(0); paintPanel(); } }, l)))));
     } else if (!hasAudio) { box.append(h('div.card', empty('ยังไม่ได้เลือกคลิป', 'upload', h('button.btn.primary', { onclick: () => go('media') }, 'ไปเลือก')))); return box; }
     else box.append(tapPanel());
-    if (hasAudio) {
-      const lenSeg = h('div.seg', [[8, 'สั้นมาก'], [12, 'สั้น'], [18, 'กลาง'], [24, 'ยาว']].map(([v, l]) => h('button', { class: P.subMax === v ? 'on' : '', disabled: !P.words?.length, onclick: async () => { const [AE, S, R] = await Promise.all([import('../video/autoedit.js'), import('../video/subs.js'), import('../video/asr.js')]); P.subMax = v; if (AE.rechunk(P, S, R)) { P.autoDone = false; save(); paintPanel(); M.player.draw(); toast('แบ่งซับใหม่แล้ว (การตกแต่งจะจัดให้ใหม่ในขั้นถัดไป)'); } } }, l)));
-      box.append(h('div.card', h('h3.vd-h3', 'รูปแบบซับ'),
+    {
+      const lenSeg = h('div.seg', [[8, 'สั้นมาก'], [12, 'สั้น'], [18, 'กลาง'], [24, 'ยาว']].map(([v, l]) => h('button', { class: P.subMax === v ? 'on' : '', disabled: !P.words?.length, onclick: async () => { const [AE, S, R] = await Promise.all([import('../video/autoedit.js'), import('../video/subs.js'), import('../video/asr.js')]); P.subMax = v; if (AE.rechunk(P, S, R)) { P.autoDone = false; if (P.enSegs?.length) (await import('../video/translate.js')).fillFromCache(P); save(); paintPanel(); M.player.draw(); toast('แบ่งซับใหม่แล้ว (การตกแต่งจะจัดให้ใหม่ในขั้นถัดไป)'); } } }, l)));
+      box.append(h('div.card', h('h3.vd-h3', 'รูปแบบซับ'), langRow(),
+        hasAudio ? [
         h('div.q', h('span.ql', 'ความยาวต่อช่วง'), lenSeg, !P.words?.length ? h('p.xs.muted', 'ใช้ได้หลัง "เขียนซับให้" หรือ "ตัดต่อให้เลย"') : null),
         h('label.vd-tg', h('input', { type: 'checkbox', checked: !!P.karaoke, onchange: (e) => { P.karaoke = e.target.checked; save(); M.player.draw(); } }), h('span', h('b', 'ไฮไลต์คำที่กำลังพูด'), h('small', 'คำเปลี่ยนเป็นสีเหลืองตามเสียงทีละคำ'))),
-        h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, h('button.btn', { onclick: () => asrSheet() }, icon('pen'), 'เขียนซับใหม่จากเสียง'), h('button.btn', { onclick: dictSheet }, icon('book'), 'คำที่แก้บ่อย'))));
+        h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, h('button.btn', { onclick: () => asrSheet() }, icon('pen'), 'เขียนซับใหม่จากเสียง'), h('button.btn', { onclick: dictSheet }, icon('book'), 'คำที่แก้บ่อย'))] : null));
     }
     const rows = h('div.vd-rows'); box.append(h('div.card', h('div.row.between', h('h3.vd-h3', { style: { margin: 0 } }, 'ตรวจซับ · ปรับทีละช่วง'), h('small.muted', `${P.chunks.length} ช่วง · แตะเพื่อดู · ✎ แก้`)), rows));
     function list() {
@@ -362,6 +364,38 @@ export async function renderVideoEditor(id, q = {}) {
     list(); M.paintRows = list;
     box.append(next('look', 'ต่อไป: ตกแต่ง'));
     return box;
+  }
+  // ── ซับภาษาอังกฤษ ──
+  function langRow() {
+    const seg = h('div.seg', [['th', 'ไทย'], ['both', 'ไทย + อังกฤษ'], ['en', 'อังกฤษ']].map(([v, l]) => h('button', { class: (P.subLang || 'th') === v ? 'on' : '', onclick: async () => {
+      P.subLang = v; save(); [...seg.children].forEach((b) => b.classList.toggle('on', b.textContent === l));
+      if (v !== 'th') { const T = await import('../video/translate.js'); if (T.fillFromCache(P)) { save(); enSheet(); } else { save(); paintPanel(); } } else paintPanel();
+      M.player.draw();
+    } }, l)));
+    const n = P.enSegs?.length || 0;
+    return h('div.q', h('span.ql', 'ภาษาซับ'), seg, (P.subLang || 'th') !== 'th' && n ? h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, h('button.btn.sm', { onclick: enReview }, icon('pen'), 'ตรวจ/แก้คำแปล'), h('button.btn.sm.ghost', { onclick: () => enSheet({ force: true }) }, 'แปลใหม่')) : null);
+  }
+  async function enSheet({ force = false, after } = {}) {
+    const T = await import('../video/translate.js'); const chrome = await T.chromeTranslator(); const st = { engine: chrome ? 'chrome' : 'nllb' };
+    const opts = h('div.vd-models', [chrome ? ['chrome', 'ตัวแปลของ Chrome', 'เร็ว · โหลดน้อย · ทำในเครื่อง'] : null, ['nllb', 'ตัวแปลในแอป', 'ประมาณ 900MB ครั้งแรก · แนะนำบนคอม']].filter(Boolean).map(([k, n, sub]) => h('button.vd-model', { type: 'button', class: k === st.engine ? 'on' : '', onclick: (e) => { st.engine = k; [...opts.children].forEach((c) => c.classList.toggle('on', c === e.currentTarget)); } }, h('b', n), h('small', sub))));
+    const stage = h('p.small'), bar = h('div.vd-bar', h('i')); const go = h('button.btn.primary', { onclick: run }, 'แปลเป็นภาษาอังกฤษ');
+    sheet({ title: 'ซับภาษาอังกฤษ', sub: `${force ? T.linesOf(P.chunks, { byLine: !P.words?.length }).length : T.missing(P)} ประโยค`, body: h('div', h('p.small.muted', { style: { marginTop: 0 } }, 'แปลทีละประโยค ศัพท์ประกันใช้คำมาตรฐาน (critical illness, sum insured, waiting period…) · ตรวจและแก้ได้ทุกบรรทัดก่อนโพสต์'), opts, stage, bar, h('div.row', { style: { justifyContent: 'flex-end', marginTop: '10px' } }, go)) });
+    async function run() {
+      go.disabled = true; bar.classList.add('on');
+      try {
+        const n = await T.translateProject(P, { engine: st.engine, force, onStatus: (t) => { stage.textContent = t; }, onProgress: (p) => { bar.classList.toggle('busy', p < 0); bar.firstChild.style.width = Math.round(Math.max(0, p) * 100) + '%'; } });
+        if ((P.subLang || 'th') === 'th') P.subLang = 'both'; save(); closeSheet(true); paintPanel(); M.player.draw(); toast(n ? `แปลแล้ว ${n} ประโยค ตรวจคำแปลได้ที่ "ตรวจ/แก้คำแปล"` : 'ใช้คำแปลเดิมแล้ว'); after?.();
+      } catch (e) { console.error(e); stage.textContent = 'แปลไม่สำเร็จ: ' + (e.message || e); go.disabled = false; bar.classList.remove('on'); }
+    }
+  }
+  async function enReview() {
+    const T = await import('../video/translate.js'); const segs = (P.enSegs || []).slice().sort((a, b) => a.t0 - b.t0);
+    if (!segs.length) { enSheet(); return; }
+    const inputs = segs.map((g) => h('textarea.input.vd-en-in', { rows: 2, placeholder: 'ใส่คำแปลภาษาอังกฤษ (เว้นว่าง = ไม่แสดง)' }, g.en || ''));
+    const list = h('div.vd-enlist', segs.map((g, i) => h('div.vd-en-row', h('button.vd-en-th', { type: 'button', onclick: () => { M.player.pause(); setPlayIcon(false); M.player.seek(g.t0 + 0.2); } }, h('small', fmtS(g.t0)), h('span', g.th)), inputs[i])));
+    const ok = () => { segs.forEach((g, i) => { const v = inputs[i].value.trim(); if (v !== g.en) { g.en = v; if (v) T.remember(g.key, v, { user: true }); } }); P.enSegs = segs.filter((g) => g.en); save(); closeSheet(true); M.player.draw(); toast('บันทึกคำแปลแล้ว'); };
+    const miss = T.missing(P);
+    sheet({ title: 'ตรวจคำแปล', sub: `${segs.length} ประโยค · แตะภาษาไทยเพื่อดูในคลิป`, body: h('div', miss ? h('div.vd-bad', icon('info'), h('span', h('b', `อีก ${miss} ประโยคยังไม่มีคำแปล`), h('small', 'เช่น ซับที่เพิ่มใหม่ ')), h('button.btn.sm', { onclick: () => { closeSheet(true); enSheet(); } }, 'แปลเพิ่ม')) : null, list, h('p.xs.muted', 'คำที่แก้จะถูกจำไว้ ใช้ซ้ำได้ในคลิปต่อไป · ตรวจตัวเลขและชื่อแผนให้ตรงกับกรมธรรม์ทุกครั้ง'), h('div.row', { style: { justifyContent: 'flex-end', marginTop: '10px' } }, h('button.btn.primary', { onclick: ok }, 'บันทึก'))) });
   }
   async function dictSheet() {
     const R = await import('../video/asr.js'); const ta = h('textarea.input', { rows: 7, placeholder: 'เขียนบรรทัดละคู่  ผิด=ถูก\nเช่น\nเอเดีย=ไอเดีย\nวัดเจ็ต=budget' }, R.getDictText());
@@ -484,7 +518,7 @@ export async function renderVideoEditor(id, q = {}) {
     const old = segList(P); const idx = P.cuts.indexOf(cut); cut.on = on;
     if (on) P.chunks = P.chunks.filter((c) => c.fromCut !== cut.id);
     P.segs = deriveSegs(P).filter((s) => M.urls[s.clip]); const nw = segList(P);
-    P.chunks = remapTimes(P.chunks, old, nw); if (P.words) P.words = on ? remapWords(P.words, old, nw) : null;
+    P.chunks = remapTimes(P.chunks, old, nw); if (P.words) P.words = on ? remapWords(P.words, old, nw) : null; if (P.enSegs) P.enSegs = remapEn(P.enSegs, old, nw);
     if (!on && cut.text) { const sg = nw.find((x) => x.clip === cut.clip && cut.a >= x.a - 0.05 && cut.a <= x.b); if (sg) { const s0 = sg.o0 + Math.max(0, cut.a - sg.a), e0 = sg.o0 + Math.min(sg.b, cut.b) - sg.a; const add = parseScript(cut.text).map((c) => ({ ...c, line: 5000 + idx, fromCut: cut.id })); const tot = add.reduce((a, c) => a + c.text.length + 1, 0) || 1; let t = s0; for (const c of add) { const d = (e0 - s0) * (c.text.length + 1) / tot; c.t0 = +t.toFixed(2); c.t1 = +(t + d).toFixed(2); t += d; } P.chunks = [...P.chunks, ...add].sort((a, b) => (a.t0 ?? 0) - (b.t0 ?? 0)); } }
     P.chunks = sanitize(P.chunks); save(); ensureMusic(); M.player.seek(Math.min(M.player.t, M.player.win[2]));
   }

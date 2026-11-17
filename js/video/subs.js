@@ -132,7 +132,7 @@ export function chunkWords(words0, { max = 14, gap = 0.3, lineGap = 0.55, lineMa
   const words = joinCompounds(words0); const groups = [];
   // 1) วลีตามจังหวะหายใจ
   const phrases = []; let cur = [];
-  words.forEach((w, i) => { const prev = words[i - 1]; if (cur.length && w.t0 - prev.t1 >= gap) { phrases.push(cur); cur = []; } cur.push(w); });
+  words.forEach((w, i) => { const prev = words[i - 1]; if (cur.length && (w.br || w.t0 - prev.t1 >= gap)) { phrases.push(cur); cur = []; } cur.push(w); });
   if (cur.length) phrases.push(cur);
   // 2) แบ่งวลียาวด้วย DP
   const L = (w) => vlen(w.w);
@@ -171,10 +171,10 @@ export function chunkWords(words0, { max = 14, gap = 0.3, lineGap = 0.55, lineMa
   let line = 0, lineLen = 0; const out = [];
   groups.forEach((g, i) => {
     const pg = groups[i - 1]; const pause = pg ? g[0].t0 - pg[pg.length - 1].t1 : 0; const txtLen = vlen(g.map((w) => w.w).join(''));
-    if (pg && (pause >= lineGap || ((g[0].sp || pause >= gap) && lineLen >= 14) || lineLen + txtLen > lineMax)) { line++; lineLen = 0; }
+    if (pg && (g[0].br || pause >= lineGap || ((g[0].sp || pause >= gap) && lineLen >= 14) || lineLen + txtLen > lineMax)) { line++; lineLen = 0; }
     lineLen += txtLen;
     const ws = g.map((w, k2) => ({ w: (k2 && (w.sp || mixGap(g[k2 - 1].w, w.w)) ? ' ' : '') + spaceMix(w.w), key: false, t0: r2(w.t0), t1: r2(w.t1) }));
-    out.push({ line, words: ws, text: ws.map((w) => w.w).join(''), t0: g[0].t0, t1: g[g.length - 1].t1 });
+    out.push({ line, words: ws, text: ws.map((w) => w.w).join(''), t0: g[0].t0, t1: g[g.length - 1].t1, ...(g[0].br || (pg && pause >= 0.6) ? { brk: 1 } : {}) });
   });
   return timeChunks(out);
 }
