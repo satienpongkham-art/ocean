@@ -5,6 +5,7 @@ import { emojiSrc } from '../../data/emoji.js';
 import { update as segUpdate, mask as segMask, ready as segReady } from './segment.js';
 import { getSig, drawSignature } from '../carousel.js';
 import { profile } from '../app.js';
+import { enAt } from './translate.js';
 
 export const VSTYLES = {
   mini: { name: 'สัมภาษณ์มินิมอล', sub: 'ซับขาวบรรทัดเดียว คำเด่นสีแดง เรียบหรูแบบคลิปพอดแคสต์', stage: 'grid', sw: ['#1d2430', '#ff4040'] },
@@ -353,26 +354,26 @@ function drawNeon(x, W, H, P, ch, tl, t, mode, ci, measureOnly = false) {
 }
 
 function drawSingle(x, W, H, P, c, t, mode) {
-  const st = P.style; const k = c.words.some((w) => w.key); const light = LIGHT.has(mode);
+  const st = P.style; const k = c.words.some((w) => w.key); const light = LIGHT.has(mode); let ret = null;
   x.save(); x.textBaseline = 'middle'; x.textAlign = 'left';
   if (st === 'mini') {
     let S = W * 0.058; const segs = c.words.map((w) => ({ s: w.w, key: w.key }));
     const meas = () => { x.font = `600 ${S}px ${FONT}`; return segs.reduce((a, g) => a + x.measureText(g.s).width, 0); };
     let w = meas(); if (w > W * 0.86) { S *= W * 0.86 / w; w = meas(); }
-    const Y = H * textY(P, c, mode, mode === 'split' ? 0.5 : LIGHT.has(mode) ? 0.74 : 0.6); x.globalAlpha = Math.min(1, (t - c.t0) / 0.08);
+    const Y = H * textY(P, c, mode, mode === 'split' ? 0.5 : LIGHT.has(mode) ? 0.74 : 0.6); x.globalAlpha = Math.min(1, (t - c.t0) / 0.08); ret = { Y, S };
     let X = (W - w) / 2;
     const tw = c.words.filter((w) => w.t0 != null); const act = P.karaoke && tw.length ? ([...tw].reverse().find((w) => w.t0 <= t + 0.03) || tw[0]) : null;
     c.words.forEach((wd, k) => { const g = segs[k]; const col = act === wd ? '#ffd21f' : g.key ? '#ff4040' : '#ffffff'; x.save(); x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = S * 0.45; x.shadowOffsetY = S * 0.04; x.fillStyle = col; x.fillText(g.s, X, Y); x.restore(); x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = Math.max(1, S * 0.05); x.strokeText(g.s, X, Y); x.fillStyle = col; x.fillText(g.s, X, Y); X += x.measureText(g.s).width; });
   } else if (st === 'grid') {
     let S = W * (k ? 0.112 : 0.1); x.font = `800 ${S}px ${FONT}`; let w = x.measureText(c.text).width; if (w > W * 0.9) { S *= W * 0.9 / w; x.font = `800 ${S}px ${FONT}`; w = x.measureText(c.text).width; }
     const q = (t - c.t0) / 0.18; const sc = q < 1 ? 0.8 + 0.2 * back(q) : 1; const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.6);
-    x.translate(W / 2, Y); x.scale(sc, sc); x.globalAlpha = Math.min(1, q * 2 + 0.2);
+    ret = { Y, S }; x.translate(W / 2, Y); x.scale(sc, sc); x.globalAlpha = Math.min(1, q * 2 + 0.2);
     glowText(x, c.text, -w / 2, 0, { fill: '#ffe23d', glow: 'rgba(255,150,0,.95)', blur: S * 0.5, stroke: '#3a2200', sw: S * 0.16 });
   } else if (st === 'aom') {
     const S0 = W * 0.078; let S = S0; const segs = c.words.map((w) => ({ s: w.w, key: w.key }));
     const meas = () => { x.font = `700 ${S}px ${FONT}`; return segs.reduce((a, g) => a + x.measureText(g.s).width, 0); };
     let w = meas(); if (w > W * 0.8) { S *= W * 0.8 / w; w = meas(); }
-    const q = ease((t - c.t0) / 0.2); const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.74) + (1 - q) * S * 0.6; const padX = S * 0.55, ph = S * 1.55;
+    const q = ease((t - c.t0) / 0.2); const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.74) + (1 - q) * S * 0.6; const padX = S * 0.55, ph = S * 1.55; ret = { Y: Y + ph * 0.18, S };
     x.globalAlpha = q; x.fillStyle = '#a6192e'; x.shadowColor = 'rgba(80,0,10,.35)'; x.shadowBlur = S * 0.4; x.shadowOffsetY = S * 0.1;
     rrect(x, (W - w) / 2 - padX, Y - ph / 2, w + padX * 2, ph, ph * 0.28); x.fill(); x.shadowColor = 'transparent';
     let X = (W - w) / 2; for (const g of segs) { x.fillStyle = g.key ? '#ffd36b' : '#ffffff'; x.fillText(g.s, X, Y + S * 0.04); X += x.measureText(g.s).width; }
@@ -380,11 +381,30 @@ function drawSingle(x, W, H, P, c, t, mode) {
     let S = W * 0.074; const segs = c.words.map((w) => ({ s: w.w, key: w.key }));
     const meas = () => { x.font = `700 ${S}px ${FONT}`; return segs.reduce((a, g) => a + x.measureText(g.s).width, 0); };
     let w = meas(); if (w > W * 0.86) { S *= W * 0.86 / w; w = meas(); }
-    const q = Math.min(1, (t - c.t0) / 0.12); const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.76); x.globalAlpha = q;
+    const q = Math.min(1, (t - c.t0) / 0.12); const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.76); x.globalAlpha = q; ret = { Y, S };
     let X = (W - w) / 2;
     for (const g of segs) { glowText(x, g.s, X, Y, paint(P, light, g.key, S)(x, Y)); X += x.measureText(g.s).width; }
   }
-  x.restore();
+  x.restore(); return ret;
+}
+
+// ── ซับภาษาอังกฤษ (ทีละประโยค แสดงตลอดบรรทัด) ──
+export const enLine = (P, t) => enAt(P, t)?.en || null;
+export function remapEn(segs, oldSl, newSl) { if (!segs?.length) return segs; return remapTimes(segs.map((s) => ({ ...s, words: [] })), oldSl, newSl).map(({ words, ...s }) => s).filter((s) => s.t1 > s.t0 + 0.1); }
+function wrapEn(x, s, maxW, font) {
+  x.font = font; const ws = s.split(/\s+/); const out = []; let cur = ''; for (const w of ws) { const nx = cur ? cur + ' ' + w : w; if (cur && x.measureText(nx).width > maxW) { out.push(cur); cur = w; } else cur = nx; } if (cur) out.push(cur);
+  if (out.length === 2) { let best = null; for (let k = 1; k < ws.length; k++) { const a = ws.slice(0, k).join(' '), b = ws.slice(k).join(' '); const m = Math.max(x.measureText(a).width, x.measureText(b).width); if (m <= maxW && (!best || m < best[0])) best = [m, a, b]; } if (best) return [best[1], best[2]]; }
+  return out;
+}
+function drawEn(x, W, H, P, ci, t, mode, under) {
+  const e = enAt(P, t); if (!e) return false; const s = e.en; const ch = P.chunks;
+  const main = !under; let S = W * (main ? 0.05 : 0.038); let font, rows;
+  for (let k = 0; k < 6; k++) { font = `${main ? 600 : 500} ${S}px ${FONT}`; rows = wrapEn(x, s, W * 0.84, font); if (rows.length <= 2) break; S *= 0.9; }
+  const lh = S * 1.25; const light = LIGHT.has(mode) && !main && P.mode !== 'cam'; let y = under?.top != null ? under.top - S * 0.9 - (rows.length - 1) * lh : main ? H * textY(P, ch[ci], mode, mode === 'split' ? 0.5 : LIGHT.has(mode) ? 0.74 : 0.6) - (rows.length - 1) * lh / 2 : under ? under.Y + under.S * 0.62 + S * 0.75 : H * 0.86;
+  if (!main && under?.top == null && y + (rows.length - 1) * lh > H * 0.95) y = (under ? under.Y - under.S * 0.75 : H * 0.86) - S * 0.6 - (rows.length - 1) * lh;
+  x.save(); x.font = font; x.textAlign = 'center'; x.textBaseline = 'middle'; x.globalAlpha = Math.min(1, (t - e.t0) / 0.12, (e.t1 + 0.05 - t) / 0.08) * (main ? 1 : 0.94);
+  rows.forEach((r, i) => { const Y = y + i * lh; if (light) { x.save(); x.shadowColor = 'rgba(255,255,255,.9)'; x.shadowBlur = S * 0.4; x.fillStyle = '#2b2b30'; x.fillText(r, W / 2, Y); x.restore(); return; } x.save(); x.shadowColor = 'rgba(0,0,0,.85)'; x.shadowBlur = S * 0.5; x.shadowOffsetY = S * 0.05; x.fillStyle = '#ffffff'; x.fillText(r, W / 2, Y); x.restore(); x.strokeStyle = 'rgba(0,0,0,.3)'; x.lineWidth = Math.max(1, S * 0.05); x.strokeText(r, W / 2, Y); x.fillStyle = '#ffffff'; x.fillText(r, W / 2, Y); });
+  x.restore(); return true;
 }
 
 // ── เอฟเฟกต์เปิดคลิป ──
@@ -543,15 +563,18 @@ export function drawFrame(x, P, t, media, tl = timeline(P), ext = {}) {
   const mode = split ? 'split' : scene;
   const titling = hk === 'title' && dt >= 0 && dt < 1.7;
   const skipText = (counting || titling) && ci >= 0 && ch[ci].line === ch[0].line;
-  if (ci >= 0 && !skipText && ch[ci].arc) { if (st) drawSticker(x, W, H, st, t, P, scene, null); drawArc(x, W, H, P, ch, tl, t, ci, scene); }
+  const lang = P.subLang || 'th'; const enOnly = lang === 'en' && !!enLine(P, t); let under = null;
+  if (enOnly && !skipText) { if (st && ci >= 0) drawSticker(x, W, H, st, t, P, scene, null); drawEn(x, W, H, P, ci, t, mode, null); }
+  else if (ci >= 0 && !skipText && ch[ci].arc) { if (st) drawSticker(x, W, H, st, t, P, scene, null); drawArc(x, W, H, P, ch, tl, t, ci, scene); }
   else if (ci >= 0 && !skipText && P.style === 'neon') {
-    const textTop = drawNeon(x, W, H, P, ch, tl, t, scene, ci, true);
+    const textTop = drawNeon(x, W, H, P, ch, tl, t, scene, ci, true); under = { top: textTop };
     if (st) drawSticker(x, W, H, st, t, P, scene, textTop);
     drawNeon(x, W, H, P, ch, tl, t, scene, ci);
   } else {
     if (st) drawSticker(x, W, H, st, t, P, scene, null);
-    if (ci >= 0 && !skipText) drawSingle(x, W, H, P, ch[ci], t, mode);
+    if (ci >= 0 && !skipText) under = drawSingle(x, W, H, P, ch[ci], t, mode);
   }
+  if (lang === 'both' && !skipText) drawEn(x, W, H, P, ci, t, mode, ci >= 0 && !ch[ci].arc ? under : null);
   // การ์ดความรู้ / ป้ายชื่อ (ไม่แสดงตอนแบ่งจอ)
   if (!split) {
     const tc = ch.filter((c) => c.term && c.t0 != null && c.t0 <= t && t < c.t0 + 3.2).pop();

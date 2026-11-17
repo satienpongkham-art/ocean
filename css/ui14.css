@@ -52,3 +52,12 @@ details.vd-adv > div { margin-top: var(--sp-2); }
 .vd-tapok > div { display: flex; flex-direction: column; gap: 2px; }
 .vd-tapok b { color: #1f7a4d; }
 .vd-tapok small { color: var(--ink-3, #8a8484); font-size: 12px; }
+
+/* v6.2 · ซับภาษาอังกฤษ */
+.vd-enlist { display: flex; flex-direction: column; gap: 12px; max-height: 58vh; overflow: auto; padding-right: 2px; }
+.vd-en-row { display: flex; flex-direction: column; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.vd-en-row:last-child { border-bottom: 0; }
+.vd-en-th { display: flex; gap: 8px; align-items: baseline; text-align: left; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.vd-en-th small { color: var(--ink-3, #8a8484); font-size: 11.5px; flex: none; min-width: 30px; }
+.vd-en-th span { font-size: 14px; line-height: 1.45; }
+.vd-en-in { font-size: 14px; line-height: 1.4; resize: vertical; min-height: 0; }

@@ -89,14 +89,15 @@ const phrasesOf = (clip, words, gap = 0.45) => { const out = []; let cur = null;
 function buildSubs(P, src, dropped, env) {
   const { S, R } = env; const sl = segList(P); const ow = [];
   const toOut = (clip, v) => { const s = sl.find((x) => x.clip === clip && v >= x.a - 0.03 && v <= x.b + 0.03); return s ? s.o0 + Math.min(Math.max(v, s.a), s.b) - s.a : null; };
-  for (const sg of sl) for (const w of src[sg.clip] || []) { if (dropped.has(w)) continue; const mid = (w.t0 + w.t1) / 2; if (mid < sg.a - 0.03 || mid > sg.b + 0.03) continue; ow.push({ ...w, t0: sg.o0 + Math.max(w.t0, sg.a) - sg.a, t1: sg.o0 + Math.min(w.t1, sg.b) - sg.a }); }
+  let last = null; // คำก่อนหน้า (ต้นฉบับ) · br = ขึ้นช็อต/ประโยคใหม่: เปลี่ยนคลิป หรือเว้นเงียบจริง ≥ 0.6 วิ หรือมีการตัดคั่น
+  for (const sg of sl) for (const w of src[sg.clip] || []) { if (dropped.has(w)) continue; const mid = (w.t0 + w.t1) / 2; if (mid < sg.a - 0.03 || mid > sg.b + 0.03) continue; const br = last && (last.clip !== sg.clip || w.t0 - last.t1 >= 0.6 || last.seg !== sg) ? 1 : 0; last = { clip: sg.clip, t1: w.t1, seg: sg }; ow.push({ ...w, br, t0: sg.o0 + Math.max(w.t0, sg.a) - sg.a, t1: sg.o0 + Math.min(w.t1, sg.b) - sg.a }); }
   void toOut;
   let chunks;
   if (env.useScript && (P.script || '').trim()) { // ใช้บทของเราเป็นซับ จับเวลาจากเสียง
     const hyp = ow.flatMap((w) => { const cs = [...w.w]; return cs.map((c, i) => ({ c, t0: w.t0 + (w.t1 - w.t0) * i / cs.length, t1: w.t0 + (w.t1 - w.t0) * (i + 1) / cs.length })); });
     const al = S.alignChunks(env.parseScript(P.script), hyp); chunks = al.chunks; P.alignScore = +al.score.toFixed(2);
   } else { chunks = R.markKeys(S.chunkWords(ow, { max: P.subMax || 18 })); P.script = lineText(chunks); }
-  P.words = ow.map((w) => ({ w: w.w, t0: +w.t0.toFixed(2), t1: +w.t1.toFixed(2), sp: w.sp ? 1 : 0 }));
+  P.words = ow.map((w) => ({ w: w.w, t0: +w.t0.toFixed(2), t1: +w.t1.toFixed(2), sp: w.sp ? 1 : 0, ...(w.br ? { br: 1 } : {}) }));
   P.chunks = chunks.map((c) => ({ emoji: null, scene: 'cam', ...c }));
   return ow.length;
 }
@@ -104,7 +105,7 @@ const lineText = (chunks) => { const L = []; for (const c of chunks) (L[c.line] 
 /** แบ่งซับใหม่ตามความยาวที่เลือก (ใช้คำพร้อมเวลาที่เก็บไว้) */
 export function rechunk(P, S, R) {
   if (!P.words?.length) return false;
-  const ws = P.words.map((w) => ({ ...w, sp: !!w.sp })); P.chunks = R.markKeys(S.chunkWords(ws, { max: P.subMax || 18 })).map((c) => ({ emoji: null, scene: P.mode === 'voice' ? 'stage' : 'cam', ...c })); P.script = lineText(P.chunks); return true;
+  const ws = P.words.map((w) => ({ ...w, sp: !!w.sp, br: !!w.br })); P.chunks = R.markKeys(S.chunkWords(ws, { max: P.subMax || 18 })).map((c) => ({ emoji: null, scene: P.mode === 'voice' ? 'stage' : 'cam', ...c })); P.script = lineText(P.chunks); return true;
 }
 
 /**
