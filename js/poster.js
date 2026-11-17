@@ -1,10 +1,10 @@
 // ─── โปสเตอร์แผน: ดึงข้อมูลแผนในระบบ → โปสเตอร์สรุปเข้าใจง่ายในภาพเดียว (วาดในเครื่อง ได้ทันที) ───
 // หลักที่ใช้: ลำดับสายตา (หัวข้อ → ตัวเลขเด่น → จุดเด่น → ติดต่อ), ข้อความน้อย + ไอคอน, สีไม่เกิน 3–4 สี, เว้นที่ว่าง
-import { PLAN, CAT, quickFacts, closingInfo } from '../data/plans.js';
+import { PLAN, PLANS, CAT, quickFacts, closingInfo } from '../data/plans.js';
 import { emojiSrc } from '../data/emoji.js';
 import { profile } from './app.js';
 
-export const POSTER_LAYOUTS = { cards: 'การ์ดตัวเลข', time: 'เส้นเวลา', why: '3 เหตุผล', urgent: 'ใกล้ปิดขาย', qa: 'ถาม-ตอบ', client: 'สรุปให้ลูกค้า' };
+export const POSTER_LAYOUTS = { cards: 'การ์ดตัวเลข', time: 'เส้นเวลา', why: '3 เหตุผล', urgent: 'ใกล้ปิดขาย', qa: 'ถาม-ตอบ', client: 'สรุปให้ลูกค้า', compare: 'เทียบ 2 แผน' };
 export const POSTER_SIZES = { feed: [1080, 1350, '4:5 ฟีด'], square: [1080, 1080, '1:1'], story: [1080, 1920, '9:16 สตอรี่'] };
 const THEME = {
   life: ['#a6192e', '#fde8ea', '#7a1022'], health: ['#0e7c86', '#e2f5f6', '#0a5a61'], ci: ['#6d3fc0', '#efe8fb', '#4e2a91'], hb: ['#d86a12', '#fdf0e3', '#a14f0d'],
@@ -119,6 +119,30 @@ function points(x, list, X, Y, w, T, max = 3, gap = 18, size = 30) {
   return y;
 }
 
+const payText = (tl = {}) => (tl.payOptions ? tl.payOptions.join('/') + ' ปี' : tl.payYears ? tl.payYears + ' ปี' : tl.payToAge ? 'ถึงอายุ ' + tl.payToAge : tl.yearly ? 'ปีต่อปี' : '—');
+const coverText = (tl = {}) => (tl.coverToAge ? 'ถึงอายุ ' + tl.coverToAge : tl.coverYears ? tl.coverYears + ' ปี' : tl.renewToAge ? 'ต่อได้ถึงอายุ ' + tl.renewToAge : '—');
+/** แผนที่เหมาะเอามาเทียบ (หมวดเดียวกันก่อน) */
+export function defaultVs(id) { const p = PLAN[id]; const same = PLANS.filter((x) => !x.closed && x.id !== id && x.cat === p?.cat); return (same.find((x) => x.star) || same[0] || PLANS.find((x) => !x.closed && x.star && x.id !== id))?.id || null; }
+/** แถวเปรียบเทียบ (ข้อมูลจากแผนในระบบเท่านั้น) */
+export function compareRows(a, b) {
+  const st = (d) => (d.stats[0] ? `${d.stats[0][1]} ${d.stats[0][2]}` : '—');
+  return [['ประเภท', CAT[a.cat]?.name || '—', CAT[b.cat]?.name || '—'], ['จ่ายเบี้ย', payText(a.tl), payText(b.tl)], ['คุ้มครอง', coverText(a.tl), coverText(b.tl)], ['อายุที่ทำได้', a.q.age || '—', b.q.age || '—'], ['จุดเด่น', st(a), st(b)], ['เหมาะกับ', a.who[0] || '—', b.who[0] || '—']].filter((r) => r[1] !== '—' || r[2] !== '—');
+}
+function drawCompare(x, W, H, a, b, y, footTop) {
+  const TA = THEME[a.cat] || THEME.brand, TB = THEME[b.cat] || THEME.brand; const sq = H < 1200;
+  text(x, 'เทียบให้เห็นชัด', 60, y + 56, { font: F(800, sq ? 56 : 64), color: '#2b2525' }); y += sq ? 90 : 110;
+  const colW = (W - 120 - 30) / 2, hh = sq ? 120 : 150;
+  [[a, TA, 60], [b, TB, 60 + colW + 30]].forEach(([d, T, X]) => { x.fillStyle = T[0]; rr(x, X, y, colW, hh, 28); x.fill(); const ns = fit(x, d.name, 800, sq ? 46 : 54, colW - 100); text(x, d.name, X + colW / 2, y + hh / 2 + ns * 0.35, { font: F(800, ns), color: '#fff', align: 'center' }); });
+  x.fillStyle = '#ffd21f'; x.beginPath(); x.arc(W / 2, y + hh / 2, 44, 0, 7); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = 6; x.stroke(); text(x, 'VS', W / 2, y + hh / 2 + 15, { font: F(800, 38), color: '#3a2200', align: 'center' });
+  y += hh + 24; const rows = compareRows(a, b).slice(0, sq ? 4 : 6); const rh = Math.min(150, (footTop - y - 20) / rows.length);
+  rows.forEach(([lab, va, vb], i) => {
+    const Y = y + i * rh; if (i % 2 === 0) { x.fillStyle = '#faf6f5'; rr(x, 40, Y, W - 80, rh - 8, 20); x.fill(); }
+    text(x, lab, W / 2, Y + 34, { font: B(700, 24), color: '#8a8484', align: 'center' });
+    [[va, TA, 60], [vb, TB, 60 + colW + 30]].forEach(([v, T, X]) => { const big = v.length <= 14; x.font = big ? F(700, 36) : B(600, 27); const ls = wrap(x, v, colW - 30, big ? 1 : 2); ls.forEach((l, k) => text(x, l, X + colW / 2, Y + (big ? rh * 0.62 : rh * 0.52 + k * 32), { font: big ? F(700, fit(x, l, 700, 36, colW - 30)) : B(600, 27), color: big ? T[2] : '#3b3434', align: 'center' })); });
+  });
+  return y + rows.length * rh;
+}
+
 /** วาดโปสเตอร์ · opt: { layout, size, theme ('cat'|'brand'), example, closeDate, head, client } */
 export function drawPoster(canvas, d, opt = {}) {
   if (opt.size === 'story') { // สตอรี่: วางโปสเตอร์ 4:5 กลางจอ เว้นที่บน-ล่างให้ปุ่มของแอป
@@ -143,7 +167,7 @@ export function drawPoster(canvas, d, opt = {}) {
     x.fillStyle = T[0]; x.fillRect(0, y - 20, W, 92); text(x, L === 'urgent' ? 'ใกล้ปิดการขาย' : 'ก่อนปิดการขาย', 60, y + 42, { font: F(800, 50), color: '#fff' });
     if (dstr) { x.font = F(800, 46); const w = x.measureText('ถึง ' + dstr).width + 40; x.fillStyle = '#ffe14a'; rr(x, W - 60 - w, y - 4, w, 64, 14); x.fill(); text(x, 'ถึง ' + dstr, W - 60 - w / 2, y + 44, { font: F(800, 46), color: '#3a2200', align: 'center' }); }
     y += 120;
-  } else { catPill(x, catName, 60, y, T); y += 90; }
+  } else { catPill(x, L === 'compare' ? 'เทียบแผน' : catName, 60, y, L === 'compare' ? THEME.brand : T); y += 90; }
   const heroCode = HERO[d.cat] || '1f6e1-fe0f';
   if (L === 'cards' || L === 'urgent') {
     text(x, dd.name, 60, y + 46, { font: F(700, 46), color: '#5b5353' }); y += 70;
@@ -184,6 +208,9 @@ export function drawPoster(canvas, d, opt = {}) {
       ls.forEach((l, i) => text(x, l, W - 60 - (W - 240) + 32, y + 52 + i * 44, { font: B(600, 32), color: '#fff' })); y += bh + 34;
     }
     icon3d(x, '1f4ac', W - 130, 120 + (tall ? 80 : 0), 130);
+  } else if (L === 'compare') {
+    const vs = opt.vs && PLAN[opt.vs] ? posterData(opt.vs) : defaultVs(d.id) ? posterData(defaultVs(d.id)) : null;
+    if (vs) y = drawCompare(x, W, H, dd, vs, y - 10, footTop); else text(x, 'ยังไม่มีแผนให้เทียบ', 60, y + 80, { font: F(700, 44), color: '#5b5353' });
   } else if (L === 'client') {
     const who = opt.client ? 'สรุปแผนสำหรับคุณ' + opt.client.replace(/^คุณ/, '') : 'สรุปแผนสำหรับคุณ';
     text(x, who, 60, y + 50, { font: F(700, 46), color: '#5b5353' }); y += 80;
@@ -205,7 +232,37 @@ export function drawPoster(canvas, d, opt = {}) {
 /** แคปชั่นคู่โปสเตอร์ */
 export function posterCaption(d, opt = {}) {
   const pr = profile();
+  if (opt.layout === 'compare') { const vid = opt.vs && PLAN[opt.vs] ? opt.vs : defaultVs(d.id); const v = vid ? posterData(vid) : null; if (v) return `🔍 เทียบให้ดู ${d.name} vs ${v.name}\n\n${compareRows(d, v).map(([l, a, b]) => `• ${l}: ${a} | ${b}`).join('\n')}\n\nแต่ละแผนเหมาะกับคนละแบบ อยากรู้ว่าแบบไหนเหมาะกับคุณ ทักมาคุยได้เลย${pr.line ? ' 👉 LINE ' + pr.line : ''}\n\n*ข้อมูลโดยสรุป เงื่อนไขความคุ้มครองเป็นไปตามกรมธรรม์\n#ประกัน #วางแผนการเงิน`; }
   const head = opt.closeDate ? `⏰ ${d.name} ปิดรับถึง ${new Date(opt.closeDate + 'T12:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'long' })}` : `✨ ${d.name} — ${d.head}`;
   const tags = { life: '#ประกันชีวิต', health: '#ประกันสุขภาพ', ci: '#ประกันโรคร้ายแรง', hb: '#ค่าชดเชยรายวัน', accident: '#ประกันอุบัติเหตุ', saving: '#ประกันออมทรัพย์', annuity: '#ประกันบำนาญ', senior: '#ประกันผู้สูงอายุ' }[d.cat] || '#ประกัน';
   return `${head}\n\n${d.points.slice(0, 3).map((p) => '✔️ ' + p).join('\n')}\n\nสนใจให้ช่วยดูแผนที่เหมาะกับคุณ ทักมาคุยได้เลย${pr.line ? ' 👉 LINE ' + pr.line : ''}\n\n${pr.name || ''}${pr.licenseLife ? ' · ใบอนุญาตเลขที่ ' + pr.licenseLife : ''}\n*เงื่อนไขความคุ้มครองเป็นไปตามกรมธรรม์\n\n${tags} #วางแผนการเงิน`;
+}
+
+/** ใบเสนอแผนเป็นภาพ (ส่ง LINE) · q = { client, tier, pkg, items: [{name, cat, sa, prem}], total, known, n, reasons } */
+export function drawProposal(canvas, q) {
+  const W = 1080; const rows = q.items.length; const H = Math.max(1080, 700 + rows * 132 + (q.reasons?.length ? 190 : 0)); canvas.width = W; canvas.height = H; const x = canvas.getContext('2d'); const T = THEME.brand;
+  background(x, W, H, T); let y = 70;
+  catPill(x, 'ข้อเสนอแผนประกัน', 60, y, T); y += 130;
+  text(x, 'สำหรับคุณ' + (q.client || '').replace(/^คุณ/, ''), 60, y, { font: F(800, 72), color: '#2b2525' }); y += 64;
+  text(x, [q.tier, q.pkg].filter(Boolean).join(' · '), 60, y, { font: B(600, 32), color: '#6b6262' }); y += 50;
+  // รายการแผน
+  q.items.forEach((it, i) => {
+    const Y = y + i * 132; const TT = THEME[it.cat] || T; x.save(); x.shadowColor = 'rgba(30,20,20,.08)'; x.shadowBlur = 18; x.shadowOffsetY = 6; x.fillStyle = '#fff'; rr(x, 60, Y, W - 120, 112, 24); x.fill(); x.restore();
+    x.fillStyle = TT[0]; rr(x, 60, Y, 14, 112, 7); x.fill();
+    const ns = fit(x, it.name, 700, 38, W - 520); text(x, it.name, 100, Y + 50, { font: F(700, ns), color: '#2b2525' });
+    text(x, it.sa || '', 100, Y + 88, { font: B(500, 26), color: '#7a7171' });
+    text(x, it.prem ? it.prem.toLocaleString('th-TH') : '—', W - 90, Y + 56, { font: F(800, 44), color: it.prem ? TT[2] : '#b0a8a8', align: 'right' });
+    text(x, it.prem ? 'บาท/ปี' : 'รอใบเสนอจากระบบ', W - 90, Y + 92, { font: B(500, 22), color: '#8a8484', align: 'right' });
+  });
+  y += rows * 132 + 20;
+  // รวม
+  x.fillStyle = T[0]; rr(x, 60, y, W - 120, 170, 32); x.fill();
+  text(x, q.known ? (q.known < q.n ? `เบี้ยรวมโดยประมาณ (${q.known}/${q.n} แผน)` : 'เบี้ยรวมโดยประมาณ') : 'เบี้ยรวม', 100, y + 60, { font: B(600, 30), color: 'rgba(255,255,255,.85)' });
+  text(x, q.known ? q.total.toLocaleString('th-TH') + ' บาท/ปี' : 'ตามใบเสนอจากระบบ AIA', 100, y + 128, { font: F(800, q.known ? 62 : 46), color: '#fff' });
+  if (q.known) text(x, `≈ ${Math.round(q.total / 12).toLocaleString('th-TH')} บาท/เดือน`, W - 100, y + 128, { font: F(700, 36), color: '#ffd21f', align: 'right' });
+  y += 210;
+  if (q.reasons?.length) { text(x, 'ทำไมแนะนำชุดนี้', 60, y + 20, { font: F(700, 36), color: '#2b2525' }); y = points(x, q.reasons, 60, y + 70, W - 120, T, 3, 14, 28); }
+  text(x, 'เบี้ยประมาณการจากตารางเบี้ยที่บันทึกไว้ เบี้ยจริงตามใบเสนอจากระบบ AIA', W / 2, H - 128 - 52, { font: B(400, 21), color: '#8a8484', align: 'center' });
+  footer(x, W, H, T, null, {});
+  return canvas;
 }

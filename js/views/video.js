@@ -1,13 +1,14 @@
 // ─── ตัดต่อคลิป: พูดหน้ากล้อง / เสียงพากย์ + กราฟิก → ซับทีละคำ ซูม ฉาก สติกเกอร์ เพลง เสียงประกอบ ป้ายท้าย → ไฟล์ 9:16 ───
 import { h, icon, sheet, closeSheet, toast, dateTH, empty } from '../ui.js';
 import * as store from '../store.js';
-import { VSTYLES, SCENES, VSCENES, HOOKS, GRADES, MOODS, remapWords, remapEn, parseScript, speechFromScript, autoTime, readDur, timed, Player, drawFrame, timeline, loadFonts, preloadEmoji, pickMime, window_, segList, remapTimes, sanitize, renderEndcard, drawCover } from '../video/engine.js';
+import { visLen, VSTYLES, SCENES, VSCENES, HOOKS, GRADES, MOODS, remapWords, remapEn, parseScript, speechFromScript, autoTime, readDur, timed, Player, drawFrame, timeline, loadFonts, preloadEmoji, pickMime, window_, segList, remapTimes, sanitize, renderEndcard, drawCover } from '../video/engine.js';
 import { EMOJI, EMOJI_BY, emojiSrc, suggestEmoji } from '../../data/emoji.js';
 import { GENRES, renderMusic, autoGenre } from '../video/music.js';
 import { autoAll, TEMPLATES, findPlan } from '../video/smart.js';
 import { SFX_NAMES } from '../video/sfx.js';
 import { PLANS, PLAN } from '../../data/plans.js';
 import { deriveSegs, silenceCuts, makeCaption, STEPS as AUTO_STEPS, WHY } from '../video/autoedit.js';
+import { artCanvas, guessArt, ARTS_PEOPLE } from '../video/broll.js';
 import { profile } from '../app.js';
 import { copyText } from '../ui.js';
 
@@ -474,7 +475,7 @@ export async function renderVideoEditor(id, q = {}) {
     const styles = h('div.vd-styles', Object.entries(VSTYLES).map(([k, s]) => h('button.vd-style', { type: 'button', class: P.style === k ? 'on' : '', style: { '--a': s.sw[1], '--b': s.sw[0] }, onclick: (e) => { P.style = k; save(); [...styles.children].forEach((c) => c.classList.toggle('on', c === e.currentTarget)); ensureEndcard(); ensureMusic(); M.player.draw(); } },
       h('span.vd-sw', h('i', k === 'mini' ? 'ก' : k === 'neon' ? 'Aa' : k === 'grid' ? 'ก' : k === 'aom' ? 'AOM' : 'aa')), h('b', s.name), h('small', s.sub))));
     const gradeSeg = h('div.seg', Object.entries(GRADES).map(([k, l]) => h('button', { class: (P.grade || 'none') === k ? 'on' : '', onclick: (e) => { P.grade = k; save(); [...gradeSeg.children].forEach((b) => b.classList.toggle('on', b === e.currentTarget)); M.player.draw(); } }, l)));
-    const tg = (label, key, sub, after) => h('label.vd-tg', h('input', { type: 'checkbox', checked: !!P[key], onchange: (e) => { P[key] = e.target.checked; save(); after?.(); M.player.draw(); } }), h('span', h('b', label), sub ? h('small', sub) : null));
+    const tg = (label, key, sub, after, defOn) => h('label.vd-tg', h('input', { type: 'checkbox', checked: defOn ? P[key] !== false : !!P[key], onchange: (e) => { P[key] = e.target.checked; save(); after?.(); M.player.draw(); } }), h('span', h('b', label), sub ? h('small', sub) : null));
     box.append(h('div.card', h('h3.vd-h3', 'สไตล์'), styles, h('h3.vd-h3', { style: { marginTop: '14px' } }, 'โทนสีภาพ'), gradeSeg,
       P.style === 'mini' ? h('label.vd-tg', h('input', { type: 'checkbox', checked: P.credit !== false, onchange: (e) => { P.credit = e.target.checked; save(); M.player.draw(); } }), h('span', h('b', 'เครดิตใต้ภาพ'), h('small', 'AOM CONNECT · Financial Advisor'))) : null));
     // ทีละช่วง
@@ -497,6 +498,9 @@ export async function renderVideoEditor(id, q = {}) {
     const vol = h('input', { type: 'range', min: 0, max: 1, step: 0.05, value: P.sfxVol ?? 0.8, 'aria-label': 'ความดังเสียงประกอบ', onchange: (e) => { P.sfxVol = +e.target.value; save(); } });
     adv.append(h('div.card', h('h3.vd-h3', 'การตัดและเสียง'),
       tg('ปรับเสียงและภาพอัตโนมัติ', 'enhance', 'เสียงสม่ำเสมอ · แสงสี · ครอปตามหน้า'),
+      h('div.q', h('span.ql', 'ลดเสียงรบกวน (พัดลม แอร์ เสียงซ่า)'), h('div.seg', [['off', 'ปิด'], ['on', 'ปกติ'], ['strong', 'แรง']].map(([v, l]) => h('button', { class: (P.denoise || 'on') === v ? 'on' : '', onclick: (e) => { P.denoise = v; save(); M.player._enh = null; M.player.applyEnhance(); [...e.currentTarget.parentNode.children].forEach((b) => b.classList.toggle('on', b === e.currentTarget)); } }, l))), P.levels && Object.values(P.levels).some(Boolean) ? h('p.xs.muted', `เสียงพื้นหลังที่วัดได้ ${Math.max(...Object.values(P.levels).filter(Boolean).map((l) => l.noise))} dB ${Math.max(...Object.values(P.levels).filter(Boolean).map((l) => l.noise)) > -42 ? '· ค่อนข้างดัง แนะนำ "แรง"' : '· เงียบดี'}`) : null),
+      tg('คำสำคัญเด้ง', 'pop', 'ตัวเลขและคำเด่นขยายตามจังหวะพูด', null, true),
+      tg('ภาพประกอบอัตโนมัติ', 'broll', 'พูดถึงโรงพยาบาล เงินเก็บ ครอบครัว… ขึ้นภาพประกอบ', () => { import('../video/broll.js').then(async (B) => { const F = await import('../video/face.js'); const n = P.broll !== false ? B.autoBroll(P, F.lookAway(P, segList(P))) : (P.chunks.forEach((c) => { if (c.autoArt) { c.scene = P.mode === 'voice' ? 'stage' : 'cam'; c.art = null; c.autoArt = false; } }), 0); save(); M.player.refresh(); paintPanel(); toast(P.broll !== false ? `วางภาพประกอบ ${n} จุด` : 'เอาภาพประกอบอัตโนมัติออกแล้ว'); }); }, true),
       P.mode === 'cam' && P.style !== 'mini' ? tg('ซูมตัดช็อต', 'zoom') : null,
       tg('ตัดเงียบตอนต้น', 'trimHead'), tg('ตัดเงียบตอนท้าย', 'trimTail'),
       tg('เสียงประกอบอัตโนมัติ', 'sfx', 'ปิดไว้ = เสียงสะอาดแบบพอดแคสต์'), h('label.vd-tg', h('span', h('b', 'ความดังเสียงประกอบ')), vol),
@@ -555,9 +559,10 @@ export async function renderVideoEditor(id, q = {}) {
       body.replaceChildren(
         h('p.small', { style: { marginTop: 0 } }, h('b', 'ฉาก'), ' (ใช้กับทั้งบรรทัดนี้)'),
         h('div.vd-chips', Object.entries(scenes).map(([k, l]) => h('button.chip', { class: (c.scene || (P.mode === 'voice' ? 'stage' : 'cam')) === k ? 'on' : '', disabled: (k === 'slide' && !d) || (k === 'img' && !P.imgs.length), onclick: async () => {
-          lineCs.forEach((x) => { x.scene = k; }); if (k === 'slide' && c.slide == null) lineCs.forEach((x) => { x.slide = 0; }); if (k === 'poster' && !c.poster) { const pl = findPlan(lineCs.map((x) => x.text).join('')) || PLANS.find((x) => x.star); lineCs.forEach((x) => { x.poster = pl.id; }); } if (k === 'img' && !c.img) lineCs.forEach((x) => { x.img = P.imgs[0]?.id || null; });
+          lineCs.forEach((x) => { x.scene = k; }); if (k === 'slide' && c.slide == null) lineCs.forEach((x) => { x.slide = 0; }); if (k === 'poster' && !c.poster) { const pl = findPlan(lineCs.map((x) => x.text).join('')) || PLANS.find((x) => x.star); lineCs.forEach((x) => { x.poster = pl.id; }); } if (k === 'img' && !c.img) lineCs.forEach((x) => { x.img = P.imgs[0]?.id || null; }); if (k === 'art') lineCs.forEach((x) => { x.art = x.art || guessArt(lineCs.map((y) => y.text).join('')) || 'p-think'; x.autoArt = false; });
           save(); if (k === 'cut') { const S = await import('../video/segment.js'); toast('กำลังโหลดตัวตัดฉากหลัง…'); S.load().then(() => M.player.draw()).catch((e) => toast(e.message)); } await ensureAssets(); paint(); after?.(); M.player.seek((c.t0 ?? 0) + 0.7); } }, l))),
         !d ? h('p.xs.muted', 'สไลด์: เลือกงานในสตูดิโอที่ "สไลด์และภาพแทรก" ก่อน') : null,
+        c.scene === 'art' ? h('div', h('p.small', h('b', 'ภาพประกอบ')), h('div.vd-arts', ARTS_PEOPLE.map(([k, l]) => h('button.vd-art', { type: 'button', class: c.art === k ? 'on' : '', onclick: () => { lineCs.forEach((x) => { x.art = k; x.autoArt = false; }); save(); paint(); after?.(); M.player.seek((c.t0 ?? 0) + 0.7); } }, h('img', { src: artCanvas(k).toDataURL('image/jpeg', 0.6), alt: '' }), h('small', l))))) : null,
         c.scene === 'slide' && d ? h('div.vd-slides', d.slides.map((s, k) => { const im = h('img', { alt: 'สไลด์ ' + (k + 1) }); slideImg(k).then((cv2) => { if (cv2) im.src = cv2.toDataURL('image/jpeg', 0.6); }); return h('button.vd-slide', { class: c.slide === k ? 'on' : '', onclick: async () => { lineCs.forEach((x) => { x.slide = k; }); save(); await slideImg(k); paint(); M.player.seek((c.t0 ?? 0) + 0.9); } }, im); })) : null,
         c.scene === 'poster' ? h('select.input', { 'aria-label': 'เลือกแผน', style: { marginTop: '8px' }, onchange: async (e) => { lineCs.forEach((x) => { x.poster = e.target.value; }); if (!lineCs[0].label) lineCs[0].label = (PLAN[e.target.value]?.short || '').toUpperCase(); save(); await ensureAssets(); paint(); after?.(); M.player.seek((c.t0 ?? 0) + 0.9); } }, PLANS.filter((x) => !x.closed).map((x) => h('option', { value: x.id, selected: x.id === c.poster }, x.short || x.name))) : null,
         c.scene === 'img' ? h('div.vd-imgs', P.imgs.map((im) => h('button.vd-img', { class: c.img === im.id ? 'on' : '', onclick: () => { lineCs.forEach((x) => { x.img = im.id; }); save(); paint(); M.player.seek((c.t0 ?? 0) + 0.5); } }, h('img', { src: M.imgUrls[im.id] || '', alt: '' })))) : null,
@@ -577,8 +582,43 @@ export async function renderVideoEditor(id, q = {}) {
   }
 
   // ── 4. ส่งออก ──
+  // ── ตรวจคลิปก่อนโพสต์ → [{lv: 'warn'|'info', msg, fix?: [label, fn]}] ──
+  async function preCheck() {
+    const out = []; const [a, b, z] = window_(P); const sl = segList(P); const F = await import('../video/face.js');
+    const lv = Object.values(P.levels || {}).filter(Boolean);
+    if (lv.length) {
+      const sp = Math.min(...lv.map((l) => l.speech)), pk = Math.max(...lv.map((l) => l.peak)), nz = Math.max(...lv.map((l) => l.noise));
+      if (sp < -30 && P.enhance === false) out.push({ lv: 'warn', msg: `เสียงพูดเบา (${sp} dB) คนดูต้องเร่งเสียง`, fix: ['ปรับเสียงอัตโนมัติ', () => { P.enhance = true; }] });
+      if (pk > -0.3) out.push({ lv: 'info', msg: 'มีช่วงเสียงดังจนแตก (ตอนอัดเสียงดังเกิน) · ครั้งหน้าถือห่างไมค์อีกนิด' });
+      if (nz > -42 && (P.denoise || 'on') !== 'strong') out.push({ lv: 'warn', msg: `เสียงพื้นหลังค่อนข้างดัง (${nz} dB)`, fix: ['ลดเสียงรบกวนแบบแรง', () => { P.denoise = 'strong'; M.player._enh = null; M.player.applyEnhance(); }] });
+    }
+    const long = P.chunks.filter((c) => visLen(c.text) > 26);
+    if (long.length) out.push({ lv: 'warn', msg: `ซับยาวเกินจอ ${long.length} ช่วง (ตัวหนังสือจะเล็กลง)`, fix: P.words?.length ? ['แบ่งซับให้สั้นลง', async () => { const [AE, S, R] = await Promise.all([import('../video/autoedit.js'), import('../video/subs.js'), import('../video/asr.js')]); P.subMax = 14; AE.rechunk(P, S, R); P.autoDone = false; }] : null });
+    const box = Object.values(P.gaze || {}).find((g) => g?.box)?.box;
+    if (box && P.mode === 'cam' && !P.chunks.some((c) => c.pos)) { const y = P.style === 'mini' ? 0.6 : 0.76; if (box[3] > y - 0.03 && box[1] < y + 0.03) out.push({ lv: 'warn', msg: 'ซับทับหน้า (ตำแหน่งหน้าในคลิปค่อนข้างต่ำ)', fix: ['ย้ายซับลงล่าง', () => { P.chunks.forEach((c) => { c.pos = 'low'; }); }] }); }
+    const len = b - a;
+    if (len > 90) out.push({ lv: 'info', msg: `คลิปยาว ${Math.round(len)} วิ · Reels/TikTok ที่คนดูจบมักอยู่ราว 15–60 วิ` });
+    const first = P.chunks.find((c) => c.t0 != null); if (first && first.t0 - a > 1.5) out.push({ lv: 'warn', msg: `${(first.t0 - a).toFixed(1)} วินาทีแรกยังไม่มีเสียงพูด คนอาจปัดผ่าน`, fix: ['ตัดช่วงเงียบตอนต้น', () => { P.trimHead = true; }] });
+    const allText = P.chunks.map((c) => c.text).join(' ') + ' ' + (P.caption || '');
+    if (/\d|ล้าน|แสน|บาท|%|เปอร์เซ็นต์/.test(allText) && !/เงื่อนไขเป็นไปตามกรมธรรม์/.test(P.caption || '')) out.push({ lv: 'warn', msg: 'มีตัวเลข/ผลประโยชน์ แต่แคปชั่นยังไม่มี "เงื่อนไขเป็นไปตามกรมธรรม์"', fix: ['เพิ่มในแคปชั่น', () => { const cap = P.caption || makeCaption(P, profile()).caption; P.caption = cap.replace(/\s*$/, '') + '\n\n*เงื่อนไขความคุ้มครองเป็นไปตามกรมธรรม์'; }] });
+    if ((P.subLang || 'th') !== 'th') { const T = await import('../video/translate.js'); const m = T.missing(P); if (m) out.push({ lv: 'warn', msg: `ซับอังกฤษยังขาด ${m} ประโยค`, fix: ['แปลเพิ่ม', () => enSheet()] }); }
+    const covered = (r) => P.chunks.some((c) => ['art', 'img', 'slide', 'poster', 'stage'].includes(c.scene) && c.t0 < r.t1 && (c.t1 ?? c.t0) > r.t0);
+    const away = F.lookAway(P, sl, { minDur: 1.2 }).filter((r) => !covered(r));
+    if (away.length) out.push({ lv: 'info', msg: `ไม่ได้มองกล้อง ${away.length} ช่วง (${away.slice(0, 3).map((r) => fmtS(r.t0)).join(', ')} วิ)`, fix: ['ใส่ภาพประกอบทับ', async () => { const B = await import('../video/broll.js'); for (const r of away) { const cs = P.chunks.filter((c) => c.t0 != null && c.t0 < r.t1 && (c.t1 ?? c.t0) > r.t0 && (c.scene || 'cam') === 'cam'); const k = B.guessArt(cs.map((c) => c.text).join('')) || 'p-think'; cs.forEach((c) => { c.scene = 'art'; c.art = k; }); } }] });
+    if (!P.coverMade) out.push({ lv: 'info', msg: 'ยังไม่ได้ทำภาพปก (ด้านล่างมีแบบแนะนำ 3 แบบ)' });
+    return out;
+  }
+  function checkCard() {
+    const card = h('div.card.vd-check', h('h3.vd-h3', 'ตรวจก่อนโพสต์'), h('p.small.muted', 'กำลังตรวจ…'));
+    preCheck().then((items) => {
+      const warn = items.filter((i) => i.lv === 'warn').length;
+      card.replaceChildren(h('div.row.between', h('h3.vd-h3', { style: { margin: 0 } }, 'ตรวจก่อนโพสต์'), h('span.vd-ckbadge', { class: warn ? 'warn' : 'ok' }, warn ? `ควรแก้ ${warn} จุด` : 'พร้อมโพสต์ ✓')),
+        items.length ? h('ul.vd-cklist', items.map((it) => h('li', { class: it.lv }, h('span', it.msg), it.fix ? h('button.btn.sm', { onclick: async (e) => { e.currentTarget.disabled = true; await it.fix[1](); P.chunks = sanitize(P.chunks); save(); M.player.refresh(); await ensureAssets(); M.player.draw(); toast('แก้แล้ว'); paintPanel(); } }, it.fix[0]) : null))) : h('p.small', { style: { margin: '6px 0 0' } }, 'เสียง ซับ ความยาว และแคปชั่นเรียบร้อย'));
+    }).catch((e) => { console.error(e); card.remove(); });
+    return card;
+  }
   function stepOut() {
-    const box = h('div');
+    const box = h('div'); box.append(checkCard());
     const mime = pickMime(); const isMp4 = mime?.startsWith('video/mp4');
     const [a, , z] = window_(P);
     const needAudio = !(P.mode === 'voice' && P.audio === 'none');
@@ -597,17 +637,36 @@ export async function renderVideoEditor(id, q = {}) {
     const capData = makeCaption(P, profile()); const capTa = h('textarea.input', { rows: 7, 'aria-label': 'แคปชั่น', onchange: (e) => { P.caption = e.target.value; save(); } }, P.caption || capData.caption);
     box.append(h('div.card', h('h3.vd-h3', 'แคปชั่นและแฮชแท็ก'), capTa, h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, h('button.btn.primary', { onclick: () => copyText(capTa.value) }, icon('copy'), 'คัดลอก'), h('button.btn', { onclick: () => { P.caption = ''; save(); paintPanel(); } }, icon('sync'), 'เขียนใหม่จากซับ')),
       capData.risks.length ? h('div.callout.warn.small', { style: { marginTop: '10px' } }, h('b', `คำที่ควรตรวจ ${capData.risks.length} จุด`), h('ul', capData.risks.map((r) => h('li', h('b', `"${r.found}" `), `${r.label} → ${r.tip}`)))) : null));
-    // ภาพปก
+    // ภาพปก: แนะนำ 3 แบบ (เฟรมหน้าตรง ตาเปิด ยิ้ม + หัวข้อ 3 แบบ + 3 สไตล์) หรือทำจากเฟรมที่เลือกเอง
     const coverTitle = h('input.input', { value: P.coverTitle ?? P.title, 'aria-label': 'หัวข้อบนปก', onchange: (e) => { P.coverTitle = e.target.value; save(); } });
-    const coverOut = h('div.vd-cover');
-    box.append(h('div.card', h('h3.vd-h3', 'ภาพปกคลิป'), h('p.xs.muted', { style: { margin: '0 0 8px' } }, 'เลื่อนตัวอย่างด้านบนไปเฟรมที่ชอบ แล้วกดสร้างปก (หัวข้อตัวใหญ่ด้านบน) · อัปโหลดเป็นปกใน TikTok/Reels'), coverTitle,
-      h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, h('button.btn', { onclick: makeCover }, icon('star'), 'สร้างปกจากเฟรมนี้')), coverOut));
-    async function makeCover() {
-      await loadFonts(); const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
-      drawCover(c.getContext('2d'), P, M.player.t, M.player.active, coverTitle.value.trim(), M.player.tl, { ...M.player.ext, win: M.player.win });
-      const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.92)); const url = URL.createObjectURL(blob); const name = 'aom-cover.jpg'; const file = new File([blob], name, { type: 'image/jpeg' });
-      coverOut.replaceChildren(h('img', { src: url, alt: 'ภาพปก' }), h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, navigator.canShare?.({ files: [file] }) ? h('button.btn.primary', { onclick: () => navigator.share({ files: [file] }).catch(() => {}) }, icon('share'), 'แชร์') : null, h('a.btn', { href: url, download: name }, icon('download'), 'บันทึกภาพ')));
+    const coverOut = h('div.vd-cover'); const sugg = h('div.vd-covers');
+    box.append(h('div.card', h('h3.vd-h3', 'ภาพปกคลิป'), h('p.xs.muted', { style: { margin: '0 0 8px' } }, 'แตะแบบที่ชอบ หรือเลื่อนตัวอย่างไปเฟรมที่ต้องการแล้วกด "ทำปกจากเฟรมนี้" · ปกไม่มีซับ'), sugg,
+      h('label.vd-field', { style: { marginTop: '10px' } }, h('span', 'หัวข้อบนปก'), coverTitle),
+      h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, h('button.btn', { onclick: suggestCovers }, icon('sync'), 'แนะนำปกใหม่'), h('button.btn', { onclick: () => makeCover(M.player.t, coverTitle.value.trim(), P.coverLook || 'top') }, icon('star'), 'ทำปกจากเฟรมนี้')), coverOut));
+    const titleIdeas = () => {
+      // หัวข้อปก: ตัดตามช่วงซับ (วลีธรรมชาติ) ไม่ตัดกลางคำ · ยาวไม่เกิน ~28 ตัวอักษร
+      const lines = [...new Set(P.chunks.map((c) => c.line))].map((ln) => P.chunks.filter((c) => c.line === ln).map((c) => c.text.replace(/\*/g, '').trim()).filter(Boolean));
+      const pick = (arr) => { let o = ''; for (const t of arr) { const n = o ? o + ' ' + t : t; if (o && visLen(n) > 28) break; o = n; } return o; };
+      const ideas = [P.coverTitle || P.title, lines[0] && pick(lines[0]), pick(lines.find((l) => /\d|ล้าน|แสน|%/.test(l.join(''))) || lines[1] || [])].filter(Boolean);
+      return [...new Set(ideas)].concat(ideas).slice(0, 3);
+    };
+    async function suggestCovers() {
+      sugg.replaceChildren(h('p.small.muted', 'กำลังเลือกเฟรมที่หน้าตรงและยิ้ม…')); await loadFonts(); const F = await import('../video/face.js'); const sl = segList(P); const [a, b] = window_(P);
+      const camAt = (t) => { const sg = M.player.tl.segs.find((x) => x.start <= t && t < x.end + 0.05); return !sg || ['cam', 'bw'].includes(sg.scene); };
+      let ts = F.coverTimes(P, sl, { ok: camAt }); const pad = [0.2, 0.5, 0.75, 0.35, 0.62, 0.9, 0.1].map((f) => +(a + (b - a) * f).toFixed(2)).filter((t) => camAt(t) && ts.every((u) => Math.abs(u - t) > 1)); while (ts.length < 3 && pad.length) ts.push(pad.shift()); while (ts.length < 3) ts.push(+(a + (b - a) * 0.5).toFixed(2));
+      const looks = ['top', 'mid', 'band']; const titles = titleIdeas(); const was = M.player.t; const opts = [];
+      for (let k = 0; k < 3; k++) { await M.player.seek(ts[k]); const c = document.createElement('canvas'); c.width = 360; c.height = 640; drawCover(c.getContext('2d'), P, ts[k], M.player.active, titles[k], M.player.tl, { ...M.player.ext, win: M.player.win }, looks[k]); opts.push({ t: ts[k], title: titles[k], look: looks[k], src: c.toDataURL('image/jpeg', 0.8) }); }
+      await M.player.seek(was);
+      sugg.replaceChildren(...opts.map((o) => h('button.vd-coveropt', { type: 'button', onclick: () => { coverTitle.value = o.title; P.coverTitle = o.title; P.coverLook = o.look; save(); makeCover(o.t, o.title, o.look); } }, h('img', { src: o.src, alt: 'แบบปก' }))));
     }
+    async function makeCover(t, title, look) {
+      await loadFonts(); const was = M.player.t; if (Math.abs(was - t) > 0.05) await M.player.seek(t); const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
+      drawCover(c.getContext('2d'), P, t, M.player.active, title, M.player.tl, { ...M.player.ext, win: M.player.win }, look);
+      const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.92)); const url = URL.createObjectURL(blob); const name = 'aom-cover.jpg'; const file = new File([blob], name, { type: 'image/jpeg' });
+      P.coverMade = true; P.coverT = t; save();
+      coverOut.replaceChildren(h('img', { src: url, alt: 'ภาพปก' }), h('div.row.wrap', { style: { gap: '8px', marginTop: '8px' } }, navigator.canShare?.({ files: [file] }) ? h('button.btn.primary', { onclick: () => navigator.share({ files: [file] }).catch(() => {}) }, icon('share'), 'แชร์') : null, h('a.btn', { href: url, download: name }, icon('download'), 'บันทึกปก')));
+    }
+    setTimeout(suggestCovers, 300);
     async function run() {
       btn.disabled = true; result.replaceChildren(); bar.classList.add('on'); let lock = null;
       try { lock = await navigator.wakeLock?.request('screen'); } catch {}

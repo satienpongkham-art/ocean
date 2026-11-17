@@ -54,3 +54,13 @@ export async function loudGain(key, blob) {
   v.sort((a, b) => a - b); const loud = v.slice(Math.floor(v.length * 0.6)); const rms = Math.sqrt(loud.reduce((a, x) => a + x * x, 0) / Math.max(1, loud.length));
   return +Math.max(0.6, Math.min(3, 0.1 / Math.max(1e-4, rms))).toFixed(2);
 }
+
+/** ระดับเสียงรบกวนพื้นหลัง + ความดังเสียงพูด (dBFS) → { noise, speech, snr, peak } ใช้ตัดสินใจลดเสียงรบกวน/ตรวจก่อนโพสต์ */
+export async function levels(key, blob) {
+  const { buf } = await decode(key, blob); const d = buf.getChannelData(0); const sr = buf.sampleRate, win = Math.round(sr * 0.02); const n = Math.floor(d.length / win);
+  const r = new Float32Array(n); let peak = 0;
+  for (let i = 0; i < n; i++) { let s = 0; for (let j = i * win, e = j + win; j < e; j++) { s += d[j] * d[j]; const a = Math.abs(d[j]); if (a > peak) peak = a; } r[i] = Math.sqrt(s / win); }
+  const srt = Float32Array.from(r).sort(); const db = (v) => +(20 * Math.log10(Math.max(1e-6, v))).toFixed(1);
+  const noise = db(srt[Math.floor(n * 0.1)] || 0), speech = db(srt[Math.floor(n * 0.9)] || 0);
+  return { noise, speech, snr: +(speech - noise).toFixed(1), peak: db(peak) };
+}
