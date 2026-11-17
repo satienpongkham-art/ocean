@@ -4,7 +4,7 @@ import { segList, visLen } from './engine.js';
 import { autoAll } from './smart.js';
 import { RISKY } from '../../data/studio.js';
 
-export const STEPS = [['audio', 'ฟังเสียง หาช่วงพูด'], ['look', 'ปรับภาพ และหาตำแหน่งหน้า'], ['asr', 'เขียนซับ'], ['cut', 'ตัดช่วงเงียบ เทคเสีย คำเติม คุมความยาว'], ['deco', 'ใส่ซับ เอฟเฟกต์ เพลง ป้ายท้าย'], ['cap', 'เขียนแคปชั่นและแฮชแท็ก']];
+export const STEPS = [['audio', 'ฟังเสียง หาช่วงพูด'], ['look', 'ปรับภาพ และหาตำแหน่งหน้า'], ['asr', 'ถอดเสียงทุกคำ พร้อมเวลา'], ['cut', 'หาจุดตัด'], ['deco', 'จัดซับและตกแต่ง'], ['cap', 'เขียนแคปชั่นและแฮชแท็ก']];
 export const WHY = { silence: 'ช่วงเงียบ', retake: 'พูดซ้ำ/เทคเสีย', filler: 'คำเติม (เอ่อ อ่า)', length: 'ตัดให้พอดีความยาว', unclear: 'ฟังไม่ออก' };
 const FILLER = /^(?:เอ่อ|เออ|อ่า|อา|อืม|เอิ่ม|อ้า|แบบ|แบบว่า|คือ|คือแบบ|อ่ะ|เอ่|ครับ|ค่ะ|คะ|นะ|ฮะ|โอเค|\s|[.,!?…])+$/;
 const norm = (s) => s.replace(/[\s.,!?…"'“”()]/g, '');
@@ -71,17 +71,54 @@ export function makeCaption(P, profile) {
   return { caption, risks };
 }
 
+/** ถอดเสียงทุกคลิป → คำพร้อมเวลา (เวลาในคลิปต้นฉบับ) · ใช้ซับสด/บทเป็นข้อความอ้างอิงถ้ามี */
+async function sourceWords(P, clips, speech, env) {
+  const { A, R, S, onStep = () => {} } = env; const out = {}; const dict = [...S.BUILTIN_DICT, ...R.userDict()];
+  for (const c of clips) {
+    const b = await env.getBlob(c); const pcm = await A.mono16(c.key, b);
+    let chars = await R.transcribeChars(pcm, { model: env.model, onStatus: (t) => onStep('asr', t), onProgress: (p) => onStep('asr', null, p) });
+    // ซับสดของ Google ตอนอัด (ถ้ามี) แม่นกว่าเรื่องตัวสะกด → ใช้เป็นข้อความ แล้วยืมเวลาจากเสียง
+    const live = P.live?.[c.id]; if (live?.length && chars.length) { const al = S.alignText(live.map((x) => x.text).join(' '), chars); if (al.score > 0.5) chars = al.chars; }
+    chars = S.applyDict(chars, dict);
+    out[c.id] = S.snapToSpeech(S.wordsFromChars(chars), speech[c.id]);
+  }
+  return out;
+}
+const phrasesOf = (clip, words, gap = 0.45) => { const out = []; let cur = null; for (const w of words) { if (!cur || w.t0 - cur.e >= gap || w.sp && w.t0 - cur.e >= 0.2) { cur = { clip, text: '', s: w.t0, e: w.t1, words: [] }; out.push(cur); } cur.text += (w.sp && cur.words.length ? ' ' : '') + w.w; cur.e = w.t1; cur.words.push(w); } return out; };
+/** คำ (เวลาต้นฉบับ) → ช่วงซับในเวลาของคลิปที่ส่งออก ตามช่วงที่ใช้อยู่ */
+function buildSubs(P, src, dropped, env) {
+  const { S, R } = env; const sl = segList(P); const ow = [];
+  const toOut = (clip, v) => { const s = sl.find((x) => x.clip === clip && v >= x.a - 0.03 && v <= x.b + 0.03); return s ? s.o0 + Math.min(Math.max(v, s.a), s.b) - s.a : null; };
+  for (const sg of sl) for (const w of src[sg.clip] || []) { if (dropped.has(w)) continue; const mid = (w.t0 + w.t1) / 2; if (mid < sg.a - 0.03 || mid > sg.b + 0.03) continue; ow.push({ ...w, t0: sg.o0 + Math.max(w.t0, sg.a) - sg.a, t1: sg.o0 + Math.min(w.t1, sg.b) - sg.a }); }
+  void toOut;
+  let chunks;
+  if (env.useScript && (P.script || '').trim()) { // ใช้บทของเราเป็นซับ จับเวลาจากเสียง
+    const hyp = ow.flatMap((w) => { const cs = [...w.w]; return cs.map((c, i) => ({ c, t0: w.t0 + (w.t1 - w.t0) * i / cs.length, t1: w.t0 + (w.t1 - w.t0) * (i + 1) / cs.length })); });
+    const al = S.alignChunks(env.parseScript(P.script), hyp); chunks = al.chunks; P.alignScore = +al.score.toFixed(2);
+  } else { chunks = R.markKeys(S.chunkWords(ow, { max: P.subMax || 18 })); P.script = lineText(chunks); }
+  P.words = ow.map((w) => ({ w: w.w, t0: +w.t0.toFixed(2), t1: +w.t1.toFixed(2), sp: w.sp ? 1 : 0 }));
+  P.chunks = chunks.map((c) => ({ emoji: null, scene: 'cam', ...c }));
+  return ow.length;
+}
+const lineText = (chunks) => { const L = []; for (const c of chunks) (L[c.line] ||= []).push(c.words.map((w) => (w.key ? `*${w.w.trim()}*` : w.w)).join('').trim()); return L.filter(Boolean).map((l) => l.join(' ')).join('\n'); };
+/** แบ่งซับใหม่ตามความยาวที่เลือก (ใช้คำพร้อมเวลาที่เก็บไว้) */
+export function rechunk(P, S, R) {
+  if (!P.words?.length) return false;
+  const ws = P.words.map((w) => ({ ...w, sp: !!w.sp })); P.chunks = R.markKeys(S.chunkWords(ws, { max: P.subMax || 18 })).map((c) => ({ emoji: null, scene: P.mode === 'voice' ? 'stage' : 'cam', ...c })); P.script = lineText(P.chunks); return true;
+}
+
 /**
- * ทำทั้งหมด · env: { getBlob(clip), urls, onStep(key, text, p), target (วินาที|0), model, canCut, slideKinds, profile, A (audio.js), R (asr.js) }
- * แก้ P ในตัว คืนสรุป
+ * ทำทั้งหมด · env: { getBlob(clip), urls, onStep(key, text, p), model, canCut, slideKinds, profile, A, R, S, parseScript,
+ *   cutSilence (true), cutRetake (false), cutFiller (false), target (0 = ไม่จำกัด), useScript }
+ * ค่าเริ่มต้น = เก็บทุกคำ ตัดแค่ช่วงเงียบ · แก้ P ในตัว คืนสรุป
  */
 export async function autoEdit(P, env) {
-  const { onStep = () => {}, A, R } = env; const sum = { cut: 0, retake: 0, filler: 0, length: 0, subs: 0, bad: 0 };
+  const { onStep = () => {}, A } = env; const sum = { cut: 0, retake: 0, filler: 0, length: 0, subs: 0, words: 0 };
   const clips = P.clips.filter((c) => env.urls[c.id]);
   // 1) ฟังเสียง
   onStep('audio', 'กำลังฟังเสียง…');
   const speech = {}; P.gain ||= {};
-  for (const c of clips) { const b = await env.getBlob(c); speech[c.id] = await A.speechRanges(c.key, b, { gap: 0.45, pad: 0.16 }); P.gain[c.id] = await A.loudGain(c.key, b).catch(() => 1); }
+  for (const c of clips) { const b = await env.getBlob(c); speech[c.id] = await A.speechRanges(c.key, b, { gap: 0.3, pad: 0.06 }); P.gain[c.id] = await A.loudGain(c.key, b).catch(() => 1); }
   // 2) ภาพ
   onStep('look', 'กำลังปรับแสงสี…');
   P.looks ||= {}; P.tracks ||= {};
@@ -89,56 +126,53 @@ export async function autoEdit(P, env) {
     const r = await analyzeLook(env.urls[c.id]).catch(() => ({ look: '' })); P.looks[c.id] = r.look;
     if (r.landscape && r.v) { onStep('look', 'คลิปแนวนอน: กำลังหาตำแหน่งหน้าเพื่อครอปเป็นแนวตั้ง…'); P.tracks[c.id] = await trackFace(r.v).catch(() => null); }
   }
-  // 3) ซับ: ซับสดจากการอัดในแอป (ถ้ามี) ไม่งั้นใช้ Whisper ถอดทีละช่วงพูด
-  const tr = []; // [{clip, text, s, e, bad}] เวลาในคลิปต้นฉบับ
-  for (const c of clips) {
-    if (P.live?.[c.id]?.length) { for (const x of R.snapLive(P.live[c.id], speech[c.id])) tr.push({ clip: c.id, ...x }); continue; }
-    const b = await env.getBlob(c); const pcm = await A.mono16(c.key, b);
-    const ranges = speech[c.id].flatMap((r) => (r.b - r.a > 14 ? R.speechChunks(pcm.subarray(Math.floor(r.a * 16000), Math.floor(r.b * 16000))).map((q) => ({ a: q.a + r.a, b: q.b + r.a })) : [r]));
-    const segs = await R.transcribe(pcm, { model: env.model, ranges, onStatus: (t) => onStep('asr', t), onProgress: (p) => onStep('asr', null, p) });
-    for (const x of segs) tr.push({ clip: c.id, ...x });
-  }
+  // 3) ถอดเสียง: ได้ทุกคำพร้อมเวลา
+  const src = await sourceWords(P, clips, speech, env);
   // 4) จุดตัด
-  onStep('cut', 'กำลังเลือกช่วงที่ดีที่สุด…');
-  const keep = tr.map((x, i) => ({ ...x, i, drop: null }));
-  keep.forEach((x) => { if (x.bad) x.drop = 'unclear'; else if (FILLER.test(x.text) && x.e - x.s < 2.5) x.drop = 'filler'; });
-  const alive = () => keep.filter((x) => !x.drop);
-  // เทคเสีย: ประโยคถัดไปคล้ายกันมาก = พูดใหม่ → ทิ้งอันก่อน
-  { const L = alive(); for (let i = 0; i < L.length; i++) for (let j = i + 1; j <= Math.min(L.length - 1, i + 2); j++) { if (L[j].clip !== L[i].clip || L[j].s - L[i].e > 6) break; const a = L[i].text, b = L[j].text; const pre = norm(a).slice(0, 6); if (dice(a, b) >= 0.55 || (norm(a).length >= 4 && norm(b).startsWith(pre) && norm(b).length >= norm(a).length * 0.7)) { L[i].drop = 'retake'; break; } } }
-  // คุมความยาว
+  onStep('cut', 'กำลังหาจุดตัด…');
+  const phr = clips.flatMap((c) => phrasesOf(c.id, src[c.id])); phr.forEach((x) => { x.drop = null; });
+  const alive = () => phr.filter((x) => !x.drop);
+  if (env.cutFiller) phr.forEach((x) => { if (FILLER.test(x.text) && x.e - x.s < 2.5) x.drop = 'filler'; });
+  if (env.cutRetake) { const L = alive(); for (let i = 0; i < L.length; i++) for (let j = i + 1; j <= Math.min(L.length - 1, i + 2); j++) { if (L[j].clip !== L[i].clip || L[j].s - L[i].e > 6) break; const a = L[i].text, b = L[j].text; const pre = norm(a).slice(0, 6); if (dice(a, b) >= 0.55 || (norm(a).length >= 4 && norm(b).startsWith(pre) && norm(b).length >= norm(a).length * 0.7)) { L[i].drop = 'retake'; break; } } }
   if (env.target > 0) {
-    let L = alive(); let tot = L.reduce((a, x) => a + (x.e - x.s) + 0.15, 0);
+    const L = alive(); let tot = L.reduce((a, x) => a + (x.e - x.s) + 0.3, 0);
     const score = (x) => (/\d/.test(x.text) ? 3 : 0) + (/ประกัน|เงิน|ภาษี|สุขภาพ|ลูก|เกษียณ|คุ้มครอง|ค่ารักษา/.test(x.text) ? 2 : 0) + Math.min(2, visLen(x.text) / 20) - (x.e - x.s > 8 ? 1 : 0);
     const cand = L.slice(1, -1).sort((p, q) => score(p) - score(q));
-    while (tot > env.target + 1.5 && cand.length) { const x = cand.shift(); x.drop = 'length'; tot -= (x.e - x.s) + 0.15; }
+    while (tot > env.target + 1.5 && cand.length) { const x = cand.shift(); x.drop = 'length'; tot -= (x.e - x.s) + 0.3; }
   }
-  // ช่วงที่ "ฟังไม่ออก" เก็บไว้ (ไม่ตัด) แต่บอกให้รู้ · ช่วงที่ตัดอื่น ๆ = จุดตัด
-  P.cuts = [];
+  P.cuts = []; const dropped = new Set();
   for (const c of clips) {
-    const mine = keep.filter((x) => x.clip === c.id);
-    const spoken = mine.map((x) => ({ a: Math.max(0, x.s - 0.14), b: x.e + 0.18 })); // ช่วงพูดทั้งหมด (รวมเทคที่ตัด) เพื่อให้เอาคืนได้
-    const base = mine.length ? spoken.sort((p, q) => p.a - q.a) : speech[c.id];
-    P.cuts.push(...silenceCuts(c, base));
-    for (const x of mine.filter((y) => y.drop && y.drop !== 'unclear')) P.cuts.push({ clip: c.id, a: +x.s.toFixed(2), b: +x.e.toFixed(2), why: x.drop, on: true, text: x.text });
+    const mine = phr.filter((x) => x.clip === c.id);
+    if (env.cutSilence !== false) {
+      // ช่วงที่มีคำพูด (เผื่อจังหวะหายใจ) — ไม่ตัดกลางคำแน่นอนเพราะยึดเวลาของคำ
+      const spoken = mine.map((x) => ({ a: Math.max(0, x.s - 0.16), b: x.e + 0.22 })); const merged = [];
+      for (const r of (mine.length ? spoken : speech[c.id]).sort((p, q) => p.a - q.a)) { const l = merged[merged.length - 1]; if (l && r.a - l.b < 0.35) l.b = Math.max(l.b, r.b); else merged.push({ ...r }); }
+      P.cuts.push(...silenceCuts(c, merged));
+    }
+    for (const x of mine.filter((y) => y.drop)) { P.cuts.push({ clip: c.id, a: +Math.max(0, x.s - 0.05).toFixed(2), b: +(x.e + 0.05).toFixed(2), why: x.drop, on: true, text: x.text }); x.words.forEach((w) => dropped.add(w)); }
   }
   P.cuts = P.cuts.map((x, i) => ({ id: 'k' + i, ...x }));
-  P.silence = { on: true, gap: 0.35 };
+  P.silence = { on: env.cutSilence !== false, gap: 0.35 };
   P.segs = deriveSegs(P);
-  // 5) ซับในเวลาของคลิปที่ส่งออก
-  onStep('deco', 'กำลังใส่ซับและเอฟเฟกต์…');
-  const sl = segList(P);
-  const toOut = (clip, v) => { const s = sl.find((x) => x.clip === clip && v >= x.a - 0.05 && v <= x.b + 0.05); return s ? s.o0 + Math.min(Math.max(v, s.a), s.b) - s.a : null; };
-  const outSegs = alive().filter((x) => x.text).map((x) => ({ text: x.text, s: toOut(x.clip, x.s), e: toOut(x.clip, x.e) })).filter((x) => x.s != null && x.e != null && x.e > x.s);
-  const r = R.segsToChunks(outSegs); P.script = r.script; P.chunks = r.chunks;
+  // 5) ซับ (เวลาของคลิปที่ส่งออก) + ตกแต่ง
+  onStep('deco', 'กำลังจัดซับและตกแต่ง…');
+  sum.words = buildSubs(P, src, dropped, env);
   P.enhance = true; P.trimHead = true; P.trimTail = true;
   autoAll(P, { slideKinds: env.slideKinds || [], canCut: env.canCut });
   // 6) แคปชั่น
   onStep('cap', 'กำลังเขียนแคปชั่น…');
   const cap = makeCaption(P, env.profile); P.caption = cap.caption;
-  for (const k of keep) { if (k.drop === 'retake') sum.retake++; if (k.drop === 'filler') sum.filler++; if (k.drop === 'length') sum.length++; if (k.drop === 'unclear') sum.bad++; }
-  sum.subs = P.chunks.length; sum.cut = P.cuts.filter((x) => x.on).reduce((a, x) => a + x.b - x.a, 0); sum.total = sl.reduce((a, s) => a + s.b - s.a, 0);
+  for (const k of phr) { if (k.drop === 'retake') sum.retake++; if (k.drop === 'filler') sum.filler++; if (k.drop === 'length') sum.length++; }
+  sum.subs = P.chunks.length; sum.cut = P.cuts.filter((x) => x.on).reduce((a, x) => a + x.b - x.a, 0);
   P.autoEdited = new Date().toISOString();
   return sum;
+}
+/** เขียนซับอย่างเดียว (ไม่แตะจุดตัด/การตกแต่ง) · ใช้กับปุ่ม "เขียนซับให้" และ "จับเวลาจากเสียง" */
+export async function subtitleOnly(P, env) {
+  const { A } = env; const clips = P.clips.filter((c) => env.urls[c.id]); const speech = {};
+  for (const c of clips) { const b = await env.getBlob(c); speech[c.id] = await A.speechRanges(c.key, b, { gap: 0.3, pad: 0.06 }); }
+  const src = await sourceWords(P, clips, speech, env);
+  return buildSubs(P, src, new Set(), env);
 }
 
 /**

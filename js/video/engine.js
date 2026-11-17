@@ -114,9 +114,12 @@ export function remapTimes(chunks, oldSl, newSl) {
   if (!oldSl.length || !newSl.length) return chunks;
   const toSrc = (t) => { const s = oldSl.find((x) => t >= x.o0 && t < x.o1) || (t < oldSl[0].o0 ? oldSl[0] : oldSl[oldSl.length - 1]); return { clip: s.clip, v: s.a + Math.min(Math.max(t, s.o0), s.o1) - s.o0 }; };
   const toOut = (p) => { const cs = newSl.filter((x) => x.clip === p.clip); for (const x of cs) if (p.v >= x.a - 0.001 && p.v <= x.b + 0.001) return x.o0 + (p.v - x.a); const n = cs.find((x) => x.a > p.v); if (n) return n.o0; const l = cs[cs.length - 1]; return l ? l.o1 : 0; };
-  const out = chunks.map((c) => (c.t0 == null ? { ...c } : { ...c, t0: r2(toOut(toSrc(c.t0))), t1: r2(toOut(toSrc(T1(c) - 0.001))) }));
+  const mp = (t) => r2(toOut(toSrc(t)));
+  const out = chunks.map((c) => (c.t0 == null ? { ...c } : { ...c, t0: mp(c.t0), t1: mp(T1(c) - 0.001), words: c.words.map((w) => (w.t0 == null ? w : { ...w, t0: mp(w.t0), t1: mp(w.t1 - 0.001) })) }));
   return sanitize(out);
 }
+/** ย้ายเวลาของรายการคำ (ใช้กับ P.words) เมื่อช่วงคลิปเปลี่ยน */
+export function remapWords(words, oldSl, newSl) { if (!words?.length) return words; const r = remapTimes(words.map((w) => ({ t0: w.t0, t1: w.t1, words: [], _w: w })), oldSl, newSl); return r.map((x) => ({ ...x._w, t0: x.t0, t1: Math.max(x.t1, x.t0 + 0.02) })); }
 /** เวลาเรียงกัน ไม่ทับกัน ไม่สั้นเกิน */
 export function sanitize(ch) {
   let prev = -1;
@@ -336,7 +339,7 @@ function drawNeon(x, W, H, P, ch, tl, t, mode, ci, measureOnly = false) {
     let X = (W - l.tot) / 2; let k = 0; y += l.h * 1.0;
     for (const p of l.parts) {
       const word = p.w0; if (!word.trim()) { X += p.w; continue; }
-      const at = c.t0 + k * step; k++; const q = (t - at) / 0.13; if (q <= 0) { X += p.w; continue; }
+      const at = p.t0 != null ? Math.max(c.t0, p.t0 - 0.04) : c.t0 + k * step; k++; const q = (t - at) / 0.13; if (q <= 0) { X += p.w; continue; }
       const sc = 0.55 + 0.45 * back(q); const a = Math.min(1, q * 1.6);
       x.save(); x.globalAlpha *= a; x.translate(X + p.w / 2, y - p.size * 0.35); x.scale(sc, sc); x.translate(-(X + p.w / 2), -(y - p.size * 0.35));
       x.font = `800 ${p.size}px ${FONT}`;
@@ -358,7 +361,8 @@ function drawSingle(x, W, H, P, c, t, mode) {
     let w = meas(); if (w > W * 0.86) { S *= W * 0.86 / w; w = meas(); }
     const Y = H * textY(P, c, mode, mode === 'split' ? 0.5 : LIGHT.has(mode) ? 0.74 : 0.6); x.globalAlpha = Math.min(1, (t - c.t0) / 0.08);
     let X = (W - w) / 2;
-    for (const g of segs) { x.save(); x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = S * 0.45; x.shadowOffsetY = S * 0.04; x.fillStyle = g.key ? '#ff4040' : '#ffffff'; x.fillText(g.s, X, Y); x.restore(); x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = Math.max(1, S * 0.05); x.strokeText(g.s, X, Y); x.fillStyle = g.key ? '#ff4040' : '#ffffff'; x.fillText(g.s, X, Y); X += x.measureText(g.s).width; }
+    const tw = c.words.filter((w) => w.t0 != null); const act = P.karaoke && tw.length ? ([...tw].reverse().find((w) => w.t0 <= t + 0.03) || tw[0]) : null;
+    c.words.forEach((wd, k) => { const g = segs[k]; const col = act === wd ? '#ffd21f' : g.key ? '#ff4040' : '#ffffff'; x.save(); x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = S * 0.45; x.shadowOffsetY = S * 0.04; x.fillStyle = col; x.fillText(g.s, X, Y); x.restore(); x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = Math.max(1, S * 0.05); x.strokeText(g.s, X, Y); x.fillStyle = col; x.fillText(g.s, X, Y); X += x.measureText(g.s).width; });
   } else if (st === 'grid') {
     let S = W * (k ? 0.112 : 0.1); x.font = `800 ${S}px ${FONT}`; let w = x.measureText(c.text).width; if (w > W * 0.9) { S *= W * 0.9 / w; x.font = `800 ${S}px ${FONT}`; w = x.measureText(c.text).width; }
     const q = (t - c.t0) / 0.18; const sc = q < 1 ? 0.8 + 0.2 * back(q) : 1; const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.6);
