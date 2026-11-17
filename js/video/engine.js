@@ -6,6 +6,7 @@ import { update as segUpdate, mask as segMask, ready as segReady } from './segme
 import { getSig, drawSignature } from '../carousel.js';
 import { profile } from '../app.js';
 import { enAt } from './translate.js';
+import { artCanvas } from './broll.js';
 
 export const VSTYLES = {
   mini: { name: 'สัมภาษณ์มินิมอล', sub: 'ซับขาวบรรทัดเดียว คำเด่นสีแดง เรียบหรูแบบคลิปพอดแคสต์', stage: 'grid', sw: ['#1d2430', '#ff4040'] },
@@ -14,11 +15,11 @@ export const VSTYLES = {
   aom: { name: 'AOM แดงขาว', sub: 'ป้ายแดง ตัวขาว คำเด่นสีทอง', stage: 'aom', sw: ['#fff8f3', '#a6192e'] },
   clean: { name: 'Clean', sub: 'มินิมอล ตัวขาวเงาบาง ด้านล่าง', stage: 'clean', sw: ['#f4f4f2', '#1b1717'] },
 };
-export const SCENES = { cam: 'หน้ากล้อง', stage: 'ฉากตาราง', bw: 'ขาวดำ', cut: 'ตัดฉากหลัง', slide: 'สไลด์', img: 'ภาพแทรก', poster: 'โปสเตอร์แผน' };
+export const SCENES = { cam: 'หน้ากล้อง', stage: 'ฉากตาราง', bw: 'ขาวดำ', cut: 'ตัดฉากหลัง', slide: 'สไลด์', art: 'ภาพประกอบ', img: 'ภาพแทรก', poster: 'โปสเตอร์แผน' };
 export const GRADES = { none: 'ไม่ปรับ', cine: 'โทนหนัง', warm: 'อุ่น', clean: 'สว่างสะอาด' };
 const GRADE_F = { cine: 'contrast(1.1) saturate(0.88) brightness(0.96)', warm: 'sepia(0.14) saturate(1.12) contrast(1.04)', clean: 'brightness(1.05) contrast(1.03) saturate(1.06)' };
 export const MOODS = { laugh: '😂 ตลก', sad: '😢 เศร้า', shock: '😱 ตกใจ', win: '🎉 ดีใจ', calm: '🙂 ปกติ' };
-export const VSCENES = { stage: 'ฉากกราฟิก', slide: 'สไลด์', img: 'ภาพแทรก', poster: 'โปสเตอร์แผน' };
+export const VSCENES = { stage: 'ฉากกราฟิก', slide: 'สไลด์', art: 'ภาพประกอบ', img: 'ภาพแทรก', poster: 'โปสเตอร์แผน' };
 export const HOOKS = { auto: 'อัตโนมัติ', title: 'หัวข้อตัวใหญ่', money: 'ฝนธนบัตร', flash: 'แฟลช + สั่น', count: 'ตัวเลขนับขึ้น', none: 'ไม่ใส่' };
 const LIGHT = new Set(['stage', 'cut', 'slide']);
 const FONT = '"Kanit", "Sarabun", sans-serif';
@@ -132,7 +133,7 @@ export function sanitize(ch) {
 export function speechSpans(ch) { const out = []; for (const c of ch) { if (c.t0 == null) continue; const l = out[out.length - 1]; if (l && c.t0 - l[1] < 0.4) l[1] = T1(c); else out.push([c.t0, T1(c)]); } return out; }
 function activeIdx(ch, t) { for (let i = ch.length - 1; i >= 0; i--) { const c = ch[i]; if (c.t0 != null && c.t0 <= t) return T1(c) > t ? i : -1; } return -1; }
 function lastStarted(ch, t) { for (let i = ch.length - 1; i >= 0; i--) if (ch[i].t0 != null && ch[i].t0 <= t) return i; return -1; }
-const sceneOf = (P, c) => (P.mode === 'voice' ? (['slide', 'img', 'poster'].includes(c.scene) ? c.scene : 'stage') : (c.scene || 'cam'));
+const sceneOf = (P, c) => (P.mode === 'voice' ? (['slide', 'img', 'poster', 'art'].includes(c.scene) ? c.scene : 'stage') : (c.scene || 'cam'));
 
 /** เหตุการณ์ในคลิป (ใช้ทั้งวาดภาพและวางเสียงประกอบ) */
 export function timeline(P, sl = segList(P)) {
@@ -140,7 +141,7 @@ export function timeline(P, sl = segList(P)) {
   ch.forEach((c, i) => {
     if (c.t0 == null) return;
     const L = (lines[c.line] ||= { start: c.t0, end: T1(c), idx: [] }); L.end = T1(c); L.idx.push(i);
-    const sc = sceneOf(P, c); const id = sc === 'slide' ? c.slide : sc === 'img' ? c.img : sc === 'poster' ? c.poster : null;
+    const sc = sceneOf(P, c); const id = sc === 'slide' ? c.slide : sc === 'img' ? c.img : sc === 'poster' ? c.poster : sc === 'art' ? c.art : null;
     const prev = segs[segs.length - 1];
     if (prev && prev.scene === sc && prev.id === id && Math.abs(prev.end - c.t0) < 0.35) { prev.end = T1(c); prev.idx.push(i); } else segs.push({ scene: sc, id, start: c.t0, end: T1(c), idx: [i] });
   });
@@ -353,17 +354,26 @@ function drawNeon(x, W, H, P, ch, tl, t, mode, ci, measureOnly = false) {
   return top;
 }
 
+// คำสำคัญเด้ง: ตอนพูดคำนั้น ขยาย 1.25 แล้วค้างที่ 1.1 (ช่องว่างจองไว้แล้ว บรรทัดไม่ขยับ)
+const POP_K = 1.1;
+function popScale(dt) { if (dt < 0) return 1; if (dt < 0.1) return 1 + 0.25 * ease(dt / 0.1); if (dt < 0.3) return 1.25 - 0.15 * ease((dt - 0.1) / 0.2); return POP_K; }
+const popOn = (P, g) => g.key && P.pop !== false;
+function widthOf(x, P, segs) { return segs.reduce((a, g) => a + x.measureText(g.s).width * (popOn(P, g) ? POP_K : 1), 0); }
+function drawWord(x, P, g, X, Y, t, t0, paintFn) {
+  const ww = x.measureText(g.s).width; const k = popOn(P, g); const lw = ww * (k ? POP_K : 1); const sc = k ? popScale(t - t0) : 1;
+  x.save(); x.translate(X + lw / 2, Y); if (sc !== 1) x.scale(sc, sc); paintFn(-ww / 2, 0); x.restore(); return lw;
+}
 function drawSingle(x, W, H, P, c, t, mode) {
   const st = P.style; const k = c.words.some((w) => w.key); const light = LIGHT.has(mode); let ret = null;
   x.save(); x.textBaseline = 'middle'; x.textAlign = 'left';
   if (st === 'mini') {
     let S = W * 0.058; const segs = c.words.map((w) => ({ s: w.w, key: w.key }));
-    const meas = () => { x.font = `600 ${S}px ${FONT}`; return segs.reduce((a, g) => a + x.measureText(g.s).width, 0); };
+    const meas = () => { x.font = `600 ${S}px ${FONT}`; return widthOf(x, P, segs); };
     let w = meas(); if (w > W * 0.86) { S *= W * 0.86 / w; w = meas(); }
     const Y = H * textY(P, c, mode, mode === 'split' ? 0.5 : LIGHT.has(mode) ? 0.74 : 0.6); x.globalAlpha = Math.min(1, (t - c.t0) / 0.08); ret = { Y, S };
     let X = (W - w) / 2;
     const tw = c.words.filter((w) => w.t0 != null); const act = P.karaoke && tw.length ? ([...tw].reverse().find((w) => w.t0 <= t + 0.03) || tw[0]) : null;
-    c.words.forEach((wd, k) => { const g = segs[k]; const col = act === wd ? '#ffd21f' : g.key ? '#ff4040' : '#ffffff'; x.save(); x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = S * 0.45; x.shadowOffsetY = S * 0.04; x.fillStyle = col; x.fillText(g.s, X, Y); x.restore(); x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = Math.max(1, S * 0.05); x.strokeText(g.s, X, Y); x.fillStyle = col; x.fillText(g.s, X, Y); X += x.measureText(g.s).width; });
+    c.words.forEach((wd, k) => { const g = segs[k]; const col = act === wd ? '#ffd21f' : g.key ? '#ff4040' : '#ffffff'; X += drawWord(x, P, g, X, Y, t, wd.t0 ?? c.t0 + 0.05, (px, py) => { x.save(); x.shadowColor = 'rgba(0,0,0,.8)'; x.shadowBlur = S * 0.45; x.shadowOffsetY = S * 0.04; x.fillStyle = col; x.fillText(g.s, px, py); x.restore(); x.strokeStyle = 'rgba(0,0,0,.28)'; x.lineWidth = Math.max(1, S * 0.05); x.strokeText(g.s, px, py); x.fillStyle = col; x.fillText(g.s, px, py); }); });
   } else if (st === 'grid') {
     let S = W * (k ? 0.112 : 0.1); x.font = `800 ${S}px ${FONT}`; let w = x.measureText(c.text).width; if (w > W * 0.9) { S *= W * 0.9 / w; x.font = `800 ${S}px ${FONT}`; w = x.measureText(c.text).width; }
     const q = (t - c.t0) / 0.18; const sc = q < 1 ? 0.8 + 0.2 * back(q) : 1; const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.6);
@@ -371,19 +381,19 @@ function drawSingle(x, W, H, P, c, t, mode) {
     glowText(x, c.text, -w / 2, 0, { fill: '#ffe23d', glow: 'rgba(255,150,0,.95)', blur: S * 0.5, stroke: '#3a2200', sw: S * 0.16 });
   } else if (st === 'aom') {
     const S0 = W * 0.078; let S = S0; const segs = c.words.map((w) => ({ s: w.w, key: w.key }));
-    const meas = () => { x.font = `700 ${S}px ${FONT}`; return segs.reduce((a, g) => a + x.measureText(g.s).width, 0); };
+    const meas = () => { x.font = `700 ${S}px ${FONT}`; return widthOf(x, P, segs); };
     let w = meas(); if (w > W * 0.8) { S *= W * 0.8 / w; w = meas(); }
     const q = ease((t - c.t0) / 0.2); const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.74) + (1 - q) * S * 0.6; const padX = S * 0.55, ph = S * 1.55; ret = { Y: Y + ph * 0.18, S };
     x.globalAlpha = q; x.fillStyle = '#a6192e'; x.shadowColor = 'rgba(80,0,10,.35)'; x.shadowBlur = S * 0.4; x.shadowOffsetY = S * 0.1;
     rrect(x, (W - w) / 2 - padX, Y - ph / 2, w + padX * 2, ph, ph * 0.28); x.fill(); x.shadowColor = 'transparent';
-    let X = (W - w) / 2; for (const g of segs) { x.fillStyle = g.key ? '#ffd36b' : '#ffffff'; x.fillText(g.s, X, Y + S * 0.04); X += x.measureText(g.s).width; }
+    let X = (W - w) / 2; segs.forEach((g, k) => { X += drawWord(x, P, g, X, Y + S * 0.04, t, c.words[k].t0 ?? c.t0 + 0.05, (px, py) => { x.fillStyle = g.key ? '#ffd36b' : '#ffffff'; x.fillText(g.s, px, py); }); });
   } else {
     let S = W * 0.074; const segs = c.words.map((w) => ({ s: w.w, key: w.key }));
-    const meas = () => { x.font = `700 ${S}px ${FONT}`; return segs.reduce((a, g) => a + x.measureText(g.s).width, 0); };
+    const meas = () => { x.font = `700 ${S}px ${FONT}`; return widthOf(x, P, segs); };
     let w = meas(); if (w > W * 0.86) { S *= W * 0.86 / w; w = meas(); }
     const q = Math.min(1, (t - c.t0) / 0.12); const Y = H * textY(P, c, mode, mode === 'stage' ? 0.72 : 0.76); x.globalAlpha = q; ret = { Y, S };
     let X = (W - w) / 2;
-    for (const g of segs) { glowText(x, g.s, X, Y, paint(P, light, g.key, S)(x, Y)); X += x.measureText(g.s).width; }
+    segs.forEach((g, k) => { X += drawWord(x, P, g, X, Y, t, c.words[k].t0 ?? c.t0 + 0.05, (px, py) => glowText(x, g.s, px, py, paint(P, light, g.key, S)(x, py))); });
   }
   x.restore(); return ret;
 }
@@ -538,9 +548,10 @@ export function drawFrame(x, P, t, media, tl = timeline(P), ext = {}) {
   if ((hk === 'flash' || hk === 'money') && dt >= 0 && dt < 0.5) { const a = W * 0.012 * (1 - dt / 0.5); x.translate((rnd(Math.floor(t * 60)) - 0.5) * 2 * a, (rnd(Math.floor(t * 60) + 7) - 0.5) * 2 * a); }
   { const mc = ci >= 0 ? ch[ci] : null; if (mc?.mood === 'laugh' && t - mc.t0 < 0.5) { const a = W * 0.01 * (1 - (t - mc.t0) / 0.5); x.translate((rnd(Math.floor(t * 50)) - 0.5) * 2 * a, (rnd(Math.floor(t * 50) + 3) - 0.5) * 2 * a); } if (mc?.mood === 'shock' && t - mc.t0 < 0.2) { const z = 1 + 0.06 * (1 - (t - mc.t0) / 0.2); x.translate(W / 2, H * 0.4); x.scale(z, z); x.translate(-W / 2, -H * 0.4); } }
   const bgKind = VSTYLES[P.style]?.stage || 'grid';
-  const split = P.mode === 'cam' && P.style === 'mini' && ['slide', 'img', 'poster'].includes(scene);
+  const split = P.mode === 'cam' && P.style === 'mini' && ['slide', 'img', 'poster', 'art'].includes(scene);
   const segC = seg ? ch[seg.idx[0]] : null;
-  if (split) drawSplit(x, W, H, media, scene === 'slide' ? ext.slides?.[seg?.id] : scene === 'img' ? ext.imgs?.[seg?.id] : ext.posters?.[seg?.id], (ci >= 0 ? ch[ci].label : null) || segC?.label || null, t - (seg?.start ?? t));
+  if (split) drawSplit(x, W, H, media, scene === 'slide' ? ext.slides?.[seg?.id] : scene === 'img' ? ext.imgs?.[seg?.id] : scene === 'art' ? artCanvas(seg?.id || 'p-think') : ext.posters?.[seg?.id], (ci >= 0 ? ch[ci].label : null) || segC?.label || null, t - (seg?.start ?? t));
+  else if (scene === 'art') { x.drawImage(stageBg(bgKind, W, H), 0, 0); const d = P.mode === 'cam' ? 0.4 : 0; if (P.mode === 'cam' && seg) cardShrink(x, W, H, media, (t - seg.start) / 0.4); drawSlideCard(x, W, H, artCanvas(seg?.id || 'p-think'), t - (seg?.start ?? t) - d); }
   else if (scene === 'poster') { x.drawImage(stageBg(bgKind, W, H), 0, 0); const d = P.mode === 'cam' ? 0.4 : 0; if (P.mode === 'cam' && seg) cardShrink(x, W, H, media, (t - seg.start) / 0.4); drawSlideCard(x, W, H, ext.posters?.[seg?.id], t - (seg?.start ?? t) - d); }
   else if (scene === 'stage') { x.drawImage(stageBg(bgKind, W, H), 0, 0); if (P.mode === 'cam' && seg) cardShrink(x, W, H, media, (t - seg.start) / 0.4); }
   else if (scene === 'slide') { x.drawImage(stageBg(bgKind, W, H), 0, 0); const d = P.mode === 'cam' ? 0.4 : 0; if (P.mode === 'cam' && seg) cardShrink(x, W, H, media, (t - seg.start) / 0.4); drawSlideCard(x, W, H, ext.slides?.[seg?.id], t - (seg?.start ?? t) - d); }
@@ -562,7 +573,7 @@ export function drawFrame(x, P, t, media, tl = timeline(P), ext = {}) {
   const st = tl.stickers.filter((s) => s.at <= t && t < s.end && s.scene === scene).pop();
   const mode = split ? 'split' : scene;
   const titling = hk === 'title' && dt >= 0 && dt < 1.7;
-  const skipText = (counting || titling) && ci >= 0 && ch[ci].line === ch[0].line;
+  const skipText = ext.noText || ((counting || titling) && ci >= 0 && ch[ci].line === ch[0].line);
   const lang = P.subLang || 'th'; const enOnly = lang === 'en' && !!enLine(P, t); let under = null;
   if (enOnly && !skipText) { if (st && ci >= 0) drawSticker(x, W, H, st, t, P, scene, null); drawEn(x, W, H, P, ci, t, mode, null); }
   else if (ci >= 0 && !skipText && ch[ci].arc) { if (st) drawSticker(x, W, H, st, t, P, scene, null); drawArc(x, W, H, P, ch, tl, t, ci, scene); }
@@ -605,17 +616,27 @@ function drawTitle(x, W, H, P, title, dt) {
 }
 
 /** ปกคลิป: เฟรม ณ เวลา t + หัวข้อตัวใหญ่ด้านบน */
-export function drawCover(x, P, t, media, title, tl, ext) {
-  drawFrame(x, P, t, media, tl, { ...ext, endcard: null });
+/** ภาพปก: เฟรมจากคลิป (ไม่มีซับ) + หัวข้อตัวใหญ่ · look = top (หัวข้อด้านบน) | mid (กลางจอ ภาพมืดลง) | band (แถบสีด้านล่าง) */
+export function drawCover(x, P, t, media, title, tl, ext, look = 'top') {
+  drawFrame(x, P, t, media, tl, { ...ext, endcard: null, noText: true });
   const W = x.canvas.width, H = x.canvas.height; if (!title) return;
-  const wordsArr = words(title); const lines2 = []; let cur = ''; let S = W * 0.11;
+  const wordsArr = words(title); const lines2 = []; let cur = ''; let S = W * (look === 'band' ? 0.09 : look === 'mid' ? 0.12 : 0.11); const maxW = W * 0.86;
   x.save(); x.font = `800 ${S}px ${FONT}`;
-  for (const w of wordsArr) { if (cur && x.measureText(cur + w).width > W * 0.86) { lines2.push(cur.trim()); cur = w; } else cur += w; }
+  for (const w of wordsArr) { if (cur && x.measureText(cur + w).width > maxW) { lines2.push(cur.trim()); cur = w; } else cur += w; }
   if (cur.trim()) lines2.push(cur.trim());
-  const L = lines2.slice(0, 3); const lh = S * 1.22; let y = H * 0.16 - (L.length - 1) * lh / 2;
-  const bg = x.createLinearGradient(0, 0, 0, H * 0.42); bg.addColorStop(0, 'rgba(0,0,0,.55)'); bg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = bg; x.fillRect(0, 0, W, H * 0.42);
-  x.textAlign = 'left'; x.textBaseline = 'middle';
-  L.forEach((l, i) => { const w = x.measureText(l).width; glowText(x, l, (W - w) / 2, y + i * lh, paint({ ...P, style: P.style === 'clean' ? 'neon' : P.style }, false, i === L.length - 1, S)(x, y + i * lh)); });
+  const L = lines2.slice(0, 3); const lh = S * 1.22; x.textAlign = 'left'; x.textBaseline = 'middle';
+  if (look === 'mid') {
+    x.fillStyle = 'rgba(0,0,0,.38)'; x.fillRect(0, 0, W, H); const y = H * 0.45 - (L.length - 1) * lh / 2;
+    L.forEach((l, i) => { const w = x.measureText(l).width; glowText(x, l, (W - w) / 2, y + i * lh, i === L.length - 1 ? { fill: '#ffd21f', stroke: '#2a2000', sw: S * 0.12, shadow: 'rgba(0,0,0,.5)', sblur: S * 0.4, soff: S * 0.05 } : { fill: '#ffffff', stroke: 'rgba(0,0,0,.45)', sw: S * 0.1, shadow: 'rgba(0,0,0,.5)', sblur: S * 0.4, soff: S * 0.05 }); });
+  } else if (look === 'band') {
+    const bh = L.length * lh + S * 0.9, by = H * 0.8 - bh / 2; x.fillStyle = '#a6192e'; x.save(); x.shadowColor = 'rgba(0,0,0,.3)'; x.shadowBlur = S * 0.6; x.fillRect(0, by, W, bh); x.restore();
+    x.fillStyle = '#ffd21f'; x.fillRect(W * 0.07, by - S * 0.18, W * 0.16, S * 0.18);
+    L.forEach((l, i) => { const w = x.measureText(l).width; x.fillStyle = '#ffffff'; x.fillText(l, (W - w) / 2, by + S * 0.45 + lh * (i + 0.5)); });
+  } else {
+    const y = H * 0.16 - (L.length - 1) * lh / 2;
+    const bg = x.createLinearGradient(0, 0, 0, H * 0.42); bg.addColorStop(0, 'rgba(0,0,0,.55)'); bg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = bg; x.fillRect(0, 0, W, H * 0.42);
+    L.forEach((l, i) => { const w = x.measureText(l).width; glowText(x, l, (W - w) / 2, y + i * lh, paint({ ...P, style: P.style === 'clean' ? 'neon' : P.style }, false, i === L.length - 1, S)(x, y + i * lh)); });
+  }
   x.restore();
 }
 
@@ -639,9 +660,11 @@ export class Player {
   }
   wire(e) { const s = this.ctx.createMediaElementSource(e); e._g = this.ctx.createGain(); e._g.gain.value = 0; s.connect(e._g).connect(this.voiceIn); }
   applyEnhance() {
-    if (!this.ctx) return; const on = this.P.enhance !== false; if (this._enh === on) return; this._enh = on;
+    if (!this.ctx) return; const on = this.P.enhance !== false; const dn = this.dn && (this.P.denoise || 'on') !== 'off' ? (this.P.denoise === 'strong' ? 2 : 1) : 0;
+    const key = on + ':' + dn; if (this._enh === key) return; this._enh = key;
     try { this.voiceIn.disconnect(); } catch {}
-    if (on) this.voiceIn.connect(this.vHp); else this.voiceIn.connect(this.master);
+    if (dn) { this.dn.port.postMessage({ strength: dn }); this.voiceIn.connect(this.dn); try { this.dn.disconnect(); } catch {} this.dn.connect(on ? this.vHp : this.master); }
+    else if (on) this.voiceIn.connect(this.vHp); else this.voiceIn.connect(this.master);
   }
   clipGain(e) { return this.P.enhance !== false ? (this.P.gain?.[e._clip] ?? 1) : 1; }
   other() { const a = this.el(0), b = this.el(1); return this.active === a ? b : a; }
@@ -656,6 +679,8 @@ export class Player {
     this.voiceIn = ctx.createGain(); this.vHp = ctx.createBiquadFilter(); this.vHp.type = 'highpass'; this.vHp.frequency.value = 85;
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -24; comp.knee.value = 8; comp.ratio.value = 3.5; comp.attack.value = 0.004; comp.release.value = 0.25;
     const mk = ctx.createGain(); mk.gain.value = 1.4; this.vHp.connect(comp).connect(mk).connect(this.master); this._enh = null; this.applyEnhance();
+    // ลดเสียงรบกวน (AudioWorklet) — โหลดแยก ถ้าเครื่องไม่รองรับก็ข้ามไป
+    this.dnReady = (ctx.audioWorklet ? ctx.audioWorklet.addModule(new URL('./denoise-worklet.js', import.meta.url)).then(() => { this.dn = new AudioWorkletNode(ctx, 'aom-denoise', { outputChannelCount: [2] }); this._enh = null; this.applyEnhance(); }) : Promise.resolve()).catch((e) => console.warn('denoise', e));
     this.pool.forEach((e) => this.wire(e));
     return ctx;
   }
@@ -698,7 +723,7 @@ export class Player {
   }
   stopMusic() { try { this.msrc?.stop(); } catch {} this.msrc = null; }
   async play(from = this.t, { to = this.win[2], sfx = this.sfxOn, rate = 1, music = true } = {}) {
-    const ctx = this.audio(); await ctx.resume().catch(() => {}); this.applyEnhance();
+    const ctx = this.audio(); await ctx.resume().catch(() => {}); await Promise.race([this.dnReady, new Promise((r) => setTimeout(r, 1500))]); this.applyEnhance();
     this.rate = rate; this.to = to; this.sfxNow = sfx; this.sfxGain.gain.value = this.P.sfxVol ?? 0.8;
     const k = this.segAt(from); this.k = k;
     if (k >= 0) { const s = this.sl[k]; const e = this.active && this.active._clip === s.clip ? this.active : this.el(0); await this.load(e, k, from); this.activate(e); }

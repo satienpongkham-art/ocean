@@ -2,9 +2,9 @@
 import { h, icon, toast, copyText, sheet, closeSheet } from '../ui.js';
 import { PLANS, PLAN, CATEGORIES } from '../../data/plans.js';
 import * as store from '../store.js';
-import { posterData, drawPoster, preparePoster, posterCaption, POSTER_LAYOUTS, POSTER_SIZES } from '../poster.js';
+import { posterData, drawPoster, preparePoster, posterCaption, defaultVs, POSTER_LAYOUTS, POSTER_SIZES } from '../poster.js';
 
-const ST = { cat: 'all', q: '', opt: { layout: 'cards', size: 'feed', theme: 'cat', example: false, closeDate: '', head: '' } };
+const ST = { cat: 'all', q: '', opt: { layout: 'cards', size: 'feed', theme: 'cat', example: false, closeDate: '', head: '', vs: null } };
 
 export function renderPosters(q = {}) {
   if (q.plan && PLAN[q.plan]) return renderPosterEditor(q.plan, q);
@@ -27,10 +27,13 @@ function renderPosterEditor(id, q) {
   o.closeDate = q.close || (d.closing && !d.closing.closed && o.layout === 'urgent' ? d.closing.date : o.closeDate && ST.lastId === id ? o.closeDate : '');
   if (q.layout && POSTER_LAYOUTS[q.layout]) o.layout = q.layout;
   if (o.layout === 'urgent' && !o.closeDate && d.closing?.date) o.closeDate = d.closing.date;
-  if (ST.lastId !== id) o.head = ''; ST.lastId = id;
+  if (ST.lastId !== id) { o.head = ''; o.vs = null; } ST.lastId = id; if (q.vs && PLAN[q.vs]) o.vs = q.vs; if (q.layout === 'compare') o.layout = 'compare';
   const cv = h('canvas.ps-cv', { 'aria-label': 'โปสเตอร์' });
   const thumbs = h('div.ps-thumbs');
-  const draw = () => { drawPoster(cv, d, o); };
+  const vsSel = h('select.input', { 'aria-label': 'แผนที่จะเทียบ', onchange: (e) => { o.vs = e.target.value; draw(); paintThumbs(); capPre.textContent = posterCaption(d, o); } }, PLANS.filter((p) => !p.closed && p.id !== id).sort((a, b) => (a.cat === d.cat ? 0 : 1) - (b.cat === d.cat ? 0 : 1)).map((p) => h('option', { value: p.id, selected: (o.vs || defaultVs(id)) === p.id }, (p.cat === d.cat ? '• ' : '') + (p.short || p.name))));
+  const vsCard = h('div.card', h('h3.vd-h3', 'เทียบกับแผน'), vsSel, h('p.xs.muted', 'ใช้ข้อมูลแผนในระบบ · • = หมวดเดียวกัน'));
+  const capPre = h('pre.ps-cap');
+  const draw = () => { drawPoster(cv, d, o); vsCard.style.display = o.layout === 'compare' ? '' : 'none'; capPre.textContent = posterCaption(d, o); };
   const paintThumbs = () => thumbs.replaceChildren(...Object.entries(POSTER_LAYOUTS).map(([k, l]) => { const c = document.createElement('canvas'); drawPoster(c, d, { ...o, layout: k, closeDate: k === 'urgent' ? (o.closeDate || d.closing?.date || '') : o.closeDate }); return h('button.ps-th', { class: o.layout === k ? 'on' : '', onclick: () => { o.layout = k; if (k === 'urgent' && !o.closeDate && d.closing?.date) { o.closeDate = d.closing.date; closeIn.value = o.closeDate; } draw(); paintThumbs(); } }, h('img', { src: c.toDataURL('image/jpeg', 0.5), alt: '' }), h('small', l)); }));
   const seg = (opts, key, after) => h('div.seg', opts.map(([v, l]) => h('button', { class: o[key] === v ? 'on' : '', onclick: (e) => { o[key] = v; [...e.currentTarget.parentNode.children].forEach((b) => b.classList.toggle('on', b === e.currentTarget)); draw(); after?.(); } }, l)));
   const closeIn = h('input.input', { type: 'date', value: o.closeDate, 'aria-label': 'วันปิดขาย', onchange: (e) => { o.closeDate = e.target.value; draw(); paintThumbs(); } });
@@ -43,13 +46,13 @@ function renderPosterEditor(id, q) {
     h('div.ps-grid',
       h('div.ps-prev', h('div.ps-frame', cv), h('div.row.wrap.ps-acts', h('button.btn.primary', { onclick: share }, icon('share'), 'แชร์ (คัดลอกแคปชั่นให้)'), h('button.btn', { onclick: save }, icon('download'), 'บันทึกภาพ'))),
       h('div.ps-side',
-        h('div.card', h('h3.vd-h3', 'แบบ'), thumbs),
+        h('div.card', h('h3.vd-h3', 'แบบ'), thumbs), vsCard,
         h('div.card', h('h3.vd-h3', 'ขนาด'), seg(Object.entries(POSTER_SIZES).map(([k, v]) => [k, v[2]]), 'size', paintThumbs),
           h('h3.vd-h3', { style: { marginTop: '12px' } }, 'สี'), seg([['cat', 'สีตามหมวดแผน'], ['brand', 'แดงแบรนด์']], 'theme', paintThumbs),
           h('label.vd-field', { style: { marginTop: '12px' } }, h('span', 'หัวข้อ (เว้นว่าง = ใช้ที่แอปเขียนให้)'), headIn),
           h('label.vd-field', h('span', 'วันปิดขาย (ใส่เมื่อแผนจะปิดรับจริง)'), closeIn),
           h('label.vd-tg', h('input', { type: 'checkbox', checked: o.example, onchange: (e) => { o.example = e.target.checked; draw(); } }), h('span', h('b', 'แสดงตัวอย่างจากโบรชัวร์'), h('small', 'ปิดไว้ถ้าไม่อยากโชว์ตัวเลขเบี้ย')))),
-        h('div.card', h('h3.vd-h3', 'แคปชั่น'), h('pre.ps-cap', posterCaption(d, o)), h('button.btn', { onclick: () => copyText(posterCaption(d, o)) }, icon('copy'), 'คัดลอก')),
+        h('div.card', h('h3.vd-h3', 'แคปชั่น'), capPre, h('button.btn', { onclick: () => copyText(posterCaption(d, o)) }, icon('copy'), 'คัดลอก')),
         h('p.xs.muted', 'ใช้ข้อมูลแผนในระบบ (ตรวจกับ aia.co.th) · ไม่มีโลโก้บริษัท · ใส่เลขใบอนุญาต/LINE ได้ที่ ', h('a', { href: '#/tools/profile' }, 'โปรไฟล์')))));
   preparePoster().then(() => { draw(); paintThumbs(); });
   return node;

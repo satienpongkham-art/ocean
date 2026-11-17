@@ -1,6 +1,8 @@
 // ─── จัดให้อัตโนมัติ: เลือกสติกเกอร์ ฉาก ตัวหนังสือโค้ง เอฟเฟกต์เปิด เพลง ป้ายท้าย ให้เหมาะกับบท · แม่แบบคลิป ───
 import { suggestEmoji } from '../../data/emoji.js';
-import { visLen } from './engine.js';
+import { visLen, segList } from './engine.js';
+import { autoBroll } from './broll.js';
+import { lookAway } from './face.js';
 import { GLOSSARY } from '../../data/rules.js';
 import { PLANS } from '../../data/plans.js';
 
@@ -35,10 +37,10 @@ export function autoAll(P, { slideKinds = [], canCut = false } = {}) {
   const lines = [...new Set(P.chunks.map((c) => c.line))];
   const did = { stickers: 0, stage: 0, bw: 0, slide: 0, cut: 0, arc: 0 };
   P.chunks.forEach((c) => { c.term = null; c.label = null; c.mood = null; c.poster = null; });
-  if (P.style === 'mini') { P.chunks.forEach((c) => { c.emoji = null; c.scene = P.mode === 'voice' ? 'stage' : 'cam'; c.arc = false; c.slide = null; }); return autoMini(P, slideKinds); }
+  if (P.style === 'mini') { P.chunks.forEach((c) => { c.emoji = null; c.scene = P.mode === 'voice' ? 'stage' : 'cam'; c.arc = false; c.slide = null; c.art = null; c.autoArt = false; }); const msg = autoMini(P, slideKinds); const nb = P.broll !== false ? autoBroll(P, lookAway(P, segList(P))) : 0; return msg + (nb ? ` · ภาพประกอบ ${nb}` : ''); }
   // อารมณ์ประจำฉาก (สไตล์อื่น): ใช้ภาพ + เสียงตามอารมณ์
   for (const ln of lines) { const cs = P.chunks.filter((c) => c.line === ln); const txt = cs.map((c) => c.text).join(''); const m = Object.keys(MOOD_RE).find((k) => MOOD_RE[k].test(txt)); if (m) cs[0].mood = m; }
-  P.chunks.forEach((c) => { c.emoji = null; c.scene = P.mode === 'voice' ? 'stage' : 'cam'; c.arc = false; c.slide = null; if (c.scene !== 'img') c.img = c.img || null; });
+  P.chunks.forEach((c) => { c.emoji = null; c.scene = P.mode === 'voice' ? 'stage' : 'cam'; c.arc = false; c.slide = null; c.art = null; c.autoArt = false; if (c.scene !== 'img') c.img = c.img || null; });
   // 1) สติกเกอร์: บรรทัดละ 1 ตัว ที่ช่วงแรกที่มีคำเข้าเค้า
   for (const ln of lines) { const cs = P.chunks.filter((c) => c.line === ln); const c = cs.find((x) => suggestEmoji(x.text)) || null; const code = c ? suggestEmoji(c.text) : suggestEmoji(lineText(P, ln)); if (code) { (c || cs[0]).emoji = code; did.stickers++; } }
   // 2) สไลด์ตัวเลข/กราฟ จากงานในสตูดิโอ (บรรทัดที่มีตัวเลข)
@@ -61,8 +63,9 @@ export function autoAll(P, { slideKinds = [], canCut = false } = {}) {
   }
   // 5) แม่แบบ: กฎของแม่แบบมาก่อน
   for (const r of P.tplRules || []) { const cs = P.chunks.filter((c) => c.line === r.line); if (!cs.length) continue; if (r.scene && !(P.mode === 'voice' && r.scene !== 'stage')) cs.forEach((c) => { c.scene = r.scene; }); if (r.emoji) { cs.forEach((c) => { c.emoji = null; }); cs[0].emoji = r.emoji; } }
+  did.art = P.broll !== false ? autoBroll(P, lookAway(P, segList(P))) : 0;
   P.hook = 'auto'; P.music = P.music && P.music !== 'off' ? P.music : 'auto'; P.endcard = true; P.autoDone = true;
-  const parts = [did.stickers && `สติกเกอร์ ${did.stickers}`, did.stage && `ฉากตาราง ${did.stage}`, did.bw && `ขาวดำ ${did.bw}`, did.slide && `สไลด์ ${did.slide}`, did.cut && 'ตัดฉากหลัง 1', did.arc && 'ตัวโค้ง 1'].filter(Boolean);
+  const parts = [did.stickers && `สติกเกอร์ ${did.stickers}`, did.stage && `ฉากตาราง ${did.stage}`, did.bw && `ขาวดำ ${did.bw}`, did.slide && `สไลด์ ${did.slide}`, did.cut && 'ตัดฉากหลัง 1', did.arc && 'ตัวโค้ง 1', did.art && `ภาพประกอบ ${did.art}`].filter(Boolean);
   return parts.length ? 'จัดให้แล้ว: ' + parts.join(' · ') + ' · เอฟเฟกต์เปิด เพลง ป้ายท้าย' : 'จัดให้แล้ว';
 }
 

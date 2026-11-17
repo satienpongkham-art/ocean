@@ -119,13 +119,25 @@ export async function autoEdit(P, env) {
   // 1) ฟังเสียง
   onStep('audio', 'กำลังฟังเสียง…');
   const speech = {}; P.gain ||= {};
-  for (const c of clips) { const b = await env.getBlob(c); speech[c.id] = await A.speechRanges(c.key, b, { gap: 0.3, pad: 0.06 }); P.gain[c.id] = await A.loudGain(c.key, b).catch(() => 1); }
+  P.levels ||= {};
+  for (const c of clips) { const b = await env.getBlob(c); speech[c.id] = await A.speechRanges(c.key, b, { gap: 0.3, pad: 0.06 }); P.gain[c.id] = await A.loudGain(c.key, b).catch(() => 1); P.levels[c.id] = await A.levels?.(c.key, b).catch(() => null); }
+  // เสียงรบกวน: วัดระดับพื้นหลัง → เลือกความแรงของตัวลดเสียงรบกวน
+  const lv = Object.values(P.levels).filter(Boolean); if (lv.length && P.denoise !== 'off') { const worst = Math.max(...lv.map((l) => l.noise)); const snr = Math.min(...lv.map((l) => l.snr)); P.denoise = worst > -42 || snr < 22 ? 'strong' : 'on'; sum.noise = worst; }
   // 2) ภาพ
   onStep('look', 'กำลังปรับแสงสี…');
   P.looks ||= {}; P.tracks ||= {};
   if (P.mode === 'cam') for (const c of clips) {
     const r = await analyzeLook(env.urls[c.id]).catch(() => ({ look: '' })); P.looks[c.id] = r.look;
     if (r.landscape && r.v) { onStep('look', 'คลิปแนวนอน: กำลังหาตำแหน่งหน้าเพื่อครอปเป็นแนวตั้ง…'); P.tracks[c.id] = await trackFace(r.v).catch(() => null); }
+  }
+  // มองกล้อง: สแกนหน้า (หน้าตรง ตาเปิด ไม่เหลือบอ่านโน้ต) — ใช้เลือกเทค วางภาพแทรก เลือกปก
+  P.gaze ||= {};
+  if (P.mode === 'cam' && env.face !== false) {
+    try {
+      const F = await import('./face.js'); onStep('look', 'กำลังโหลดตัวดูการมองกล้อง…', -1); await F.load();
+      for (const [k, c] of clips.entries()) { onStep('look', `กำลังดูการมองกล้อง… คลิป ${k + 1}/${clips.length}`); P.gaze[c.id] = await F.scanClip(env.urls[c.id], { step: c.dur > 90 ? 0.5 : 0.33, onProgress: (p) => onStep('look', null, (k + p) / clips.length) }).catch(() => null); }
+      env.F = F;
+    } catch (e) { console.warn('face', e); }
   }
   // 3) ถอดเสียง: ได้ทุกคำพร้อมเวลา
   const src = await sourceWords(P, clips, speech, env);
@@ -134,7 +146,7 @@ export async function autoEdit(P, env) {
   const phr = clips.flatMap((c) => phrasesOf(c.id, src[c.id])); phr.forEach((x) => { x.drop = null; });
   const alive = () => phr.filter((x) => !x.drop);
   if (env.cutFiller) phr.forEach((x) => { if (FILLER.test(x.text) && x.e - x.s < 2.5) x.drop = 'filler'; });
-  if (env.cutRetake) { const L = alive(); for (let i = 0; i < L.length; i++) for (let j = i + 1; j <= Math.min(L.length - 1, i + 2); j++) { if (L[j].clip !== L[i].clip || L[j].s - L[i].e > 6) break; const a = L[i].text, b = L[j].text; const pre = norm(a).slice(0, 6); if (dice(a, b) >= 0.55 || (norm(a).length >= 4 && norm(b).startsWith(pre) && norm(b).length >= norm(a).length * 0.7)) { L[i].drop = 'retake'; break; } } }
+  if (env.cutRetake) { const L = alive(); for (let i = 0; i < L.length; i++) for (let j = i + 1; j <= Math.min(L.length - 1, i + 2); j++) { if (L[j].clip !== L[i].clip || L[j].s - L[i].e > 6) break; const a = L[i].text, b = L[j].text; const pre = norm(a).slice(0, 6); if (dice(a, b) >= 0.55 || (norm(a).length >= 4 && norm(b).startsWith(pre) && norm(b).length >= norm(a).length * 0.7)) { const gi = env.F?.gazeIn(P, L[i].clip, L[i].s, L[i].e), gj = env.F?.gazeIn(P, L[j].clip, L[j].s, L[j].e); /* เก็บเทคที่มองกล้องดีกว่า (ปกติเก็บเทคหลัง) */ if (gi != null && gj != null && gi - gj > 0.2) { L[j].drop = 'retake'; sum.gazePick = (sum.gazePick || 0) + 1; } else L[i].drop = 'retake'; break; } } }
   if (env.target > 0) {
     const L = alive(); let tot = L.reduce((a, x) => a + (x.e - x.s) + 0.3, 0);
     const score = (x) => (/\d/.test(x.text) ? 3 : 0) + (/ประกัน|เงิน|ภาษี|สุขภาพ|ลูก|เกษียณ|คุ้มครอง|ค่ารักษา/.test(x.text) ? 2 : 0) + Math.min(2, visLen(x.text) / 20) - (x.e - x.s > 8 ? 1 : 0);
